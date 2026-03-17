@@ -1,0 +1,11 @@
+name = "arca-github-notion-sync"
+main = "index.js"
+compatibility_date = "2026-03-01"
+
+# Environment variables for Notion integration
+# Secrets are stored via: wrangler secret put SECRET_NAME
+[vars]
+NOTION_DB_ID = "YOUR_NOTION_DATABASE_ID"
+
+# NOTION_API_KEY must be set as a secret (not committed to version control)
+# Run: wrangler secret put NOTION_API_KEY

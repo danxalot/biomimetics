@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+ENV/
+
+# Configuration with secrets
+config/omni_sync_config.json
+secrets/
+*.credentials
+*.key
+
+# Logs
+*.log
+*.err
+.arca/
+
+# State files
+*.state
+*_state.json
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Cloudflare secrets (wrangler stores these separately)
+.secrets/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Proton exports (if used)
+proton_exports/

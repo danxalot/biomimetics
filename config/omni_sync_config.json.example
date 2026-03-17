@@ -1,0 +1,47 @@
+{
+  "GCP_GATEWAY_URL": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+
+  "NOTION_API_KEY": "ntn_YOUR_NOTION_API_KEY_HERE",
+  "NOTION_PAGE_ID": "3244d2d9fc7c808b97c3ce78648d77a1",
+  "NOTION_BIOMETIC_OS_DB_ID": "your-biometic-os-db-id",
+
+  "IDENTITY": {
+    "PRIMARY_EMAIL": "claws@arca-vsa.tech",
+    "IDENTITY_NAME": "Claws"
+  },
+
+  "PROTONMAIL_ENABLED": true,
+  "PROTONMAIL_IMAP_HOST": "127.0.0.1",
+  "PROTONMAIL_IMAP_PORT": 1143,
+  "PROTONMAIL_ACCOUNTS": [
+    {"email": "dan.exall@pm.me", "password": "YOUR_BRIDGE_PASSWORD"},
+    {"email": "dan@arca-vsa.tech", "password": "YOUR_BRIDGE_PASSWORD"},
+    {"email": "claws@pm.me", "password": "YOUR_BRIDGE_PASSWORD"},
+    {"email": "arca@pm.me", "password": "YOUR_BRIDGE_PASSWORD"},
+    {"email": "info@pm.me", "password": "YOUR_BRIDGE_PASSWORD"}
+  ],
+
+  "GMAIL_ENABLED": true,
+  "GMAIL_IMAP_HOST": "imap.gmail.com",
+  "GMAIL_IMAP_PORT": 993,
+  "GMAIL_USER": "your-email@gmail.com",
+  "GMAIL_APP_PASSWORD": "your-app-password",
+
+  "GOOGLE_DRIVE_ENABLED": true,
+  "GOOGLE_AUTH_TYPE": "service_account",
+  "GOOGLE_SERVICE_ACCOUNT_PATH": "~/.secrets/gcp_credentials.json",
+  "GOOGLE_CLIENT_SECRETS_PATH": "~/.secrets/client_secrets.json",
+  "GOOGLE_DRIVE_WATCH_FOLDER": "root",
+
+  "MYCLOUD_ENABLED": true,
+  "MYCLOUD_MOUNT_PATH": "/Volumes/danexall",
+  "MYCLOUD_WATCH_FOLDERS": ["danexall", "Public"],
+  "MYCLOUD_PASSWORD": ["YourNASPassword"],
+
+  "EMAIL_POLL_INTERVAL": 60,
+  "DRIVE_POLL_INTERVAL": 300,
+  "MYCLOUD_POLL_INTERVAL": 300,
+
+  "STATE_DIR": "~/.arca/omni_sync",
+  "LOG_FILE": "~/.arca/omni_sync.log"
+}
