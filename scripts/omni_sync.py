@@ -43,6 +43,7 @@ except ImportError:
 CONFIG_PATH = Path.home() / "omni_sync_config.json"
 LOG_PATH = Path.home() / ".arca" / "omni_sync.log"
 STATE_DIR = Path.home() / ".arca" / "omni_sync"
+DB_STATE_FILE = STATE_DIR / "db_state.json"  # Persistence for database IDs
 
 # Circuit Breaker Constants
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB hard limit
@@ -70,16 +71,39 @@ def load_config() -> Dict[str, Any]:
     """Load configuration from JSON file."""
     if not CONFIG_PATH.exists():
         raise FileNotFoundError(f"Config file not found: {CONFIG_PATH}")
-    
+
     with open(CONFIG_PATH, 'r') as f:
         config = json.load(f)
-    
+
     # Expand ~ paths
     for key in ['GOOGLE_CREDENTIALS_PATH', 'STATE_DIR', 'LOG_FILE']:
         if key in config and config[key]:
             config[key] = os.path.expanduser(config[key])
-    
+
     return config
+
+
+def load_db_state() -> Dict[str, str]:
+    """Load existing database IDs from state file (persistence fix)."""
+    if not DB_STATE_FILE.exists():
+        return {}
+    try:
+        with open(DB_STATE_FILE, 'r') as f:
+            return json.load(f)
+    except (json.JSONDecodeError, IOError):
+        return {}
+
+
+def save_db_state(db_ids: Dict[str, str]) -> bool:
+    """Save database IDs to state file for persistence."""
+    try:
+        STATE_DIR.mkdir(parents=True, exist_ok=True)
+        with open(DB_STATE_FILE, 'w') as f:
+            json.dump(db_ids, f, indent=2)
+        return True
+    except IOError as e:
+        print(f"Warning: Could not save db_state.json: {e}")
+        return False
 
 
 class NotionClient:
@@ -729,15 +753,23 @@ class OmniSync:
         self.logger.info(f"Circuit Breakers: MAX_FILE_SIZE={MAX_FILE_SIZE}, IGNORE_KEYWORDS={IGNORE_KEYWORDS}")
     
     def create_notion_databases(self) -> Dict[str, Optional[str]]:
-        """Create Life OS Triage and Tool Guard databases."""
+        """Create Life OS Triage and Tool Guard databases with persistence fix."""
         parent_page_id = self.config.get('NOTION_PAGE_ID')
-        
+
         if not parent_page_id:
             self.logger.error("NOTION_PAGE_ID not configured")
             return {}
-        
+
         self.logger.info(f"Creating databases in Notion page: {parent_page_id}")
-        
+
+        # PERSISTENCE FIX: Check for existing database IDs first
+        existing_state = load_db_state()
+        if existing_state:
+            self.logger.info(f"Found existing database IDs in {DB_STATE_FILE}")
+            self.logger.info(f"  Life OS Triage: {existing_state.get('life_os_triage', 'N/A')}")
+            self.logger.info(f"  Tool Guard: {existing_state.get('tool_guard', 'N/A')}")
+            return existing_state
+
         if self.dry_run:
             self.logger.info("[DRY RUN] Would create 'Life OS Triage' database")
             self.logger.info("[DRY RUN] Would create 'Tool Guard' database")
@@ -745,14 +777,24 @@ class OmniSync:
                 'life_os_triage': 'dry-run-id-1',
                 'tool_guard': 'dry-run-id-2'
             }
-        
+
+        # Create new databases
         life_os_id = self.notion.create_life_os_triage_db(parent_page_id)
         tool_guard_id = self.notion.create_tool_guard_db(parent_page_id)
-        
-        return {
+
+        db_ids = {
             'life_os_triage': life_os_id,
             'tool_guard': tool_guard_id
         }
+
+        # PERSISTENCE FIX: Save database IDs for future runs
+        if life_os_id or tool_guard_id:
+            if save_db_state(db_ids):
+                self.logger.info(f"Saved database IDs to {DB_STATE_FILE}")
+            else:
+                self.logger.warning("Failed to save database IDs (will retry on next run)")
+
+        return db_ids
     
     def sync_emails(self) -> List[Dict]:
         """Sync emails from Proton (5 accounts) and Gmail."""

@@ -1,0 +1,33 @@
+# Cloudflare Pages Configuration for ARCA Live Voice
+# Deploy with: npm run deploy
+
+name = "arca-live-voice"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "./dist"
+
+# Environment variables (set via Cloudflare dashboard or wrangler secret)
+# wrangler secret put GEMINI_API_KEY
+# wrangler secret put CLOUDFLARE_WORKER_URL
+
+[vars]
+# Non-secret configuration
+GCP_GATEWAY_URL = "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator"
+
+# Build configuration
+[build]
+command = "npm run build"
+
+# Development settings
+[dev]
+port = 3000
+
+# Durable Objects (if needed for session state)
+# [durable_objects]
+# bindings = [
+#   { name = "SESSION_STORE", class_name = "SessionStore" }
+# ]
+
+# KV Namespaces (if needed for caching)
+# [[kv_namespaces]]
+# binding = "MY_KV"
+# id = "xxx"

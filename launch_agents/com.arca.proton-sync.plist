@@ -7,11 +7,11 @@
     
     <key>ProgramArguments</key>
     <array>
-        <string>/Users/danexall/scripts/proton_sync_hourly.sh</string>
+        <string>/Users/danexall/biomimetics/scripts/proton_sync_hourly.sh</string>
     </array>
     
     <key>WorkingDirectory</key>
-    <string>/Users/danexall</string>
+    <string>/Users/danexall/biomimetics</string>
     
     <key>RunAtLoad</key>
     <true/>

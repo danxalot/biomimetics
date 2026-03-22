@@ -1,245 +1,282 @@
 #!/usr/bin/env python3
 """
-ARCA ProtonMail Backfill & Sync
-Fetches emails from all 5 Proton accounts via IMAP Bridge
-Summarizes with local Ollama model and sends to GCP Gateway
+ARCA ProtonMail Backfill & Sync - Refactored for Phase 1 & 2
+Fetches emails since 25-Dec-2025 via IMAP Bridge
+Filters with local LLM before cloud transmission
+Transmits to GCP Gateway with Obsidian link preparation
 """
 
-import os
-import sys
-import email
 import imaplib
-import datetime
-import requests
+import email
+from email.header import decode_header
+import openai
+import os
+import time
 import json
 import logging
-from email import policy
-from dateutil import parser
+import requests
+from typing import Generator, Tuple, Optional
+from urllib.parse import quote
 
 # Configuration
-GCP_GATEWAY_URL = "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator"
-OLLAMA_API = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = "deepseek-r1-1.5b"
+IMAP_HOST = "127.0.0.1"  # Proton Bridge localhost
+IMAP_PORT = 1143
+LOCAL_LLM_BASE_URL = "http://localhost:11435/v1"
+LOCAL_LLM_MODEL = "qwen3.5-2b-instruct"
+SINCE_DATE = "25-Dec-2025"  # Format: DD-Mon-YYYY
 
-# Proton Bridge Configuration
-PROTON_BRIDGE_HOST = "127.0.0.1"
-PROTON_BRIDGE_PORT = 1143
-
-# 5 Proton Accounts
-PROTON_ACCOUNTS = [
-    {"email": "dan.exall@pm.me", "password": "ayaOq50DHJRuB1CsH2OoIA"},
-    {"email": "dan@arca-vsa.tech", "password": "ayaOq50DHJRuB1CsH2OoIA"},
-    {"email": "claws@pm.me", "password": "ayaOq50DHJRuB1CsH2OoIA"},
-    {"email": "arca@pm.me", "password": "ayaOq50DHJRuB1CsH2OoIA"},
-    {"email": "info@pm.me", "password": "ayaOq50DHJRuB1CsH2OoIA"},
-]
-
-# Time window: Last 3 months
-CUTOFF_DATE = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=90)
-
-# State tracking
-STATE_FILE = os.path.expanduser("~/.arca/proton_sync_state.json")
-LOG_FILE = os.path.expanduser("~/.arca/proton_sync.log")
+# GCP Gateway Configuration
+GCP_GATEWAY_URL = (
+    "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator"
+)
+NOTION_TRIAGE_DB_ID = "3254d2d9fc7c81228daefc564e912546"
 
 # Setup logging
-os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(LOG_FILE),
-        logging.StreamHandler(sys.stdout)
-    ]
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
 
-def load_state():
-    """Load processed email IDs from state file."""
-    if os.path.exists(STATE_FILE):
-        with open(STATE_FILE, 'r') as f:
-            return json.load(f)
-    return {"processed_ids": set(), "last_sync": None}
+def decode_mime_words(s):
+    """Decode MIME encoded words in email headers."""
+    if s is None:
+        return ""
+    decoded_parts = []
+    for part, encoding in decode_header(s):
+        if isinstance(part, bytes):
+            if encoding:
+                decoded_parts.append(part.decode(encoding))
+            else:
+                decoded_parts.append(part.decode("utf-8", errors="ignore"))
+        else:
+            decoded_parts.append(part)
+    return "".join(decoded_parts)
 
 
-def save_state(state):
-    """Save processed email IDs to state file."""
-    state["processed_ids"] = list(state["processed_ids"])
-    os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
-    with open(STATE_FILE, 'w') as f:
-        json.dump(state, f, indent=2)
-    state["processed_ids"] = set(state["processed_ids"])  # Convert back for runtime
+def get_imap_connection(username: str, password: str) -> imaplib.IMAP4:
+    """Establish an IMAP connection with STARTTLS (not IMAP4_SSL)."""
+    conn = imaplib.IMAP4(IMAP_HOST, IMAP_PORT)
+    conn.starttls()  # Upgrade to secure connection
+    conn.login(username, password)
+    return conn
 
 
-def summarize_with_local_model(text):
-    """Generate 2-sentence summary using local Ollama model."""
-    if not text or len(text.strip()) < 50:
-        return "Email too short for meaningful summary."
-    
-    prompt = f"Summarize the following email thread in exactly two sentences, focusing on actionable decisions or project updates:\n\n{text[:2000]}"
-    payload = {
-        "model": OLLAMA_MODEL,
-        "prompt": prompt,
-        "stream": False
-    }
+def fetch_emails_since(
+    username: str, password: str, mailbox: str = "INBOX"
+) -> Generator[Tuple[str, str, str], None, None]:
+    """
+    Fetch emails since SINCE_DATE from the specified mailbox.
+    Yields tuples of (subject, sender, body_snippet).
+    """
     try:
-        response = requests.post(OLLAMA_API, json=payload, timeout=60)
-        return response.json().get("response", "Summary generation failed.")
-    except Exception as e:
-        logger.error(f"Local AI Error: {e}")
-        return "Summary generation failed due to AI service unavailable."
+        conn = get_imap_connection(username, password)
+        conn.select(mailbox)
 
+        # Search for emails since the given date
+        status, messages = conn.search(None, f'SINCE "{SINCE_DATE}"')
+        if status != "OK":
+            logger.error("Failed to search emails")
+            return
 
-def fetch_emails_from_account(account_config, state):
-    """Fetch emails from a single Proton account via IMAP."""
-    email_addr = account_config["email"]
-    password = account_config["password"]
-    processed_count = 0
-    skipped_count = 0
+        email_ids = messages[0].split()
+        logger.info(f"Found {len(email_ids)} emails since {SINCE_DATE}")
 
-    try:
-        logger.info(f"Connecting to Proton Bridge for: {email_addr}")
-        mail = imaplib.IMAP4_SSL(PROTON_BRIDGE_HOST, PROTON_BRIDGE_PORT)
-        mail.login(email_addr, password)
-        mail.select('INBOX')
-
-        # Search for ALL emails, then filter by date
-        status, messages = mail.search(None, 'ALL')
-
-        if status != 'OK':
-            logger.warning(f"No messages found for {email_addr}")
-            mail.logout()
-            return 0
-
-        msg_ids = messages[0].split()
-        logger.info(f"Found {len(msg_ids)} total emails for {email_addr}")
-
-        # Process emails (newest first, limit to 100 per account per sync)
-        for msg_id in reversed(msg_ids[-100:]):
-            try:
-                status, msg_data = mail.fetch(msg_id, '(RFC822)')
-                if status != 'OK':
-                    continue
-
-                msg = email.message_from_bytes(msg_data[0][1])
-
-                # Get unique ID
-                msg_uid = msg.get('Message-ID', f"{email_addr}-{msg_id.decode()}")
-                if msg_uid in state["processed_ids"]:
-                    skipped_count += 1
-                    continue
-
-                # Parse Date
-                date_str = msg.get("Date")
-                if not date_str:
-                    continue
-
-                try:
-                    email_date = parser.parse(date_str)
-                    if email_date.tzinfo is None:
-                        email_date = email_date.replace(tzinfo=datetime.timezone.utc)
-                except Exception:
-                    continue
-
-                # Check cutoff date
-                if email_date < CUTOFF_DATE:
-                    continue  # Skip old emails
-
-                # Extract metadata
-                subject = msg.get("Subject", "No Subject")
-                sender = msg.get("From", "Unknown Sender")
-
-                # Extract plain text body
-                body = ""
-                if msg.is_multipart():
-                    for part in msg.walk():
-                        if part.get_content_type() == "text/plain":
-                            try:
-                                body += part.get_content()
-                            except:
-                                pass
-                else:
-                    try:
-                        body = msg.get_content()
-                    except:
-                        pass
-
-                if not body or len(body.strip()) < 10:
-                    logger.info(f"Skipping empty email: {subject}")
-                    continue
-
-                logger.info(f"Processing: {subject} ({email_date.date()}) from {email_addr}")
-
-                # Generate summary
-                summary = summarize_with_local_model(body)
-
-                # Build payload for GCP Gateway
-                memory_payload = {
-                    "source": email_addr,
-                    "type": "email_archive",
-                    "timestamp": email_date.isoformat(),
-                    "metadata": {
-                        "subject": subject,
-                        "sender": sender,
-                        "summary": summary,
-                        "account": email_addr
-                    },
-                    "content": body[:5000]  # Limit content size
-                }
-
-                # Send to GCP Gateway
-                try:
-                    response = requests.post(GCP_GATEWAY_URL, json=memory_payload, timeout=30)
-                    if response.status_code == 200:
-                        logger.info(f"✓ Memorized: {subject[:50]}...")
-                    else:
-                        logger.warning(f"Gateway rejected: {response.status_code}")
-                except Exception as e:
-                    logger.error(f"Failed to send to gateway: {e}")
-
-                # Mark as processed
-                state["processed_ids"].add(msg_uid)
-                processed_count += 1
-
-            except Exception as e:
-                logger.error(f"Error processing message {msg_id}: {e}")
+        for eid in email_ids:
+            status, msg_data = conn.fetch(eid, "(RFC822)")
+            if status != "OK":
+                logger.error(f"Failed to fetch email {eid}")
                 continue
 
-        mail.logout()
+            for response_part in msg_data:
+                if isinstance(response_part, tuple):
+                    msg = email.message_from_bytes(response_part[1])
+                    subject = decode_mime_words(msg["Subject"])
+                    sender = decode_mime_words(msg["From"])
 
-    except imaplib.IMAP4.error as e:
-        logger.error(f"IMAP error for {email_addr}: {e}")
+                    # Extract a snippet of the body (first 500 characters of plain text)
+                    body_snippet = ""
+                    if msg.is_multipart():
+                        for part in msg.walk():
+                            content_type = part.get_content_type()
+                            if content_type == "text/plain":
+                                charset = part.get_content_charset() or "utf-8"
+                                payload = part.get_payload(decode=True)
+                                if payload is not None:
+                                    if isinstance(payload, bytes):
+                                        body = payload.decode(charset, errors="ignore")
+                                    else:
+                                        body = str(payload)
+                                    body_snippet = body[:500]
+                                    break
+                    else:
+                        charset = msg.get_content_charset() or "utf-8"
+                        payload = msg.get_payload(decode=True)
+                        if payload is not None:
+                            if isinstance(payload, bytes):
+                                body = payload.decode(charset, errors="ignore")
+                            else:
+                                body = str(payload)
+                            body_snippet = body[:500]
+
+                    yield subject, sender, body_snippet
+
+        conn.close()
+        conn.logout()
     except Exception as e:
-        logger.error(f"Unexpected error for {email_addr}: {e}")
-
-    logger.info(f"Account {email_addr}: {processed_count} processed, {skipped_count} skipped")
-    return processed_count
+        logger.error(f"Error in fetch_emails_since: {e}")
+        raise
 
 
-def sync_all_accounts():
-    """Main sync function - fetches from all 5 Proton accounts."""
-    logger.info("=" * 60)
-    logger.info("ARCA ProtonMail Sync - Starting")
-    logger.info(f"Cutoff Date: {CUTOFF_DATE.date()}")
-    logger.info("=" * 60)
+def is_email_significant(subject: str, sender: str) -> bool:
+    """
+    Use local LLM to determine if an email is significant (human communication, actionable task, or important alert).
+    Returns True if significant (LLM responds YES), False otherwise.
+    """
+    try:
+        client = openai.OpenAI(
+            base_url=LOCAL_LLM_BASE_URL,
+            api_key="not-needed",  # Local server doesn't require a real API key
+        )
 
-    state = load_state()
-    total_processed = 0
+        # Handle None values for subject and sender
+        subject_str = subject if subject is not None else ""
+        sender_str = sender if sender is not None else ""
 
-    for account in PROTON_ACCOUNTS:
-        count = fetch_emails_from_account(account, state)
-        total_processed += count
+        prompt = f"""Is this email a human communication, an actionable task, or an important alert? 
+Subject: {subject_str}
+Sender: {sender_str}
+Reply exactly with YES or NO."""
 
-    state["last_sync"] = datetime.datetime.now().isoformat()
-    save_state(state)
+        response = client.chat.completions.create(
+            model=LOCAL_LLM_MODEL,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a precise email classifier. Respond only with YES or NO.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.0,
+            max_tokens=10,
+        )
 
-    logger.info("=" * 60)
-    logger.info(f"Sync Complete: {total_processed} new emails processed")
-    logger.info(f"State saved to: {STATE_FILE}")
-    logger.info("=" * 60)
+        # Handle potential None response from LLM
+        message_content = response.choices[0].message.content
+        if message_content is None:
+            logger.warning("LLM returned None response, treating as insignificant")
+            return False
 
-    return total_processed
+        result = message_content.strip().upper()
+        return result == "YES"
+    except Exception as e:
+        logger.error(f"Error in LLM significance check: {e}")
+        # Fail safe: treat as not significant if LLM fails to avoid false positives
+        return False
 
 
+def create_obsidian_uri(subject: str) -> str:
+    """Create a standardized Obsidian URI string from email subject."""
+    # Handle None subject
+    if subject is None:
+        subject = ""
+    # Sanitize subject for use in file path: remove/replace problematic characters
+    subject_slug = "".join(c if c.isalnum() or c in " ._-" else "_" for c in subject)
+    subject_slug = subject_slug.strip().replace(" ", "_")
+    # Limit length to avoid filesystem issues
+    if len(subject_slug) > 100:
+        subject_slug = subject_slug[:100]
+    return f"[Obsidian Note](obsidian://open?vault=Obsidian%20Vault&file=Email_Triage/{subject_slug})"
+
+
+def create_gcp_payload(subject: str, sender: str, body_snippet: str) -> dict:
+    """
+    Construct JSON payload for GCP Memory Gateway.
+    Maps to Notion Life OS Triage DB.
+    """
+    # Handle None values
+    subject_str = subject if subject is not None else ""
+    sender_str = sender if sender is not None else "Unknown Sender"
+
+    # Truncate body snippet to 500 characters
+    content = body_snippet[:500] if body_snippet is not None else ""
+    # Add sender info
+    content = f"From: {sender_str}\n\n{content}"
+    # Add Obsidian link placeholder
+    obsidian_link = create_obsidian_uri(subject_str)
+    content = f"{content}\n\n{obsidian_link}"
+
+    payload = {
+        "database_id": NOTION_TRIAGE_DB_ID,
+        "properties": {
+            "Title": {"title": [{"text": {"content": subject_str}}]},
+            "Status": {"select": {"name": "Triage"}},
+        },
+        "children": [
+            {
+                "object": "block",
+                "type": "paragraph",
+                "paragraph": {
+                    "rich_text": [{"type": "text", "text": {"content": content}}]
+                },
+            }
+        ],
+    }
+    return payload
+
+
+def send_to_gcp_gateway(payload: dict, max_retries: int = 5) -> bool:
+    """
+    Send payload to GCP Gateway with exponential backoff.
+    Returns True if successful, False otherwise.
+    """
+    for attempt in range(max_retries):
+        try:
+            response = requests.post(GCP_GATEWAY_URL, json=payload, timeout=30)
+
+            if response.status_code == 200:
+                title_content = payload["properties"]["Title"]["title"][0]["text"][
+                    "content"
+                ]
+                logger.info(
+                    f"Successfully sent to GCP Gateway: {title_content[:50]}..."
+                )
+                return True
+            else:
+                logger.warning(
+                    f"GCP Gateway returned status {response.status_code}: {response.text}"
+                )
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Request to GCP Gateway failed (attempt {attempt + 1}): {e}")
+
+        # Exponential backoff: wait 2^attempt seconds before retrying
+        if attempt < max_retries - 1:  # Don't wait after the last attempt
+            wait_time = 2**attempt
+            logger.info(f"Waiting {wait_time} seconds before retry...")
+            time.sleep(wait_time)
+
+    logger.error(f"Failed to send to GCP Gateway after {max_retries} attempts")
+    return False
+
+
+# Example usage (not part of the requested functions, but for context)
 if __name__ == "__main__":
-    sync_all_accounts()
+    # This would be replaced by actual credential handling
+    username = "user@protonmail.com"
+    # In practice, retrieve password securely:
+    # password = open(os.path.expanduser("~/biomimetics/secrets/proton_bridge_password")).read().strip()
+    password = "example_password"  # Placeholder
+
+    for subject, sender, snippet in fetch_emails_since(username, password):
+        if is_email_significant(subject, sender):
+            logger.info(f"Significant email: {subject} from {sender}")
+            # Phase 2: Create payload and send to GCP Gateway
+            payload = create_gcp_payload(subject, sender, snippet)
+            success = send_to_gcp_gateway(payload)
+            if success:
+                logger.info(f"Email routed to Triage: {subject}")
+            else:
+                logger.error(f"Failed to route email to Triage: {subject}")
+        else:
+            logger.info(f"Insignificant email skipped: {subject} from {sender}")

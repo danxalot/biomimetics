@@ -1,0 +1,41 @@
+{
+  "name": "ARCA Live Voice Interface",
+  "short_name": "ARCA Voice",
+  "description": "Multimodal voice and vision interface with Gemini Live API",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4285f4",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Query Memory",
+      "short_name": "Memory",
+      "description": "Query unified memory system",
+      "url": "/?action=query_memory",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Create Task",
+      "short_name": "Task",
+      "description": "Create Notion task",
+      "url": "/?action=create_task",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

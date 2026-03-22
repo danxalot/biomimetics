@@ -35,6 +35,11 @@ secrets/
 *.swp
 *.swo
 
+# Editor configs with secrets
+.config/zed/settings.json
+.antigravity/settings.json
+"Library/Application Support/Code/User/settings.json"
+
 # Cloudflare secrets (wrangler stores these separately)
 .secrets/
 

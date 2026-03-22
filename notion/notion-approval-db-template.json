@@ -1,0 +1,20 @@
+{
+  "parent": { "type": "workspace", "workspace": true },
+  "title": [
+    { "type": "text", "text": { "content": "Copaw Tool Approvals" } }
+  ],
+  "properties": {
+    "Name": { "title": {} },
+    "Status": { "select": { "options": [
+      { "name": "Pending", "color": "yellow" },
+      { "name": "Approved", "color": "green" },
+      { "name": "Denied", "color": "red" }
+    ]} },
+    "Tool": { "rich_text": {} },
+    "Arguments": { "rich_text": {} },
+    "Context": { "rich_text": {} },
+    "Approval ID": { "rich_text": {} },
+    "Requested": { "date": {} },
+    "Approved/Denied": { "date": {} }
+  }
+}
