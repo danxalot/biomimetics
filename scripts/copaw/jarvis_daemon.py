@@ -724,12 +724,12 @@ class AudioLoop:
         while True:
             msg = await self.out_queue.get()
             if self.speaking:
-                continue  # Drop mic input while speaker is active
+                continue
             try:
                 await self.session.send_realtime_input(audio=msg)
             except Exception as e:
-                print(f"⚠️ send error: {e}")
-                return
+                print(f"\n⚠️ send error: {e}")
+                raise
 
     async def receive_audio(self):
         """Read from websocket, play audio and handle tool calls."""
@@ -759,12 +759,11 @@ class AudioLoop:
                                 )
                             except Exception as e:
                                 print(f"❌ Failed to send tool response: {e}")
-                                return
-                # Turn complete — flush queued audio for clean interrupts
                 while not self.audio_in_queue.empty():
                     self.audio_in_queue.get_nowait()
         except Exception as e:
             print(f"\n⚠️ receive_audio stopped: {e}")
+            raise
 
     async def play_audio(self):
         """Write audio chunks to speaker. Keeps speaking=True for entire playback."""
@@ -789,34 +788,37 @@ class AudioLoop:
                 self.speaking = False
 
     async def run(self):
-        try:
-            async with (
-                client.aio.live.connect(model=MODEL, config=CONFIG) as session,  # type: ignore
-                asyncio.TaskGroup() as tg,
-            ):
-                self.session = session
+        reconnect_delay = 1
+        max_reconnect_delay = 60
+        while True:
+            try:
+                async with (
+                    client.aio.live.connect(model=MODEL, config=CONFIG) as session,  # type: ignore
+                    asyncio.TaskGroup() as tg,
+                ):
+                    self.session = session
+                    self.audio_in_queue = asyncio.Queue()
+                    self.out_queue = asyncio.Queue()
+                    reconnect_delay = 1
 
-                self.audio_in_queue = asyncio.Queue()
-                self.out_queue = asyncio.Queue()
+                    tg.create_task(self.send_realtime())
+                    tg.create_task(self.listen_audio())
+                    tg.create_task(self.receive_audio())
+                    tg.create_task(self.play_audio())
+                    print("🔴 Jarvis connected and listening...")
+            except asyncio.CancelledError:
+                print("\n🛑 Jarvis shutting down.")
+                break
+            except ExceptionGroup as eg:
+                for exc in eg.exceptions:
+                    print(f"\n⚠️ Session error: {exc}")
+            except Exception as e:
+                print(f"\n⚠️ Jarvis disconnected: {type(e).__name__}: {e}")
 
-                tg.create_task(self.send_realtime())
-                tg.create_task(self.listen_audio())
-                tg.create_task(self.receive_audio())
-                tg.create_task(self.play_audio())
-        except asyncio.CancelledError:
-            pass
-        except ExceptionGroup as eg:
-            for exc in eg.exceptions:
-                if "ConnectionClosed" in type(exc).__name__:
-                    print(f"\n🔌 Connection closed. Restart to reconnect.")
-                else:
-                    print(f"\n❌ {type(exc).__name__}: {exc}")
-            if self.audio_stream:
-                self.audio_stream.close()
-        except Exception as e:
-            print(f"\n❌ {type(e).__name__}: {e}")
-            if self.audio_stream:
-                self.audio_stream.close()
+            print(f"⏳ Reconnecting in {reconnect_delay}s...")
+            await asyncio.sleep(reconnect_delay)
+            reconnect_delay = min(reconnect_delay * 2, max_reconnect_delay)
+            print("🔄 Attempting reconnection...")
 
 
 if __name__ == "__main__":
