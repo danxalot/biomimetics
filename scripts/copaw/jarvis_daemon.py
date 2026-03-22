@@ -45,21 +45,25 @@ pya = pyaudio.PyAudio()
 API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyDfnNa-IJpPZGB0Jfc4QqvVK_jIJXNWtpY")
 COPAW_URL = "http://127.0.0.1:8088"
 OPENCODE_TOKEN_PATH = "/Users/danexall/biomimetics/secrets/opencode_api"
-OPENCODE_BASE_URL = "https://opencode.ai/zen/v1"
+OPENCODE_ZEN_URL = "https://opencode.ai/zen/v1"
+OPENCODE_GO_URL = "https://opencode.ai/zen/go/v1"
 OPENCODE_MODELS = {
     "nemotron": "nemotron-3-super-free",
     "minimax": "minimax-m2.5-free",
 }
-NOTION_BIOS_ROOT_PAGE = os.environ.get(
-    "NOTION_BIOS_ROOT_PAGE", "3284d"
-)  # Set full page ID via env var
-
+OPENCODE_GO_MODELS = {
+    "glm-5": "glm-5",
+    "kimi": "kimi-k2.5",
+    "minimax": "minimax-m2.7",
+    "minimax-m2.5": "minimax-m2.5",
+}
+NOTION_BIOS_ROOT_PAGE = os.environ.get("NOTION_BIOS_ROOT_PAGE", "3284d")
 
 _opencode_cache = {}
 _CACHE_TTL = 300
 _RATE_LIMIT_COOLDOWN = 60
 _last_rate_limit_hit = 0
-_fallback_models = ["minimax-m2.5-free", "nemotron-3-super-free"]
+_opencode_using_go = False
 
 
 def _get_cache_key(system_prompt, user_command, model):
@@ -71,7 +75,7 @@ def _is_cache_valid(timestamp):
 
 
 def _trigger_opencode_agent_sync(system_prompt, user_command, model_choice="nemotron"):
-    global _last_rate_limit_hit
+    global _last_rate_limit_hit, _opencode_using_go
 
     cache_key = _get_cache_key(system_prompt, user_command, model_choice)
     if cache_key in _opencode_cache:
@@ -91,11 +95,17 @@ def _trigger_opencode_agent_sync(system_prompt, user_command, model_choice="nemo
     except FileNotFoundError:
         return {"error": f"OpenCode token not found at {OPENCODE_TOKEN_PATH}"}
 
-    target_model = OPENCODE_MODELS.get(model_choice, OPENCODE_MODELS["nemotron"])
+    go_model = OPENCODE_GO_MODELS.get(model_choice)
+    if go_model and _opencode_using_go:
+        base_url = OPENCODE_GO_URL
+        target_model = go_model
+    else:
+        base_url = OPENCODE_ZEN_URL
+        target_model = OPENCODE_MODELS.get(model_choice, OPENCODE_MODELS["nemotron"])
 
     try:
         client = OpenAI(
-            base_url=OPENCODE_BASE_URL,
+            base_url=base_url,
             api_key=api_key,
             max_retries=0,
             timeout=60.0,
@@ -110,6 +120,7 @@ def _trigger_opencode_agent_sync(system_prompt, user_command, model_choice="nemo
         )
         result = {
             "model": target_model,
+            "tier": "go" if _opencode_using_go and go_model else "zen",
             "response": response.choices[0].message.content,
         }
 
@@ -126,6 +137,11 @@ def _trigger_opencode_agent_sync(system_prompt, user_command, model_choice="nemo
         err_str = str(e).lower()
         if "rate limit" in err_str or "freeusagelimit" in err_str or "429" in err_str:
             _last_rate_limit_hit = time.time()
+            if go_model and not _opencode_using_go:
+                _opencode_using_go = True
+                return _trigger_opencode_agent_sync(
+                    system_prompt, user_command, model_choice
+                )
             return {
                 "error": f"OpenCode rate limit hit. Cooldown: {_RATE_LIMIT_COOLDOWN}s. {str(e)[:100]}",
                 "rate_limited": True,
@@ -384,7 +400,7 @@ save_to_notion_tool = {
 
 execute_heavy_reasoning_tool = {
     "name": "execute_heavy_reasoning",
-    "description": "Offload complex reasoning, code analysis, or orchestration tasks to OpenCode models (Nemotron or MiniMax). Use when the task is too complex for a simple response.",
+    "description": "Offload complex reasoning, code analysis, or orchestration tasks to OpenCode models. Free tier: nemotron, minimax. Go subscription ($5/mo): glm-5, kimi-k2.5, minimax-m2.7. Auto-failover to Go tier when Zen is rate-limited.",
     "parameters": {
         "type": "object",
         "properties": {
@@ -394,7 +410,7 @@ execute_heavy_reasoning_tool = {
             },
             "model": {
                 "type": "string",
-                "description": "Model to use: 'nemotron' (default) or 'minimax'",
+                "description": "Model: 'nemotron', 'minimax' (Zen free) or 'glm-5', 'kimi', 'minimax-m2.7' (Go tier)",
             },
         },
         "required": ["task"],
