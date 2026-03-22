@@ -57,6 +57,9 @@ NOTION_BIOS_ROOT_PAGE = os.environ.get(
 
 _opencode_cache = {}
 _CACHE_TTL = 300
+_RATE_LIMIT_COOLDOWN = 60
+_last_rate_limit_hit = 0
+_fallback_models = ["minimax-m2.5-free", "nemotron-3-super-free"]
 
 
 def _get_cache_key(system_prompt, user_command, model):
@@ -68,11 +71,19 @@ def _is_cache_valid(timestamp):
 
 
 def _trigger_opencode_agent_sync(system_prompt, user_command, model_choice="nemotron"):
+    global _last_rate_limit_hit
+
     cache_key = _get_cache_key(system_prompt, user_command, model_choice)
     if cache_key in _opencode_cache:
         cached_result, timestamp = _opencode_cache[cache_key]
         if _is_cache_valid(timestamp):
             return cached_result
+
+    if time.time() - _last_rate_limit_hit < _RATE_LIMIT_COOLDOWN:
+        return {
+            "error": f"OpenCode rate limited. Cooldown active. Try again in {_RATE_LIMIT_COOLDOWN - int(time.time() - _last_rate_limit_hit)}s.",
+            "rate_limited": True,
+        }
 
     try:
         with open(OPENCODE_TOKEN_PATH, "r") as f:
@@ -83,7 +94,12 @@ def _trigger_opencode_agent_sync(system_prompt, user_command, model_choice="nemo
     target_model = OPENCODE_MODELS.get(model_choice, OPENCODE_MODELS["nemotron"])
 
     try:
-        client = OpenAI(base_url=OPENCODE_BASE_URL, api_key=api_key)
+        client = OpenAI(
+            base_url=OPENCODE_BASE_URL,
+            api_key=api_key,
+            max_retries=0,
+            timeout=60.0,
+        )
         response = client.chat.completions.create(
             model=target_model,
             messages=[
@@ -107,6 +123,13 @@ def _trigger_opencode_agent_sync(system_prompt, user_command, model_choice="nemo
         return result
 
     except Exception as e:
+        err_str = str(e).lower()
+        if "rate limit" in err_str or "freeusagelimit" in err_str or "429" in err_str:
+            _last_rate_limit_hit = time.time()
+            return {
+                "error": f"OpenCode rate limit hit. Cooldown: {_RATE_LIMIT_COOLDOWN}s. {str(e)[:100]}",
+                "rate_limited": True,
+            }
         return {"error": f"OpenCode Gateway Error: {e}"}
 
 
@@ -570,6 +593,12 @@ async def handle_tool_call(name, args):
             model = args.get("model", "nemotron")
             system_prompt = "You are a specialized reasoning engine. Provide thorough, accurate analysis. Be direct and structured."
             result = await trigger_opencode_agent(system_prompt, task, model)
+            if result.get("rate_limited"):
+                return {
+                    "status": "rate_limited",
+                    "message": "OpenCode is rate-limited. Heavy reasoning will be available shortly. Please try again in 60 seconds.",
+                    "model": model,
+                }
             if "response" in result:
                 await asyncio.to_thread(
                     preserve_session_context,
