@@ -12,6 +12,8 @@ ENV/
 # Configuration with secrets
 config/omni_sync_config.json
 secrets/
+!scripts/secrets/
+scripts/secrets/__pycache__/
 *.credentials
 *.key
 
@@ -50,3 +52,5 @@ temp/
 
 # Proton exports (if used)
 proton_exports/
+*.pyc
+**/__pycache__/
