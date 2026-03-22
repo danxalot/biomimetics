@@ -7,12 +7,12 @@
     <key>ProgramArguments</key>
     <array>
         <string>/Library/Frameworks/Python.framework/Versions/3.13/bin/python3</string>
-        <string>/Users/danexall/omni_sync.py</string>
+        <string>/Users/danexall/biomimetics/scripts/omni_sync.py</string>
         <string>--config</string>
-        <string>/Users/danexall/omni_sync_config.json</string>
+        <string>/Users/danexall/biomimetics/config/omni_sync_config.json</string>
     </array>
     <key>WorkingDirectory</key>
-    <string>/Users/danexall</string>
+    <string>/Users/danexall/biomimetics</string>
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>

@@ -1,0 +1,31 @@
+{
+  "mcp_servers": {
+    "notion": {
+      "command": "npx",
+      "args": ["-y", "@notionhq/notion-mcp-server"],
+      "env": {
+        "NOTION_TOKEN": "[NOTION_TOKEN_REDACTED]"
+      }
+    },
+    "github": {
+      "url": "https://github-mcp-server-arca-vsa-3c648978.koyeb.app/sse",
+      "transport": "sse"
+    }
+  },
+  "agent_servers": {
+    "BiOS_PM": {
+      "type": "custom",
+      "command": "python3",
+      "args": ["~/.copaw/bios_orchestrator.py"],
+      "env": {
+        "NOTION_DB_ID": "3224d2d9fc7c80deb18dd94e22e5bb21",
+        "GCP_GATEWAY": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator"
+      }
+    }
+  },
+  "gcp_gateway": {
+    "url": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+    "enabled": true,
+    "projects": ["biomimetics", "arca"]
+  }
+}

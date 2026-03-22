@@ -7,11 +7,11 @@
     
     <key>ProgramArguments</key>
     <array>
-        <string>/Users/danexall/maintain_mycloud_mount.sh</string>
+        <string>/Users/danexall/biomimetics/scripts/maintain_mycloud_mount.sh</string>
     </array>
     
     <key>WorkingDirectory</key>
-    <string>/Users/danexall</string>
+    <string>/Users/danexall/biomimetics</string>
     
     <key>RunAtLoad</key>
     <true/>

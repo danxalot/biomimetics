@@ -1,0 +1,47 @@
+[
+  {
+    "title": "Plaintext API keys in .secrets/ directory",
+    "severity": "critical",
+    "category": "Secrets Management",
+    "description": ".secrets/ contains plaintext API keys for Azure, GCP, OCI, and MiniMax. This directory likely commits to version control or is readable by unauthorized processes. Any compromise exposes all cloud credentials.",
+    "suggested_fix": "Implement HashiCorp Vault or Azure Key Vault for secret storage. Use environment variables or a secrets manager library that decrypts at runtime. Add .secrets/ to .gitignore immediately.",
+    "model": "big-pickle",
+    "model_role": "The Wildcard"
+  },
+  {
+    "title": "No inter-service authentication between microservices",
+    "severity": "high",
+    "category": "API Security",
+    "description": "Services (geometry_onnx_interpreter, hse_encoder, execution_firewall, agent_service, request_validation, alert_manager, docker_helper) communicate without documented API authentication. MCP Server :8086 and LLM Gateway :8080 have no auth mentioned.",
+    "suggested_fix": "Implement mTLS or JWT-based service mesh authentication. Add API keys or OAuth2 client credentials for all service-to-service communication. Configure network policies to restrict lateral movement.",
+    "model": "big-pickle",
+    "model_role": "The Wildcard"
+  },
+  {
+    "title": "Configuration drift across .qwen/.gemini/.serena",
+    "severity": "medium",
+    "category": "Configuration Management",
+    "description": "Three separate configuration directories (.qwen blueprints, .gemini AI settings, .serena LSP/memory) lack centralized versioning or consistency checks. Drift between these can cause runtime mismatches in behavior.",
+    "suggested_fix": "Consolidate configs into a single location with schema validation. Implement config synchronization CI/CD step. Document all configuration options with expected values.",
+    "model": "big-pickle",
+    "model_role": "The Wildcard"
+  },
+  {
+    "title": "Missing test infrastructure and CI/CD pipeline",
+    "severity": "high",
+    "category": "Testing",
+    "description": "No test directories, test frameworks, or CI/CD configuration visible in the structure. Benchmark scripts exist but no unit/integration tests mentioned. This risks uncaught bugs in geometry kernel, JSON-RPC serialization, and service integration.",
+    "suggested_fix": "Add pytest/unittest for each service. Create integration tests for service mesh. Set up GitHub Actions or similar for automated test runs before deployment.",
+    "model": "big-pickle",
+    "model_role": "The Wildcard"
+  },
+  {
+    "title": "MCP Server and LLM Gateway exposed without authentication",
+    "severity": "critical",
+    "category": "Network Security",
+    "description": "MCP Server on :8086 and LLM Gateway on :8080 are exposed but no authentication mechanism mentioned. These are critical entry points that could allow unauthorized access to AI services and downstream data.",
+    "suggested_fix": "Add API key validation, OAuth2, or mTLS for both MCP Server and LLM Gateway. Restrict to internal network via firewall rules if possible. Implement rate limiting to prevent abuse.",
+    "model": "big-pickle",
+    "model_role": "The Wildcard"
+  }
+]

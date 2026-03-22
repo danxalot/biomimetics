@@ -1,0 +1,32 @@
+{
+  "GCP_GATEWAY_URL": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+  
+  "NOTION_API_KEY": "secret_xxx",
+  "NOTION_INBOX_DB_ID": "your-database-id",
+  
+  "PROTONMAIL_ENABLED": true,
+  "PROTONMAIL_IMAP_HOST": "127.0.0.1",
+  "PROTONMAIL_IMAP_PORT": 1143,
+  "PROTONMAIL_USER": "your-email@proton.me",
+  "PROTONMAIL_PASS": "your-bridge-password",
+  
+  "GMAIL_ENABLED": true,
+  "GMAIL_IMAP_HOST": "imap.gmail.com",
+  "GMAIL_IMAP_PORT": 993,
+  "GMAIL_USER": "your-email@gmail.com",
+  "GMAIL_APP_PASSWORD": "your-app-password",
+  
+  "GOOGLE_DRIVE_ENABLED": true,
+  "GOOGLE_CREDENTIALS_PATH": "~/.gcp/google_drive_credentials.json",
+  "GOOGLE_DRIVE_WATCH_FOLDER": "root",
+  
+  "MYCLOUD_ENABLED": true,
+  "MYCLOUD_MOUNT_PATH": "/Volumes/MyCloud Home",
+  "MYCLOUD_WATCH_FOLDERS": ["Documents", "Downloads", "Obsidian"],
+  
+  "EMAIL_POLL_INTERVAL": 60,
+  "DRIVE_POLL_INTERVAL": 300,
+  "MYCLOUD_POLL_INTERVAL": 300,
+  
+  "STATE_DIR": "~/.arca/omni_sync"
+}

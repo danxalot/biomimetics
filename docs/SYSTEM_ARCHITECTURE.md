@@ -23,9 +23,11 @@
 Biomimetics provides:
 - **Automated Sync**: Email, files, and data synchronization across platforms
 - **Project Tracking**: Notion-based task and issue management
-- **Event Processing**: Real-time webhook handling via Cloudflare Workers
+- **Event Processing**: Real-time webhook handling via Cloudflare Workers (GitHub, Serena agents, GCP memory, CoPaw)
 - **System Monitoring**: LaunchAgents for continuous operation
 - **AI Integration**: Local model inference for summarization and analysis
+- **Intelligent Memory**: GCP Cloud Function integration for contextual AI
+- **Approval Workflows**: CoPaw tool guard for safe AI agent operations
 
 ### Core Principles
 
@@ -73,7 +75,7 @@ Biomimetics provides:
 │                                                                         │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                         LAUNCH AGENTS (macOS)                           │
-│  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐           │
+│  ┌─────────────┐ ┌─────────────────┐ ┌─────────────────┐           │
 │  │  omni-sync      │ │  proton-sync    │ │  mycloud-       │           │
 │  │  (continuous)   │ │  (hourly)       │ │  watchdog (60s) │           │
 │  └─────────────────┘ └─────────────────┘ └─────────────────┘           │
@@ -82,6 +84,11 @@ Biomimetics provides:
 │  ┌─────────────┐     ┌─────────────┐     ┌─────────────┐               │
 │  │  Cloudflare │     │   GitHub    │     │   Ollama    │               │
 │  │   Workers   │◄────│   Webhooks  │     │   (Local)   │               │
+│  │                 │     │           │◄────┤  GCP Memo   │               │
+│  │                 │     │           │     │  ry       │               │
+│  │                 │     │           │◄────┤  CoPaw    │               │
+│  │                 │     │           │     │  Tool     │               │
+│  │                 │     │           │     │  Guard    │               │
 │  └─────────────┘     └─────────────┘     └─────────────┘               │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -89,6 +96,41 @@ Biomimetics provides:
 ---
 
 ## Component Details
+
+### 0. Azure Secrets-Init (`azure/azure_secrets_init.py`)
+
+**Purpose**: Centralized secret management via Azure Key Vault
+
+**Features**:
+- Fetches secrets from Azure Key Vault
+- Injects into `omni_sync_config.json`
+- Updates Cloudflare Worker secrets via `wrangler`
+- Configures Notion MCP Server for Claude Desktop
+- Creates local encrypted backup
+
+**Secrets Managed**:
+| Secret Name | Used By |
+|-------------|---------|
+| `notion-api-key` | Notion API, Cloudflare Worker, MCP Server |
+| `gmail-app-password` | Gmail IMAP sync |
+| `proton-bridge-password` | ProtonMail 5-account sync |
+| `gcp-service-account` | Google Drive API |
+| `mycloud-password` | SMB NAS mount |
+| `gcp-gateway-url` | GCP Cloud Functions endpoint |
+
+**Usage**:
+```bash
+# Authenticate with Azure
+az login
+
+# Initialize all secrets
+python3 azure/azure_secrets_init.py --refresh
+
+# Specify custom vault
+python3 azure/azure_secrets_init.py --vault my-custom-vault
+```
+
+---
 
 ### 1. Omni Sync (`scripts/omni_sync.py`)
 
@@ -154,19 +196,29 @@ else:
 
 ### 4. Cloudflare Worker (`cloudflare/index.js`)
 
-**Purpose**: GitHub → Notion webhook bridge
+**Purpose**: Multi-system integration hub for GitHub webhooks, Serena agents, GCP memory, and CoPaw integration
 
-**Trigger**: GitHub Issues events
+**Triggers**:
+- GitHub Webhooks (Issues, PRs, Pushes) → Biomimetic OS database
+- Serena Agent Tasks → Life OS Triage & Biomimetic OS databases  
+- GCP Memory Insights → Biomimetic OS (task suggestions, context updates)
+- CoPaw Requests → Tool approval workflow, skill queuing
 
 **Flow**:
 ```
-GitHub Issue → Cloudflare Worker → Notion Database
-     │                                    │
-     ▼                                    ▼
-  action: opened                     Status: In Progress
-  action: closed                     Status: Done
-  action: edited                     Status: In Progress
+GitHub Event → Cloudflare Worker → Notion Database
+      │                                    │
+      ├→ GCP Memory System (contextual AI) │
+      │                                    ▼
+      └→ CoPaw Approval System            ◄── Notion Updates
 ```
+
+**Enhanced Capabilities**:
+- **GitHub → Notion**: Issues, PRs, pushes tracked in Biomimetic OS
+- **Serena → Notion**: Agent tasks create/update Notion entries
+- **Notion → GCP Memory**: Updates forwarded for contextual AI enrichment  
+- **GCP Memory → Biomimetic OS**: Insights generate task suggestions/context updates
+- **CoPaw Integration**: Tool approval workflow and skill execution queuing
 
 **Deployment**:
 ```bash
@@ -175,6 +227,51 @@ npx wrangler deploy
 ```
 
 **Worker URL**: `https://arca-github-notion-sync.dan-exall.workers.dev`
+
+**Secrets Managed via Azure Key Vault**:
+- NOTION_API_KEY / NOTION_TOKEN: Notion integration
+- GITHUB_WEBHOOK_SECRET: Webhook validation  
+- GCP_SERVICE_ACCOUNT: GCP memory gateway auth
+- COPAW_APPROVAL_DB_ID: CoPaw approvals database ID
+
+---
+
+### 4b. Notion MCP Server (`scripts/setup_notion_mcp.sh`)
+
+**Purpose**: Model Context Protocol integration for direct Notion access
+
+**Configuration**:
+```json
+{
+  "mcpServers": {
+    "notion": {
+      "command": "npx",
+      "args": ["-y", "@notionhq/notion-mcp-server"],
+      "env": {
+        "NOTION_TOKEN": "ntn_..."
+      }
+    }
+  }
+}
+```
+
+**Integration Points**:
+- Claude Desktop (`~/Library/Application Support/Claude/claude_desktop_config.json`)
+- Qwen Code (`~/.qwen/settings.json`)
+
+**Setup**:
+```bash
+# Run setup script (pulls token from Azure secrets)
+./scripts/setup_notion_mcp.sh
+
+# Or manually configure MCP client with above JSON
+```
+
+**Capabilities**:
+- Read/write Notion pages and databases
+- Create and update database entries
+- Search and query Notion content
+- Bi-directional sync with ARCA project tracking
 
 ---
 

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.bios.llamacpp-server</string>
+    
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/danexall/llama.cpp/build_vulkan/bin/llama-server</string>
+        <string>--model</string>
+        <string>/Users/danexall/Documents/VS Code Projects/ARCA/models_optimized/qwen3.5-2b-Q8/qwen3.5-2b-q8_0.gguf</string>
+        <string>--mmproj</string>
+        <string>/Users/danexall/Documents/VS Code Projects/ARCA/models_optimized/qwen3.5-2b-Q8/mmproj-F16.gguf</string>
+        <string>--host</string>
+        <string>0.0.0.0</string>
+        <string>--port</string>
+        <string>11435</string>
+        <string>--ctx-size</string>
+        <string>12288</string>
+        <string>--batch-size</string>
+        <string>4096</string>
+        <string>--ubatch-size</string>
+        <string>4096</string>
+        <string>--gpu-layers</string>
+        <string>99</string>
+        <string>--main-gpu</string>
+        <string>0</string>
+        <string>--threads</string>
+        <string>8</string>
+    </array>
+    
+    <key>WorkingDirectory</key>
+    <string>/Users/danexall/llama.cpp/build_vulkan</string>
+    
+    <key>RunAtLoad</key>
+    <true/>
+    
+    <key>KeepAlive</key>
+    <true/>
+    
+    <key>StandardOutPath</key>
+    <string>/Users/danexall/.arca/llamacpp.log</string>
+    
+    <key>StandardErrorPath</key>
+    <string>/Users/danexall/.arca/llamacpp.err</string>
+    
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PYTHONUNBUFFERED</key>
+        <string>1</string>
+        <key>GGML_VULKAN</key>
+        <string>1</string>
+        <key>GGML_METAL</key>
+        <string>0</string>
+    </dict>
+</dict>
+</plist>

@@ -1,0 +1,349 @@
+import asyncio
+import os
+import sys
+import traceback
+import json
+import base64
+import pyaudio
+import requests
+
+from google import genai
+
+if sys.version_info < (3, 11, 0):
+    import taskgroup, exceptiongroup
+
+    asyncio.TaskGroup = taskgroup.TaskGroup
+    asyncio.ExceptionGroup = exceptiongroup.ExceptionGroup
+
+
+FORMAT = pyaudio.paInt16
+CHANNELS = 1
+SEND_SAMPLE_RATE = 16000
+RECEIVE_SAMPLE_RATE = 24000
+CHUNK_SIZE = 1024
+
+pya = pyaudio.PyAudio()
+
+API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyDfnNa-IJpPZGB0Jfc4QqvVK_jIJXNWtpY")
+WEBHOOK_URL = "http://127.0.0.1:8000/webhook"
+
+client = genai.Client(api_key=API_KEY, http_options={"api_version": "v1alpha"})
+
+SYSTEM_PROMPT = """
+You are Jarvis, a highly competent, dryly witty, and fiercely loyal tactical butler.
+
+Core Directives:
+1. The "Read the Room" Protocol: Under normal circumstances, your tone is dry, sophisticated, and slightly cynical. HOWEVER, if the user expresses frustration, if errors are occurring, or if the user is tired, instantly drop the sarcasm. Become deadly serious, highly supportive, and flawlessly helpful.
+2. Competence over Comedy: Your primary job is seamless execution. Never let a joke or sarcasm get in the way of a clear, direct answer or a successful tool call.
+3. Brevity for the Short Fuse: Keep your answers extremely concise and punchy. The user values perfection and speed. Do not monologue.
+4. Professional Candor: If an idea is flawed, state it directly and professionally, then offer the immediate solution.
+5. No AI disclaimers: Never mention you are an AI, a language model, or that you are processing text.
+
+You have access to tools: delegate_to_brain for complex tasks, read_file to inspect any file on the system, write_file to create or modify files, and get_status to check system health. Use them proactively to diagnose issues.
+"""
+
+delegate_to_brain_tool = {
+    "name": "delegate_to_brain",
+    "description": "Delegate complex reasoning, memory queries, or actions to the local webhook.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "task": {"type": "string", "description": "The task or query to execute"},
+        },
+        "required": ["task"],
+    },
+}
+
+read_file_tool = {
+    "name": "read_file",
+    "description": "Read the contents of any file on the system. Use to inspect code, configs, logs.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "path": {
+                "type": "string",
+                "description": "Absolute path to the file to read",
+            },
+            "max_lines": {
+                "type": "integer",
+                "description": "Max lines to return (default 100)",
+            },
+        },
+        "required": ["path"],
+    },
+}
+
+write_file_tool = {
+    "name": "write_file",
+    "description": "Write or overwrite a file. Use to fix code, update configs. ALWAYS read the file first.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "path": {
+                "type": "string",
+                "description": "Absolute path to the file to write",
+            },
+            "content": {
+                "type": "string",
+                "description": "The full file content to write",
+            },
+        },
+        "required": ["path", "content"],
+    },
+}
+
+get_status_tool = {
+    "name": "get_status",
+    "description": "Get system status: audio device info, queue sizes, uptime.",
+    "parameters": {
+        "type": "object",
+        "properties": {},
+    },
+}
+
+MODEL = "gemini-2.5-flash-native-audio-preview-12-2025"
+CONFIG = {
+    "system_instruction": SYSTEM_PROMPT,
+    "response_modalities": ["AUDIO"],
+    "tools": [
+        {
+            "function_declarations": [
+                delegate_to_brain_tool,
+                read_file_tool,
+                write_file_tool,
+                get_status_tool,
+            ]
+        }
+    ],
+}
+
+
+import time
+
+_start_time = time.time()
+
+
+def handle_tool_call(name, args):
+    print(f"\n🛠️  Executing Tool: {name}({args})")
+    try:
+        if name == "delegate_to_brain":
+            try:
+                resp = requests.post(
+                    WEBHOOK_URL,
+                    json={
+                        "type": "brain_delegate",
+                        "task": args.get("task", ""),
+                        "context": args.get("context", ""),
+                    },
+                    timeout=5,
+                )
+                return resp.json()
+            except requests.ConnectionError:
+                return {
+                    "error": "Webhook not reachable. Is the webhook receiver running?"
+                }
+            except requests.Timeout:
+                return {"error": "Webhook timed out after 5s"}
+
+        elif name == "read_file":
+            path = args["path"]
+            max_lines = args.get("max_lines", 100)
+            if not os.path.isfile(path):
+                return {"error": f"File not found: {path}"}
+            with open(path, "r") as f:
+                lines = f.readlines()
+            total = len(lines)
+            content = "".join(lines[:max_lines])
+            return {
+                "path": path,
+                "total_lines": total,
+                "lines_shown": min(max_lines, total),
+                "content": content,
+            }
+
+        elif name == "write_file":
+            path = args["path"]
+            content = args["content"]
+            if os.path.isfile(path):
+                backup = path + ".bak"
+                with open(path, "r") as src, open(backup, "w") as dst:
+                    dst.write(src.read())
+            os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+            with open(path, "w") as f:
+                f.write(content)
+            return {"status": "written", "path": path, "bytes": len(content)}
+
+        elif name == "get_status":
+            uptime = time.time() - _start_time
+            in_q = (
+                _audio_loop_ref.audio_in_queue.qsize()
+                if _audio_loop_ref and _audio_loop_ref.audio_in_queue
+                else 0
+            )
+            out_q = (
+                _audio_loop_ref.out_queue.qsize()
+                if _audio_loop_ref and _audio_loop_ref.out_queue
+                else 0
+            )
+            return {
+                "uptime_seconds": round(uptime, 1),
+                "model": MODEL,
+                "audio_in_queue": in_q,
+                "audio_out_queue": out_q,
+                "sample_rate_in": SEND_SAMPLE_RATE,
+                "sample_rate_out": RECEIVE_SAMPLE_RATE,
+                "chunk_size": CHUNK_SIZE,
+                "daemon_path": os.path.abspath(__file__),
+                "working_dir": os.getcwd(),
+            }
+
+        return {"error": f"Unknown tool: {name}"}
+    except Exception as e:
+        print(f"❌ Tool {name} failed: {e}")
+        return {"error": f"Tool execution failed: {e}"}
+
+
+_audio_loop_ref = None
+
+
+class AudioLoop:
+    def __init__(self):
+        self.audio_in_queue = None
+        self.out_queue = None
+        self.session = None
+        self.audio_stream = None
+        self.speaking = False
+
+    async def listen_audio(self):
+        """Read mic in a thread, put raw PCM on out_queue."""
+        mic_info = pya.get_default_input_device_info()
+        self.audio_stream = await asyncio.to_thread(
+            pya.open,
+            format=FORMAT,
+            channels=CHANNELS,
+            rate=SEND_SAMPLE_RATE,
+            input=True,
+            input_device_index=mic_info["index"],
+            frames_per_buffer=CHUNK_SIZE,
+        )
+        if __debug__:
+            kwargs = {"exception_on_overflow": False}
+        else:
+            kwargs = {}
+        while True:
+            data = await asyncio.to_thread(self.audio_stream.read, CHUNK_SIZE, **kwargs)
+            await self.out_queue.put({"data": data, "mime_type": "audio/pcm"})
+
+    async def send_realtime(self):
+        """Pull from out_queue and send to Gemini as realtime audio."""
+        while True:
+            msg = await self.out_queue.get()
+            if self.speaking:
+                continue  # Drop mic input while speaker is active (feedback prevention)
+            try:
+                await self.session.send_realtime_input(audio=msg)
+            except Exception as e:
+                print(f"⚠️ send error: {e}")
+                return
+
+    async def receive_audio(self):
+        """Read from websocket, play audio and handle tool calls."""
+        try:
+            while True:
+                turn = self.session.receive()
+                async for response in turn:
+                    # Audio data
+                    if data := response.data:
+                        self.audio_in_queue.put_nowait(data)
+                        continue
+
+                    # Text (transcription/debug)
+                    if text := response.text:
+                        print(text, end="", flush=True)
+
+                    # Tool calls
+                    if response.tool_call:
+                        for fc in response.tool_call.function_calls:
+                            result = handle_tool_call(
+                                fc.name, dict(fc.args) if fc.args else {}
+                            )
+                            try:
+                                await self.session.send_tool_response(
+                                    function_responses=[
+                                        {
+                                            "id": fc.id,
+                                            "name": fc.name,
+                                            "response": {"result": json.dumps(result)},
+                                        }
+                                    ]
+                                )
+                            except Exception as e:
+                                print(f"❌ Failed to send tool response: {e}")
+                                return
+
+                # Turn complete — flush queued audio for clean interrupt handling
+                while not self.audio_in_queue.empty():
+                    self.audio_in_queue.get_nowait()
+        except Exception as e:
+            print(f"\n⚠️ receive_audio stopped: {e}")
+
+    async def play_audio(self):
+        """Write audio chunks to speaker in a thread."""
+        stream = await asyncio.to_thread(
+            pya.open,
+            format=FORMAT,
+            channels=CHANNELS,
+            rate=RECEIVE_SAMPLE_RATE,
+            output=True,
+        )
+        while True:
+            try:
+                bytestream = await asyncio.wait_for(
+                    self.audio_in_queue.get(), timeout=2.0
+                )
+            except asyncio.TimeoutError:
+                continue
+            self.speaking = True
+            await asyncio.to_thread(stream.write, bytestream)
+            self.speaking = False
+
+    async def run(self):
+        global _audio_loop_ref
+        try:
+            async with (
+                client.aio.live.connect(model=MODEL, config=CONFIG) as session,
+                asyncio.TaskGroup() as tg,
+            ):
+                self.session = session
+                _audio_loop_ref = self
+
+                self.audio_in_queue = asyncio.Queue()
+                self.out_queue = asyncio.Queue()
+
+                tg.create_task(self.send_realtime())
+                tg.create_task(self.listen_audio())
+                tg.create_task(self.receive_audio())
+                tg.create_task(self.play_audio())
+        except asyncio.CancelledError:
+            pass
+        except ExceptionGroup as eg:
+            for exc in eg.exceptions:
+                if "ConnectionClosed" in type(exc).__name__:
+                    print(f"\n🔌 Connection closed by server. Restart to reconnect.")
+                else:
+                    print(f"\n❌ {type(exc).__name__}: {exc}")
+            if self.audio_stream:
+                self.audio_stream.close()
+        except Exception as e:
+            print(f"\n❌ {type(e).__name__}: {e}")
+            if self.audio_stream:
+                self.audio_stream.close()
+
+
+if __name__ == "__main__":
+    loop = AudioLoop()
+    try:
+        asyncio.run(loop.run())
+    except KeyboardInterrupt:
+        print("\n🛑 Jarvis out. Finally, some peace and quiet.")
+        pya.terminate()

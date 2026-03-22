@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.arca.email-ingest</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/python3</string>
+        <string>/Users/danexall/biomimetics/scripts/email/email-ingestion-daemon.py</string>
+        <string>--once</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/danexall/biomimetics</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>StartInterval</key>
+    <integer>300</integer>
+
+    <key>StandardOutPath</key>
+    <string>/Users/danexall/.arca/email-ingest.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/danexall/.arca/email-ingest.err</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>PYTHONIOENCODING</key>
+        <string>UTF-8</string>
+        <key>GCP_GATEWAY_URL</key>
+        <string>https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator</string>
+        <key>WEBHOOK_RECEIVER_URL</key>
+        <string>http://localhost:8000/email</string>
+    </dict>
+
+    <key>Nice</key>
+    <integer>10</integer>
+
+    <key>ThrottleInterval</key>
+    <integer>60</integer>
+</dict>
+</plist>

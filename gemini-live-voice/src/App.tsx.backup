@@ -1,0 +1,377 @@
+// !!! ACTION REQUIRED: Whitelist localhost:3000 in chrome://flags/#unsafely-treat-insecure-origin-as-secure !!!
+
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { GoogleGenAI } from '@google/genai';
+
+// CoPaw Local API Endpoints (Tri-Factor Architecture)
+const COPAW_WEBHOOK_URL = 'http://127.0.0.1:8000/webhook';
+const COPAW_MEMORY_URL = 'http://127.0.0.1:8088/api/memory/query';
+const COPAW_ACTION_URL = 'http://127.0.0.1:8088/api/action/trigger';
+
+const TEST_CHIME_BASE64 = 'UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
+
+const TOOLS = [
+  {
+    name: 'query_memory',
+    description: 'Query the unified memory system.',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'The search query' },
+        user_id: { type: 'string', description: 'User identifier' }
+      },
+      required: ['query']
+    }
+  },
+  {
+    name: 'trigger_notion_action',
+    description: 'Trigger a Notion action or workflow.',
+    parameters: {
+      type: 'object',
+      properties: {
+        action: { type: 'string', description: 'The action to trigger' },
+        data: { type: 'object', description: 'Action-specific data payload' }
+      },
+      required: ['action', 'data']
+    }
+  },
+  {
+    name: 'delegate_to_brain',
+    description: 'Delegate complex reasoning, conversation, or coding tasks to the CoPaw brain (MiniMax m2.7 via Kilo Code).',
+    parameters: {
+      type: 'object',
+      properties: {
+        task: { type: 'string', description: 'The complex reasoning, conversation, or coding task to execute' },
+        context: { type: 'string', description: 'Any relevant conversation history or environmental context' }
+      },
+      required: ['task']
+    }
+  }
+];
+
+// --- INLINED AUDIO WORKLET (Off-Thread Processing) ---
+// This runs on a separate hardware thread, achieving zero-UI-latency
+const captureWorkletCode = `
+class PCMWorklet extends AudioWorkletProcessor {
+  process(inputs) {
+    const input = inputs[0][0];
+    if (!input) return true;
+
+    // Convert Float32 to Int16 PCM instantly off-thread
+    const pcm16 = new Int16Array(input.length);
+    for (let i = 0; i < input.length; i++) {
+      const s = Math.max(-1, Math.min(1, input[i]));
+      pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+    }
+
+    // Send raw bytes back to main thread
+    this.port.postMessage(pcm16.buffer);
+    return true;
+  }
+}
+registerProcessor('pcm-worklet', PCMWorklet);
+`;
+
+export default function App() {
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '');
+  const [isConnected, setIsConnected] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [responseText, setResponseText] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const sessionRef = useRef<any>(null);
+
+  // Audio Refs
+  const inputAudioContextRef = useRef<AudioContext | null>(null);
+  const workletNodeRef = useRef<AudioWorkletNode | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const playbackContextRef = useRef<AudioContext | null>(null);
+  const nextPlayTimeRef = useRef<number>(0);
+  const workletUrlRef = useRef<string | null>(null);
+
+  // Use refs to avoid stale closures in worklet port callbacks
+  const isListeningRef = useRef(false);
+  const isConnectedRef = useRef(false);
+
+  useEffect(() => {
+    if (apiKey) localStorage.setItem('gemini_api_key', apiKey);
+  }, [apiKey]);
+
+  // Keep refs in sync with state
+  useEffect(() => {
+    isListeningRef.current = isListening;
+  }, [isListening]);
+
+  useEffect(() => {
+    isConnectedRef.current = isConnected;
+  }, [isConnected]);
+
+  const handleToolCall = useCallback(async (toolCall: any) => {
+    const { name, args } = toolCall;
+    console.log(`🛠️ Executing Tool: ${name}`, args);
+
+    try {
+      // Route delegate_to_brain to CoPaw webhook receiver (port 8000)
+      if (name === 'delegate_to_brain') {
+        const response = await fetch(COPAW_WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'brain_delegate',
+            task: args.task,
+            context: args.context || ''
+          })
+        });
+        const result = await response.json();
+        return JSON.stringify(result);
+      }
+
+      // Route memory and action tools to CoPaw endpoints (port 8088)
+      let endpoint = '';
+      if (name === 'query_memory') endpoint = COPAW_MEMORY_URL;
+      if (name === 'trigger_notion_action') endpoint = COPAW_ACTION_URL;
+
+      if (!endpoint) return JSON.stringify({ error: `Unknown tool: ${name}` });
+
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(args)
+      });
+
+      const result = await response.json();
+      return JSON.stringify(result);
+    } catch (err: any) {
+      console.error(`❌ Tool execution failed for ${name}:`, err);
+      return JSON.stringify({ error: `Tool execution failed: ${err.message}` });
+    }
+  }, []);
+
+  const stopMicrophone = useCallback(() => {
+    if (workletNodeRef.current) {
+      workletNodeRef.current.port.onmessage = null;
+      workletNodeRef.current.disconnect();
+      workletNodeRef.current = null;
+    }
+    if (inputAudioContextRef.current) {
+      inputAudioContextRef.current.close();
+      inputAudioContextRef.current = null;
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    }
+    // Revoke the blob URL we created for the worklet
+    if (workletUrlRef.current) {
+      URL.revokeObjectURL(workletUrlRef.current);
+      workletUrlRef.current = null;
+    }
+    isListeningRef.current = false;
+    setIsListening(false);
+  }, []);
+
+  const disconnect = useCallback(() => {
+    // 1. Stop mic first
+    stopMicrophone();
+
+    // 2. Close session
+    if (sessionRef.current) {
+      try { sessionRef.current.close(); } catch {}
+      sessionRef.current = null;
+    }
+
+    // 3. Close playback context
+    if (playbackContextRef.current) {
+      playbackContextRef.current.close();
+      playbackContextRef.current = null;
+    }
+    nextPlayTimeRef.current = 0;
+
+    // 4. Reset state
+    isConnectedRef.current = false;
+    setIsConnected(false);
+    setResponseText('');
+  }, [stopMicrophone]);
+
+  const connect = useCallback(async () => {
+    if (!apiKey) return setError('Please enter API Key');
+    try {
+      setError(null);
+      const genAI = new GoogleGenAI({ apiKey });
+
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+      playbackContextRef.current = audioCtx;
+      nextPlayTimeRef.current = audioCtx.currentTime;
+
+      sessionRef.current = await genAI.live.connect({
+        model: 'gemini-2.5-flash-native-audio-preview-12-2025',
+        config: {
+          generationConfig: { responseModalities: ["AUDIO"] },
+          tools: [{ functionDeclarations: TOOLS }]
+        },
+        callbacks: {
+          onopen: () => {
+            console.log('✅ WebSocket Connected');
+            isConnectedRef.current = true;
+            setIsConnected(true);
+            setResponseText('');
+          },
+          onmessage: async (message: any) => {
+            const parts = message.serverContent?.modelTurn?.parts;
+            if (parts && playbackContextRef.current) {
+              const ctx = playbackContextRef.current;
+
+              for (const part of parts) {
+                if (part.inlineData?.data) {
+                  // Fast Base64 decode
+                  const raw = atob(part.inlineData.data);
+                  const uint8 = new Uint8Array(raw.length);
+                  for (let i = 0; i < raw.length; i++) uint8[i] = raw.charCodeAt(i);
+                  const int16 = new Int16Array(uint8.buffer);
+
+                  const float32 = new Float32Array(int16.length);
+                  for (let i = 0; i < int16.length; i++) {
+                    float32[i] = int16[i] / 32768.0;
+                  }
+
+                  const buffer = ctx.createBuffer(1, float32.length, 24000);
+                  buffer.getChannelData(0).set(float32);
+
+                  const source = ctx.createBufferSource();
+                  source.buffer = buffer;
+                  source.connect(ctx.destination);
+
+                  if (nextPlayTimeRef.current < ctx.currentTime) {
+                    nextPlayTimeRef.current = ctx.currentTime;
+                  }
+
+                  source.start(nextPlayTimeRef.current);
+                  nextPlayTimeRef.current += buffer.duration;
+                }
+              }
+            }
+
+            // Handle interruption — flush queued audio
+            if (message.serverContent?.interrupted) {
+              console.log('🤐 User interrupted — flushing playback buffer');
+              nextPlayTimeRef.current = playbackContextRef.current?.currentTime ?? 0;
+            }
+
+            // Tool Call Handling
+            if (message.toolCall) {
+              console.log('🛠️ Tool Call Received:', message.toolCall);
+
+              const resultString = await handleToolCall(message.toolCall);
+
+              if (sessionRef.current) {
+                sessionRef.current.sendToolResponse({
+                  functionResponses: [{
+                    id: message.toolCall.id,
+                    name: message.toolCall.name,
+                    response: { result: resultString }
+                  }]
+                });
+              }
+            }
+
+            if (message.text) setResponseText(prev => prev + message.text);
+          },
+          onerror: (err: any) => {
+            console.error('❌ WebSocket Error:', err);
+            isConnectedRef.current = false;
+            setIsConnected(false);
+          },
+          onclose: () => {
+            console.log('🔌 WebSocket Closed');
+            isConnectedRef.current = false;
+            setIsConnected(false);
+            stopMicrophone();
+            if (playbackContextRef.current) {
+              playbackContextRef.current.close();
+              playbackContextRef.current = null;
+            }
+          }
+        }
+      } as any);
+    } catch (err: any) { setError(`Connect Failed: ${err.message}`); }
+  }, [apiKey, handleToolCall, stopMicrophone]);
+
+  const startMicrophone = useCallback(async () => {
+    if (!sessionRef.current) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { channelCount: 1, sampleRate: 16000 }
+      });
+      streamRef.current = stream;
+
+      const audioCtx = new window.AudioContext({ sampleRate: 16000 });
+      inputAudioContextRef.current = audioCtx;
+
+      // Load the Worklet via Blob URL
+      const blob = new Blob([captureWorkletCode], { type: 'application/javascript' });
+      const workletUrl = URL.createObjectURL(blob);
+      workletUrlRef.current = workletUrl;
+      await audioCtx.audioWorklet.addModule(workletUrl);
+
+      const source = audioCtx.createMediaStreamSource(stream);
+      const workletNode = new AudioWorkletNode(audioCtx, 'pcm-worklet');
+      workletNodeRef.current = workletNode;
+
+      // Handle off-thread data rapidly — use refs to avoid stale closures
+      workletNode.port.onmessage = (e) => {
+        if (!sessionRef.current || !isConnectedRef.current) return;
+
+        const uint8Array = new Uint8Array(e.data);
+        const chunkSize = 8192;
+        let binary = '';
+        for (let i = 0; i < uint8Array.length; i += chunkSize) {
+            binary += String.fromCharCode.apply(null, uint8Array.subarray(i, i + chunkSize) as unknown as number[]);
+        }
+
+        sessionRef.current.sendRealtimeInput({
+          media: {
+            data: btoa(binary),
+            mimeType: 'audio/pcm;rate=16000'
+          }
+        });
+      };
+
+      source.connect(workletNode);
+      // We do NOT connect workletNode to audioCtx.destination to prevent speaker feedback loop
+
+      setIsListening(true);
+      console.log('🎤 [STUDIO GRADE] AudioWorklet Pipeline Active');
+    } catch (err) { setError('Mic Access Denied'); }
+  }, []);
+
+  return (
+    <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
+      <h1>🎙️ Native Audio Live v3.2 (Tri-Factor)</h1>
+      {!isConnected ? (
+        <>
+          <input type="password" value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="API Key" />
+          <button onClick={connect}>Connect</button>
+        </>
+      ) : (
+        <>
+          <button onClick={disconnect}>Disconnect</button>
+          <button onClick={isListening ? stopMicrophone : startMicrophone} style={{ background: isListening ? 'orange' : 'lightgreen' }}>
+            {isListening ? '🎤 Stop' : '🎤 Start Mic'}
+          </button>
+          <button onClick={sendTestPayload}>🔍 Test Chime</button>
+        </>
+      )}
+      <div style={{ color: isConnected ? 'green' : 'red' }}>{isConnected ? 'Connected' : 'Disconnected'}</div>
+      {error && <div style={{ color: 'red' }}>{error}</div>}
+      <div style={{ background: '#eee', padding: '10px', marginTop: '10px', minHeight: '50px' }}>{responseText || 'Waiting...'}</div>
+    </div>
+  );
+
+  function sendTestPayload() {
+    if (!sessionRef.current) return;
+    sessionRef.current.sendRealtimeInput({
+      media: { data: TEST_CHIME_BASE64, mimeType: 'audio/pcm;rate=16000' }
+    });
+    console.log('✅ Chime Sent');
+  }
+}
