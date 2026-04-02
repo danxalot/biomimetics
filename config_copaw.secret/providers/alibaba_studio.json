@@ -1,0 +1,12 @@
+{
+  "id": "alibaba_studio",
+  "name": "Alibaba DashScope",
+  "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+  "api_key_env": "QWEN_OAUTH_TOKEN",
+  "chat_model": "OpenAIChatModel",
+  "is_local": false,
+  "models": [
+    { "id": "qwen-max", "name": "Qwen Max", "context_window": 256000, "supports_function_calling": true, "supports_vision": true },
+    { "id": "qwen-coder", "name": "Qwen Coder", "context_window": 256000, "supports_function_calling": true, "supports_vision": false }
+  ]
+}

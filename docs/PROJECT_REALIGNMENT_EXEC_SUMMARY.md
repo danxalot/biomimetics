@@ -20,7 +20,7 @@
 - ✅ Key secrets found:
   - `notion_api_key` → `[NOTION_TOKEN_REDACTED]`
   - `github_token` → `[GITHUB_TOKEN_REDACTED]`
-  - `google_api_studio` → `AIzaSyDfnNa-IJpPZGB0Jfc4QqvVK_jIJXNWtpY`
+  - `google_api_studio` → `[REDACTED]`
 
 **3. Directory Bridging**
 - ✅ 3 files with hardcoded paths identified:

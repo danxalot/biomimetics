@@ -1,0 +1,137 @@
+{
+  "mcp_servers": {
+    "github": {
+      "url": "http://github-mcp-server-xxxx.westus2.azurecontainer.io:8080/mcp",
+      "transport": "http",
+      "headers": {
+        "X-MCP-Tools": "issues,pull_requests",
+        "Authorization": "Bearer ${GITHUB_PAT}"
+      },
+      "description": "GitHub Issues and PRs (Azure ACI)",
+      "restricted_tools": [
+        "github.create_issue",
+        "github.update_issue",
+        "github.search_issues",
+        "github.get_issue",
+        "github.create_pull_request",
+        "github.list_pull_requests",
+        "github.get_pull_request",
+        "github.get_repository"
+      ],
+      "require_approval_for": [
+        "github.create_issue",
+        "github.update_issue",
+        "github.create_pull_request"
+      ]
+    },
+    "serena": {
+      "command": "uvx",
+      "args": ["mcp-server-serena"],
+      "transport": "stdio",
+      "cwd": "${PROJECT_ROOT}",
+      "description": "Serena Code Intelligence MCP",
+      "restricted_tools": [
+        "serena.search_symbols",
+        "serena.get_symbol_implementation",
+        "serena.get_call_hierarchy",
+        "serena.get_file_content",
+        "serena.list_projects",
+        "serena.get_project_info"
+      ],
+      "require_approval_for": [
+        "serena.execute_shell_command",
+        "serena.git_push",
+        "serena.git_commit"
+      ]
+    },
+    "local_files": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "${HOME}"],
+      "transport": "stdio",
+      "description": "Local file system access",
+      "restricted_tools": [
+        "read_file",
+        "read_multiple_files",
+        "search_files",
+        "list_directory"
+      ],
+      "require_approval_for": [
+        "write_file",
+        "create_directory",
+        "delete_file",
+        "move_file"
+      ]
+    }
+  },
+  "tool_guard": {
+    "enabled": true,
+    "approval_channels": {
+      "notion": {
+        "enabled": true,
+        "database_id": "${NOTION_APPROVAL_DB_ID}",
+        "webhook_url": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator"
+      },
+      "telegram": {
+        "enabled": false,
+        "bot_token": "${TELEGRAM_BOT_TOKEN}",
+        "chat_id": "${TELEGRAM_CHAT_ID}"
+      }
+    },
+    "high_risk_patterns": [
+      "git push",
+      "git commit",
+      "rm -rf",
+      "sudo",
+      "chmod 777",
+      "curl.*|.*sh",
+      "wget.*|.*sh",
+      "DROP TABLE",
+      "DELETE FROM",
+      "TRUNCATE"
+    ],
+    "auto_approve_patterns": [
+      "git status",
+      "git log",
+      "git diff",
+      "ls -la",
+      "cat ",
+      "head ",
+      "tail "
+    ]
+  },
+  "memory_integration": {
+    "gateway_url": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+    "auto_inject": true,
+    "max_tokens": 2000,
+    "min_confidence": 0.3,
+    "serena_sync": {
+      "enabled": true,
+      "watch_directory": "~/.serena/memories/",
+      "sync_interval_seconds": 300,
+      "metadata_prefix": "serena_code_spec"
+    }
+  },
+  "notion_integration": {
+    "enabled": true,
+    "api_key": "${NOTION_API_KEY}",
+    "database_id": "${NOTION_TASKS_DB_ID}",
+    "webhook_secret": "${NOTION_WEBHOOK_SECRET}",
+    "action_mapping": {
+      "create_github_issue": {
+        "button_property": "Action",
+        "button_value": "create_issue",
+        "copaw_skill": "create_github_issue_from_notion"
+      },
+      "plan_feature": {
+        "button_property": "Action",
+        "button_value": "plan_feature",
+        "copaw_skill": "plan_feature"
+      },
+      "review_code": {
+        "button_property": "Action",
+        "button_value": "review_code",
+        "copaw_skill": "review_code"
+      }
+    }
+  }
+}

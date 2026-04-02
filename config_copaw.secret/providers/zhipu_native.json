@@ -1,0 +1,12 @@
+{
+  "id": "zhipu_native",
+  "name": "Zhipu AI (Native)",
+  "base_url": "https://open.bigmodel.cn/api/paas/v4",
+  "api_key_env": "ZHIPU_API_KEY",
+  "chat_model": "OpenAIChatModel",
+  "is_local": false,
+  "models": [
+    { "id": "glm-5", "name": "GLM-5", "context_window": 256000, "supports_function_calling": true, "supports_vision": false },
+    { "id": "glm-5-turbo", "name": "GLM-5 Turbo", "context_window": 256000, "supports_function_calling": true, "supports_vision": false }
+  ]
+}

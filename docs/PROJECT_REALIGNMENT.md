@@ -86,7 +86,7 @@ Directory-based secrets (140+ files):
 ├── github_token                → [GITHUB_TOKEN_REDACTED]
 ├── gcp_credentials.json        → GCP service account key
 ├── client_secrets.json         → Google OAuth credentials
-├── google_api_studio           → AIzaSyDfnNa-IJpPZGB0Jfc4QqvVK_jIJXNWtpY
+├── google_api_studio           → [REDACTED]
 ├── openrouter_api              → OpenRouter API key
 ├── anthropic_api_key           → Anthropic API key
 ├── aws_access_key              → AWS credentials
@@ -135,7 +135,7 @@ TAILSCALE_AUTH_KEY_MCP=tskey-auth-kH4ZdQ5Lr911CNTRL-xmdhtHkt7SEG6G42uGJtREmXv9pG
 TAILSCALE_AUTH_KEY_MEMORY=tskey-auth-kgLDR15QD611CNTRL-TymRdEDPGhXqVBF9PhTMhXKRuqymH1V4
 
 # Cloud API Keys
-GOOGLE_API_KEY=AIzaSyDfnNa-IJpPZGB0Jfc4QqvVK_jIJXNWtpY
+GOOGLE_API_KEY=[REDACTED]
 ALIBABA_API_KEY=sk-0e4093d9bff436e9793b860774c6c51
 
 # Azure Key Vault (for Biomimetics)

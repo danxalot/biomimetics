@@ -1,0 +1,8 @@
+<think>
+Thinking Process:
+
+1.  **Analyze the Request:**
+    *   Input: A user-provided text that seems to be a "thought experiment" or "prompt" containing a dialogue between a user and an AI, or perhaps a prompt for a specific type of AI interaction. The text provided at the very end is the actual prompt I need to respond to? Wait, no.
+    *   The text provided is: "User Input: A dialogue snippet... Wait, looking at the structure."
+    *   Actually, the user provided a text block that looks like a prompt *for me* to analyze. It contains a "dialogue" where the first part is a user message and the "response" is the AI's internal monologue or a critique?
+    *   Let's look closer at the structure. The text provided seems to be a "system prompt" or "instruction set" that the user *wants me to evaluate* or

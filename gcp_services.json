@@ -1,0 +1,1046 @@
+[
+  {
+    "apiVersion": "serving.knative.dev/v1",
+    "kind": "Service",
+    "metadata": {
+      "annotations": {
+        "run.googleapis.com/ingress": "all",
+        "run.googleapis.com/ingress-status": "all",
+        "run.googleapis.com/maxScale": "20",
+        "run.googleapis.com/operation-id": "86140c86-1ff8-4c34-b559-ad11f2cf6334",
+        "run.googleapis.com/urls": "[\"https://arca-portal-757330161781.us-central1.run.app\",\"https://arca-portal-eqij24gbwq-uc.a.run.app\"]",
+        "serving.knative.dev/creator": "dan.exall@gmail.com",
+        "serving.knative.dev/lastModifier": "arca-service-agent@arca-471022.iam.gserviceaccount.com"
+      },
+      "creationTimestamp": "2026-02-07T07:13:36.594054Z",
+      "generation": 2,
+      "labels": {
+        "cloud.googleapis.com/location": "us-central1"
+      },
+      "name": "arca-portal",
+      "namespace": "757330161781",
+      "resourceVersion": "AAZKYXqqQ5c",
+      "selfLink": "/apis/serving.knative.dev/v1/namespaces/757330161781/services/arca-portal",
+      "uid": "82db4dd5-b484-4210-88eb-6ec9ac1f12e1"
+    },
+    "spec": {
+      "template": {
+        "metadata": {
+          "annotations": {
+            "autoscaling.knative.dev/minScale": "0",
+            "run.googleapis.com/cpu-throttling": "true",
+            "run.googleapis.com/sessionAffinity": "false",
+            "run.googleapis.com/startup-cpu-boost": "true"
+          },
+          "labels": {
+            "client.knative.dev/nonce": "nnkjppsagl",
+            "run.googleapis.com/startupProbeType": "Default"
+          }
+        },
+        "spec": {
+          "containerConcurrency": 80,
+          "containers": [
+            {
+              "image": "us-docker.pkg.dev/cloudrun/container/hello",
+              "ports": [
+                {
+                  "containerPort": 8080,
+                  "name": "http1"
+                }
+              ],
+              "resources": {
+                "limits": {
+                  "cpu": "1000m",
+                  "memory": "512Mi"
+                }
+              },
+              "startupProbe": {
+                "failureThreshold": 1,
+                "periodSeconds": 240,
+                "tcpSocket": {
+                  "port": 8080
+                },
+                "timeoutSeconds": 240
+              }
+            }
+          ],
+          "serviceAccountName": "757330161781-compute@developer.gserviceaccount.com",
+          "timeoutSeconds": 300
+        }
+      },
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100
+        }
+      ]
+    },
+    "status": {
+      "address": {
+        "url": "https://arca-portal-eqij24gbwq-uc.a.run.app"
+      },
+      "conditions": [
+        {
+          "lastTransitionTime": "2026-02-09T10:19:50.525847Z",
+          "status": "True",
+          "type": "Ready"
+        },
+        {
+          "lastTransitionTime": "2026-02-09T10:19:45.264280Z",
+          "status": "True",
+          "type": "ConfigurationsReady"
+        },
+        {
+          "lastTransitionTime": "2026-02-09T10:19:50.494294Z",
+          "status": "True",
+          "type": "RoutesReady"
+        }
+      ],
+      "latestCreatedRevisionName": "arca-portal-00002-4lz",
+      "latestReadyRevisionName": "arca-portal-00002-4lz",
+      "observedGeneration": 2,
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100,
+          "revisionName": "arca-portal-00002-4lz"
+        }
+      ],
+      "url": "https://arca-portal-eqij24gbwq-uc.a.run.app"
+    }
+  },
+  {
+    "apiVersion": "serving.knative.dev/v1",
+    "kind": "Service",
+    "metadata": {
+      "annotations": {
+        "cloudfunctions.googleapis.com/function-id": "document-processor",
+        "run.googleapis.com/ingress": "all",
+        "run.googleapis.com/ingress-status": "all",
+        "run.googleapis.com/operation-id": "40b602a8-36e5-452b-ac25-9141af156480",
+        "run.googleapis.com/urls": "[\"https://document-processor-757330161781.us-central1.run.app\",\"https://us-central1-arca-471022.cloudfunctions.net/document-processor\",\"https://document-processor-eqij24gbwq-uc.a.run.app\"]",
+        "serving.knative.dev/creator": "service-757330161781@gcf-admin-robot.iam.gserviceaccount.com",
+        "serving.knative.dev/lastModifier": "arca-service-agent@arca-471022.iam.gserviceaccount.com"
+      },
+      "creationTimestamp": "2025-10-24T19:06:15.675407Z",
+      "generation": 2,
+      "labels": {
+        "cloud.googleapis.com/location": "us-central1",
+        "goog-cloudfunctions-runtime": "python312",
+        "goog-drz-cloudfunctions-id": "document-processor",
+        "goog-drz-cloudfunctions-location": "us-central1",
+        "goog-managed-by": "cloudfunctions",
+        "goog-terraform-provisioned": "true"
+      },
+      "name": "document-processor",
+      "namespace": "757330161781",
+      "resourceVersion": "AAZKYXrLKW4",
+      "selfLink": "/apis/serving.knative.dev/v1/namespaces/757330161781/services/document-processor",
+      "uid": "e0862ed0-83f8-43fb-b23d-40ea9e19c297"
+    },
+    "spec": {
+      "template": {
+        "metadata": {
+          "annotations": {
+            "autoscaling.knative.dev/maxScale": "1",
+            "autoscaling.knative.dev/minScale": "0",
+            "run.googleapis.com/cpu-throttling": "true",
+            "run.googleapis.com/sessionAffinity": "false",
+            "run.googleapis.com/startup-cpu-boost": "true"
+          },
+          "labels": {
+            "run.googleapis.com/startupProbeType": "Default"
+          }
+        },
+        "spec": {
+          "containerConcurrency": 1,
+          "containers": [
+            {
+              "image": "us-docker.pkg.dev/cloudrun/container/hello",
+              "ports": [
+                {
+                  "containerPort": 8080,
+                  "name": "http1"
+                }
+              ],
+              "resources": {
+                "limits": {
+                  "cpu": "0.1666",
+                  "memory": "256M"
+                }
+              },
+              "startupProbe": {
+                "failureThreshold": 1,
+                "periodSeconds": 240,
+                "tcpSocket": {
+                  "port": 8080
+                },
+                "timeoutSeconds": 240
+              }
+            }
+          ],
+          "serviceAccountName": "arca-service-agent@arca-471022.iam.gserviceaccount.com",
+          "timeoutSeconds": 540
+        }
+      },
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100
+        }
+      ]
+    },
+    "status": {
+      "address": {
+        "url": "https://document-processor-eqij24gbwq-uc.a.run.app"
+      },
+      "conditions": [
+        {
+          "lastTransitionTime": "2026-02-09T10:19:52.681838Z",
+          "status": "True",
+          "type": "Ready"
+        },
+        {
+          "lastTransitionTime": "2026-02-09T10:19:45.112455Z",
+          "status": "True",
+          "type": "ConfigurationsReady"
+        },
+        {
+          "lastTransitionTime": "2026-02-09T10:19:52.652830Z",
+          "status": "True",
+          "type": "RoutesReady"
+        }
+      ],
+      "latestCreatedRevisionName": "document-processor-00002-9bb",
+      "latestReadyRevisionName": "document-processor-00002-9bb",
+      "observedGeneration": 2,
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100,
+          "revisionName": "document-processor-00002-9bb"
+        }
+      ],
+      "url": "https://document-processor-eqij24gbwq-uc.a.run.app"
+    }
+  },
+  {
+    "apiVersion": "serving.knative.dev/v1",
+    "kind": "Service",
+    "metadata": {
+      "annotations": {
+        "cloudfunctions.googleapis.com/function-id": "drive_downloader",
+        "run.googleapis.com/ingress": "all",
+        "run.googleapis.com/ingress-status": "all",
+        "run.googleapis.com/operation-id": "521815eb-8189-4440-9a95-1fb021dea7d9",
+        "run.googleapis.com/urls": "[\"https://drive-downloader-757330161781.us-central1.run.app\",\"https://us-central1-arca-471022.cloudfunctions.net/drive_downloader\",\"https://drive-downloader-eqij24gbwq-uc.a.run.app\"]",
+        "serving.knative.dev/creator": "service-757330161781@gcf-admin-robot.iam.gserviceaccount.com",
+        "serving.knative.dev/lastModifier": "arca-service-agent@arca-471022.iam.gserviceaccount.com"
+      },
+      "creationTimestamp": "2025-09-27T01:57:47.228443Z",
+      "generation": 9,
+      "labels": {
+        "cloud.googleapis.com/location": "us-central1",
+        "goog-cloudfunctions-runtime": "python311",
+        "goog-drz-cloudfunctions-id": "drive_downloader",
+        "goog-drz-cloudfunctions-location": "us-central1",
+        "goog-managed-by": "cloudfunctions"
+      },
+      "name": "drive-downloader",
+      "namespace": "757330161781",
+      "resourceVersion": "AAZKYXqiuRo",
+      "selfLink": "/apis/serving.knative.dev/v1/namespaces/757330161781/services/drive-downloader",
+      "uid": "5e13db02-ace8-4697-bd3a-69b2f50322ee"
+    },
+    "spec": {
+      "template": {
+        "metadata": {
+          "annotations": {
+            "autoscaling.knative.dev/maxScale": "100",
+            "autoscaling.knative.dev/minScale": "0",
+            "run.googleapis.com/cpu-throttling": "true",
+            "run.googleapis.com/sessionAffinity": "false",
+            "run.googleapis.com/startup-cpu-boost": "true"
+          },
+          "labels": {
+            "run.googleapis.com/startupProbeType": "Default"
+          }
+        },
+        "spec": {
+          "containerConcurrency": 1,
+          "containers": [
+            {
+              "image": "us-docker.pkg.dev/cloudrun/container/hello",
+              "ports": [
+                {
+                  "containerPort": 8080,
+                  "name": "http1"
+                }
+              ],
+              "resources": {
+                "limits": {
+                  "cpu": "0.1666",
+                  "memory": "256M"
+                }
+              },
+              "startupProbe": {
+                "failureThreshold": 1,
+                "periodSeconds": 240,
+                "tcpSocket": {
+                  "port": 8080
+                },
+                "timeoutSeconds": 240
+              }
+            }
+          ],
+          "serviceAccountName": "arca-service-agent@arca-471022.iam.gserviceaccount.com",
+          "timeoutSeconds": 60
+        }
+      },
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100
+        }
+      ]
+    },
+    "status": {
+      "address": {
+        "url": "https://drive-downloader-eqij24gbwq-uc.a.run.app"
+      },
+      "conditions": [
+        {
+          "lastTransitionTime": "2026-02-09T10:19:50.031642Z",
+          "status": "True",
+          "type": "Ready"
+        },
+        {
+          "lastTransitionTime": "2026-02-09T10:19:45.131680Z",
+          "status": "True",
+          "type": "ConfigurationsReady"
+        },
+        {
+          "lastTransitionTime": "2026-02-09T10:19:49.993690Z",
+          "status": "True",
+          "type": "RoutesReady"
+        }
+      ],
+      "latestCreatedRevisionName": "drive-downloader-00009-pbg",
+      "latestReadyRevisionName": "drive-downloader-00009-pbg",
+      "observedGeneration": 9,
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100,
+          "revisionName": "drive-downloader-00009-pbg"
+        }
+      ],
+      "url": "https://drive-downloader-eqij24gbwq-uc.a.run.app"
+    }
+  },
+  {
+    "apiVersion": "serving.knative.dev/v1",
+    "kind": "Service",
+    "metadata": {
+      "annotations": {
+        "cloudfunctions.googleapis.com/function-id": "memory-orchestrator",
+        "run.googleapis.com/build-base-image": "us-central1-docker.pkg.dev/serverless-runtimes/google-22-full/runtimes/python310",
+        "run.googleapis.com/build-enable-automatic-updates": "true",
+        "run.googleapis.com/build-function-target": "process_memory_request",
+        "run.googleapis.com/build-image-uri": "us-central1-docker.pkg.dev/arca-471022/gcf-artifacts/arca--471022__us--central1__memory--orchestrator:version_1",
+        "run.googleapis.com/build-name": "projects/757330161781/locations/us-central1/builds/5c5cff15-250d-4432-9149-9a63b88c2e85",
+        "run.googleapis.com/build-service-account": "projects/arca-471022/serviceAccounts/757330161781-compute@developer.gserviceaccount.com",
+        "run.googleapis.com/build-source-location": "gs://gcf-v2-sources-757330161781-us-central1/memory-orchestrator/function-source.zip#1774738707449925",
+        "run.googleapis.com/client-name": "gcloud",
+        "run.googleapis.com/custom-audiences": "[\"https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator\"]",
+        "run.googleapis.com/ingress": "all",
+        "run.googleapis.com/ingress-status": "all",
+        "run.googleapis.com/maxScale": "100",
+        "run.googleapis.com/operation-id": "0d7143ba-2c5e-4b51-b80f-a695b0d7d4ee",
+        "run.googleapis.com/urls": "[\"https://memory-orchestrator-757330161781.us-central1.run.app\",\"https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator\",\"https://memory-orchestrator-eqij24gbwq-uc.a.run.app\"]",
+        "serving.knative.dev/creator": "service-757330161781@gcf-admin-robot.iam.gserviceaccount.com",
+        "serving.knative.dev/lastModifier": "service-757330161781@gcf-admin-robot.iam.gserviceaccount.com"
+      },
+      "creationTimestamp": "2026-03-15T11:12:46.367723Z",
+      "generation": 8,
+      "labels": {
+        "cloud.googleapis.com/location": "us-central1",
+        "goog-cloudfunctions-runtime": "python310",
+        "goog-drz-cloudfunctions-id": "memory-orchestrator",
+        "goog-drz-cloudfunctions-location": "us-central1",
+        "goog-managed-by": "cloudfunctions"
+      },
+      "name": "memory-orchestrator",
+      "namespace": "757330161781",
+      "resourceVersion": "AAZOHZBReRA",
+      "selfLink": "/apis/serving.knative.dev/v1/namespaces/757330161781/services/memory-orchestrator",
+      "uid": "2e1043f3-3a08-4ffe-b788-930537b77230"
+    },
+    "spec": {
+      "template": {
+        "metadata": {
+          "annotations": {
+            "autoscaling.knative.dev/maxScale": "100",
+            "cloudfunctions.googleapis.com/trigger-type": "HTTP_TRIGGER",
+            "run.googleapis.com/base-images": "{\"worker\":\"us-central1-docker.pkg.dev/serverless-runtimes/google-22-full/runtimes/python310\"}",
+            "run.googleapis.com/client-name": "gcloud",
+            "run.googleapis.com/startup-cpu-boost": "true",
+            "run.googleapis.com/vpc-access-connector": "projects/arca-471022/locations/us-central1/connectors/muninn-connector",
+            "run.googleapis.com/vpc-access-egress": "private-ranges-only"
+          },
+          "labels": {
+            "goog-drz-cloudfunctions-id": "memory-orchestrator",
+            "goog-drz-cloudfunctions-location": "us-central1",
+            "run.googleapis.com/startupProbeType": "Default"
+          },
+          "name": "memory-orchestrator-00008-kav"
+        },
+        "spec": {
+          "containerConcurrency": 1,
+          "containers": [
+            {
+              "env": [
+                {
+                  "name": "MUNINN_VM_URL",
+                  "value": "http://10.128.0.3:8475"
+                },
+                {
+                  "name": "LOG_EXECUTION_ID",
+                  "value": "true"
+                }
+              ],
+              "image": "us-central1-docker.pkg.dev/arca-471022/gcf-artifacts/arca--471022__us--central1__memory--orchestrator:version_1",
+              "name": "worker",
+              "ports": [
+                {
+                  "containerPort": 8080,
+                  "name": "http1"
+                }
+              ],
+              "resources": {
+                "limits": {
+                  "cpu": "0.1666",
+                  "memory": "256M"
+                }
+              },
+              "startupProbe": {
+                "failureThreshold": 1,
+                "periodSeconds": 240,
+                "tcpSocket": {
+                  "port": 8080
+                },
+                "timeoutSeconds": 240
+              }
+            }
+          ],
+          "runtimeClassName": "run.googleapis.com/linux-base-image-update",
+          "serviceAccountName": "757330161781-compute@developer.gserviceaccount.com",
+          "timeoutSeconds": 60
+        }
+      },
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100
+        }
+      ]
+    },
+    "status": {
+      "address": {
+        "url": "https://memory-orchestrator-eqij24gbwq-uc.a.run.app"
+      },
+      "conditions": [
+        {
+          "lastTransitionTime": "2026-03-28T22:59:02.540560Z",
+          "status": "True",
+          "type": "Ready"
+        },
+        {
+          "lastTransitionTime": "2026-03-28T22:58:57.230422Z",
+          "status": "True",
+          "type": "ConfigurationsReady"
+        },
+        {
+          "lastTransitionTime": "2026-03-28T22:59:02.511130Z",
+          "status": "True",
+          "type": "RoutesReady"
+        }
+      ],
+      "latestCreatedRevisionName": "memory-orchestrator-00008-kav",
+      "latestReadyRevisionName": "memory-orchestrator-00008-kav",
+      "observedGeneration": 8,
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100,
+          "revisionName": "memory-orchestrator-00008-kav"
+        }
+      ],
+      "url": "https://memory-orchestrator-eqij24gbwq-uc.a.run.app"
+    }
+  },
+  {
+    "apiVersion": "serving.knative.dev/v1",
+    "kind": "Service",
+    "metadata": {
+      "annotations": {
+        "run.googleapis.com/client-name": "gcloud",
+        "run.googleapis.com/client-version": "541.0.0",
+        "run.googleapis.com/ingress": "all",
+        "run.googleapis.com/ingress-status": "all",
+        "run.googleapis.com/maxScale": "20",
+        "run.googleapis.com/operation-id": "7b2a7171-888b-4350-a102-e030acbb7f4f",
+        "run.googleapis.com/urls": "[\"https://memu-757330161781.us-central1.run.app\",\"https://memu-eqij24gbwq-uc.a.run.app\"]",
+        "serving.knative.dev/creator": "arca-service-agent@arca-471022.iam.gserviceaccount.com",
+        "serving.knative.dev/lastModifier": "arca-service-agent@arca-471022.iam.gserviceaccount.com"
+      },
+      "creationTimestamp": "2026-03-15T10:16:51.060997Z",
+      "generation": 20,
+      "labels": {
+        "cloud.googleapis.com/location": "us-central1"
+      },
+      "name": "memu",
+      "namespace": "757330161781",
+      "resourceVersion": "AAZOC7b8ntI",
+      "selfLink": "/apis/serving.knative.dev/v1/namespaces/757330161781/services/memu",
+      "uid": "08b08546-6228-4282-bf1f-d535b99051ce"
+    },
+    "spec": {
+      "template": {
+        "metadata": {
+          "annotations": {
+            "autoscaling.knative.dev/maxScale": "3",
+            "run.googleapis.com/client-name": "gcloud",
+            "run.googleapis.com/client-version": "541.0.0",
+            "run.googleapis.com/startup-cpu-boost": "true"
+          },
+          "labels": {
+            "client.knative.dev/nonce": "otyzuumhpy",
+            "run.googleapis.com/startupProbeType": "Default"
+          }
+        },
+        "spec": {
+          "containerConcurrency": 50,
+          "containers": [
+            {
+              "env": [
+                {
+                  "name": "USE_GEMINI_EMBEDDINGS",
+                  "value": "true"
+                },
+                {
+                  "name": "GEMINI_EMBEDDING_MODEL",
+                  "value": "gemini-embedding-2-preview"
+                },
+                {
+                  "name": "QDRANT_COLLECTION",
+                  "value": "memu_archive_1536"
+                },
+                {
+                  "name": "EMBEDDING_DIMS",
+                  "value": "1536"
+                },
+                {
+                  "name": "AGENT_PROVIDER",
+                  "value": "gemini"
+                },
+                {
+                  "name": "AGENT_MODEL",
+                  "value": "gemma-3-12b-it"
+                },
+                {
+                  "name": "FIREBASE_PROJECT",
+                  "value": "arca-471022"
+                },
+                {
+                  "name": "EMBEDDING_RPM",
+                  "value": "100"
+                },
+                {
+                  "name": "EMBEDDING_TPD",
+                  "value": "1000"
+                },
+                {
+                  "name": "AGENT_RPM",
+                  "value": "30"
+                },
+                {
+                  "name": "AGENT_TPM",
+                  "value": "15000"
+                },
+                {
+                  "name": "GCP_PROJECT_ID",
+                  "value": "arca-471022"
+                },
+                {
+                  "name": "REGION",
+                  "value": "us-central1"
+                },
+                {
+                  "name": "QDRANT_URL",
+                  "value": "https://bfc3f711-81d4-43c6-b7bb-f58c99684d70.eu-west-2-0.aws.cloud.qdrant.io"
+                },
+                {
+                  "name": "GEMINI_EMBEDDING_API_KEY_FILE",
+                  "value": "/run/secrets/google_ai_studio/google_ai_studio"
+                },
+                {
+                  "name": "QDRANT_API_KEY_FILE",
+                  "value": "/run/secrets/qdrant_api_key/qdrant_api_key"
+                },
+                {
+                  "name": "AGENT_API_KEY_FILE",
+                  "value": "/run/secrets/google_ai_studio/google_ai_studio"
+                }
+              ],
+              "image": "gcr.io/arca-471022/memu:latest",
+              "ports": [
+                {
+                  "containerPort": 8080,
+                  "name": "http1"
+                }
+              ],
+              "resources": {
+                "limits": {
+                  "cpu": "1",
+                  "memory": "1Gi"
+                }
+              },
+              "startupProbe": {
+                "failureThreshold": 1,
+                "periodSeconds": 240,
+                "tcpSocket": {
+                  "port": 8080
+                },
+                "timeoutSeconds": 240
+              },
+              "volumeMounts": [
+                {
+                  "mountPath": "/run/secrets/google_ai_studio",
+                  "name": "google_ai_studio-can-qiw-suj"
+                },
+                {
+                  "mountPath": "/run/secrets/qdrant_api_key",
+                  "name": "qdrant_api_key-buw-taf-ziy"
+                }
+              ]
+            }
+          ],
+          "serviceAccountName": "arca-service-agent@arca-471022.iam.gserviceaccount.com",
+          "timeoutSeconds": 300,
+          "volumes": [
+            {
+              "name": "google_ai_studio-can-qiw-suj",
+              "secret": {
+                "items": [
+                  {
+                    "key": "latest",
+                    "path": "google_ai_studio"
+                  }
+                ],
+                "secretName": "google_ai_studio"
+              }
+            },
+            {
+              "name": "qdrant_api_key-buw-taf-ziy",
+              "secret": {
+                "items": [
+                  {
+                    "key": "latest",
+                    "path": "qdrant_api_key"
+                  }
+                ],
+                "secretName": "qdrant_api_key"
+              }
+            }
+          ]
+        }
+      },
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100
+        }
+      ]
+    },
+    "status": {
+      "address": {
+        "url": "https://memu-eqij24gbwq-uc.a.run.app"
+      },
+      "conditions": [
+        {
+          "lastTransitionTime": "2026-03-28T01:41:21.879762Z",
+          "status": "True",
+          "type": "Ready"
+        },
+        {
+          "lastTransitionTime": "2026-03-28T01:41:08.420543Z",
+          "status": "True",
+          "type": "ConfigurationsReady"
+        },
+        {
+          "lastTransitionTime": "2026-03-28T01:41:21.830041Z",
+          "status": "True",
+          "type": "RoutesReady"
+        }
+      ],
+      "latestCreatedRevisionName": "memu-00020-2wm",
+      "latestReadyRevisionName": "memu-00020-2wm",
+      "observedGeneration": 20,
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100,
+          "revisionName": "memu-00020-2wm"
+        }
+      ],
+      "url": "https://memu-eqij24gbwq-uc.a.run.app"
+    }
+  },
+  {
+    "apiVersion": "serving.knative.dev/v1",
+    "kind": "Service",
+    "metadata": {
+      "annotations": {
+        "run.googleapis.com/client-name": "gcloud",
+        "run.googleapis.com/client-version": "541.0.0",
+        "run.googleapis.com/ingress": "all",
+        "run.googleapis.com/ingress-status": "all",
+        "run.googleapis.com/maxScale": "20",
+        "run.googleapis.com/operation-id": "0605ba93-d06f-47cf-9645-203e2269edbe",
+        "run.googleapis.com/urls": "[\"https://muninn-gateway-757330161781.us-central1.run.app\",\"https://muninn-gateway-eqij24gbwq-uc.a.run.app\"]",
+        "serving.knative.dev/creator": "arca-service-agent@arca-471022.iam.gserviceaccount.com",
+        "serving.knative.dev/lastModifier": "arca-service-agent@arca-471022.iam.gserviceaccount.com"
+      },
+      "creationTimestamp": "2026-03-15T11:33:46.742962Z",
+      "generation": 2,
+      "labels": {
+        "cloud.googleapis.com/location": "us-central1"
+      },
+      "name": "muninn-gateway",
+      "namespace": "757330161781",
+      "resourceVersion": "AAZNDrBGVRU",
+      "selfLink": "/apis/serving.knative.dev/v1/namespaces/757330161781/services/muninn-gateway",
+      "uid": "11154c4e-6a70-4787-9363-2a13e6606fa0"
+    },
+    "spec": {
+      "template": {
+        "metadata": {
+          "annotations": {
+            "autoscaling.knative.dev/maxScale": "20",
+            "run.googleapis.com/client-name": "gcloud",
+            "run.googleapis.com/client-version": "541.0.0",
+            "run.googleapis.com/startup-cpu-boost": "true"
+          },
+          "labels": {
+            "client.knative.dev/nonce": "rrkdfaudsc",
+            "run.googleapis.com/startupProbeType": "Default"
+          }
+        },
+        "spec": {
+          "containerConcurrency": 80,
+          "containers": [
+            {
+              "env": [
+                {
+                  "name": "MEMU_URL",
+                  "value": "https://memu-eqij24gbwq-uc.a.run.app"
+                },
+                {
+                  "name": "MUNINN_HOST",
+                  "value": "104.198.54.178"
+                },
+                {
+                  "name": "MUNINN_HTTP_PORT",
+                  "value": "8080"
+                }
+              ],
+              "image": "gcr.io/arca-471022/muninn-gateway:latest",
+              "ports": [
+                {
+                  "containerPort": 8080,
+                  "name": "http1"
+                }
+              ],
+              "resources": {
+                "limits": {
+                  "cpu": "1",
+                  "memory": "256Mi"
+                }
+              },
+              "startupProbe": {
+                "failureThreshold": 1,
+                "periodSeconds": 240,
+                "tcpSocket": {
+                  "port": 8080
+                },
+                "timeoutSeconds": 240
+              }
+            }
+          ],
+          "serviceAccountName": "757330161781-compute@developer.gserviceaccount.com",
+          "timeoutSeconds": 60
+        }
+      },
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100
+        }
+      ]
+    },
+    "status": {
+      "address": {
+        "url": "https://muninn-gateway-eqij24gbwq-uc.a.run.app"
+      },
+      "conditions": [
+        {
+          "lastTransitionTime": "2026-03-15T11:49:02.544149Z",
+          "status": "True",
+          "type": "Ready"
+        },
+        {
+          "lastTransitionTime": "2026-03-15T11:49:01.284174Z",
+          "status": "True",
+          "type": "ConfigurationsReady"
+        },
+        {
+          "lastTransitionTime": "2026-03-15T11:49:02.501201Z",
+          "status": "True",
+          "type": "RoutesReady"
+        }
+      ],
+      "latestCreatedRevisionName": "muninn-gateway-00002-ctg",
+      "latestReadyRevisionName": "muninn-gateway-00002-ctg",
+      "observedGeneration": 2,
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100,
+          "revisionName": "muninn-gateway-00002-ctg"
+        }
+      ],
+      "url": "https://muninn-gateway-eqij24gbwq-uc.a.run.app"
+    }
+  },
+  {
+    "apiVersion": "serving.knative.dev/v1",
+    "kind": "Service",
+    "metadata": {
+      "annotations": {
+        "run.googleapis.com/ingress": "all",
+        "run.googleapis.com/ingress-status": "all",
+        "run.googleapis.com/operation-id": "ce03f39c-b2bb-44f3-b3eb-62bb57838490",
+        "run.googleapis.com/urls": "[\"https://user-interaction-agent-757330161781.us-central1.run.app\",\"https://user-interaction-agent-eqij24gbwq-uc.a.run.app\"]",
+        "serving.knative.dev/creator": "arca-service-agent@arca-471022.iam.gserviceaccount.com",
+        "serving.knative.dev/lastModifier": "arca-service-agent@arca-471022.iam.gserviceaccount.com"
+      },
+      "creationTimestamp": "2025-10-31T20:57:23.274740Z",
+      "generation": 15,
+      "labels": {
+        "cloud.googleapis.com/location": "us-central1"
+      },
+      "name": "user-interaction-agent",
+      "namespace": "757330161781",
+      "resourceVersion": "AAZKYXqgBWk",
+      "selfLink": "/apis/serving.knative.dev/v1/namespaces/757330161781/services/user-interaction-agent",
+      "uid": "84805265-ff36-4167-b5eb-360f649a569a"
+    },
+    "spec": {
+      "template": {
+        "metadata": {
+          "annotations": {
+            "autoscaling.knative.dev/maxScale": "20",
+            "autoscaling.knative.dev/minScale": "0",
+            "run.googleapis.com/cpu-throttling": "true",
+            "run.googleapis.com/sessionAffinity": "false",
+            "run.googleapis.com/startup-cpu-boost": "true"
+          },
+          "labels": {
+            "client.knative.dev/nonce": "brzmtwykeq",
+            "run.googleapis.com/startupProbeType": "Default"
+          }
+        },
+        "spec": {
+          "containerConcurrency": 80,
+          "containers": [
+            {
+              "image": "us-docker.pkg.dev/cloudrun/container/hello",
+              "ports": [
+                {
+                  "containerPort": 8084,
+                  "name": "http1"
+                }
+              ],
+              "resources": {
+                "limits": {
+                  "cpu": "1000m",
+                  "memory": "512Mi"
+                }
+              },
+              "startupProbe": {
+                "failureThreshold": 1,
+                "periodSeconds": 240,
+                "tcpSocket": {
+                  "port": 8084
+                },
+                "timeoutSeconds": 240
+              }
+            }
+          ],
+          "serviceAccountName": "757330161781-compute@developer.gserviceaccount.com",
+          "timeoutSeconds": 300
+        }
+      },
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100
+        }
+      ]
+    },
+    "status": {
+      "address": {
+        "url": "https://user-interaction-agent-eqij24gbwq-uc.a.run.app"
+      },
+      "conditions": [
+        {
+          "lastTransitionTime": "2026-02-09T10:19:49.854569Z",
+          "status": "True",
+          "type": "Ready"
+        },
+        {
+          "lastTransitionTime": "2026-02-09T10:19:45.259515Z",
+          "status": "True",
+          "type": "ConfigurationsReady"
+        },
+        {
+          "lastTransitionTime": "2026-02-09T10:19:49.817249Z",
+          "status": "True",
+          "type": "RoutesReady"
+        }
+      ],
+      "latestCreatedRevisionName": "user-interaction-agent-00015-c2j",
+      "latestReadyRevisionName": "user-interaction-agent-00015-c2j",
+      "observedGeneration": 15,
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100,
+          "revisionName": "user-interaction-agent-00015-c2j"
+        }
+      ],
+      "url": "https://user-interaction-agent-eqij24gbwq-uc.a.run.app"
+    }
+  },
+  {
+    "apiVersion": "serving.knative.dev/v1",
+    "kind": "Service",
+    "metadata": {
+      "annotations": {
+        "run.googleapis.com/ingress": "all",
+        "run.googleapis.com/ingress-status": "all",
+        "run.googleapis.com/operation-id": "9fcf2fdb-c541-4401-9ccb-d94e1fa6e5e2",
+        "run.googleapis.com/urls": "[\"https://web-navigator-757330161781.us-central1.run.app\",\"https://web-navigator-eqij24gbwq-uc.a.run.app\"]",
+        "serving.knative.dev/creator": "dan.exall@gmail.com",
+        "serving.knative.dev/lastModifier": "arca-service-agent@arca-471022.iam.gserviceaccount.com"
+      },
+      "creationTimestamp": "2025-09-07T13:39:50.922866Z",
+      "generation": 5,
+      "labels": {
+        "cloud.googleapis.com/location": "us-central1"
+      },
+      "name": "web-navigator",
+      "namespace": "757330161781",
+      "resourceVersion": "AAZKYXrOR6g",
+      "selfLink": "/apis/serving.knative.dev/v1/namespaces/757330161781/services/web-navigator",
+      "uid": "7d7c8cb8-5a08-40fd-92a1-e644c1322a34"
+    },
+    "spec": {
+      "template": {
+        "metadata": {
+          "annotations": {
+            "autoscaling.knative.dev/maxScale": "20",
+            "autoscaling.knative.dev/minScale": "0",
+            "run.googleapis.com/cpu-throttling": "true",
+            "run.googleapis.com/sessionAffinity": "false",
+            "run.googleapis.com/startup-cpu-boost": "true"
+          },
+          "labels": {
+            "client.knative.dev/nonce": "unjkhjrtjk",
+            "run.googleapis.com/startupProbeType": "Default"
+          }
+        },
+        "spec": {
+          "containerConcurrency": 80,
+          "containers": [
+            {
+              "image": "us-docker.pkg.dev/cloudrun/container/hello",
+              "ports": [
+                {
+                  "containerPort": 8080,
+                  "name": "http1"
+                }
+              ],
+              "resources": {
+                "limits": {
+                  "cpu": "1000m",
+                  "memory": "512Mi"
+                }
+              },
+              "startupProbe": {
+                "failureThreshold": 1,
+                "periodSeconds": 240,
+                "tcpSocket": {
+                  "port": 8080
+                },
+                "timeoutSeconds": 240
+              }
+            }
+          ],
+          "serviceAccountName": "arca-service-agent@arca-471022.iam.gserviceaccount.com",
+          "timeoutSeconds": 300
+        }
+      },
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100
+        }
+      ]
+    },
+    "status": {
+      "address": {
+        "url": "https://web-navigator-eqij24gbwq-uc.a.run.app"
+      },
+      "conditions": [
+        {
+          "lastTransitionTime": "2026-02-09T10:19:52.886184Z",
+          "status": "True",
+          "type": "Ready"
+        },
+        {
+          "lastTransitionTime": "2026-02-09T10:19:45.303675Z",
+          "status": "True",
+          "type": "ConfigurationsReady"
+        },
+        {
+          "lastTransitionTime": "2026-02-09T10:19:52.850598Z",
+          "status": "True",
+          "type": "RoutesReady"
+        }
+      ],
+      "latestCreatedRevisionName": "web-navigator-00005-kl5",
+      "latestReadyRevisionName": "web-navigator-00005-kl5",
+      "observedGeneration": 5,
+      "traffic": [
+        {
+          "latestRevision": true,
+          "percent": 100,
+          "revisionName": "web-navigator-00005-kl5"
+        }
+      ],
+      "url": "https://web-navigator-eqij24gbwq-uc.a.run.app"
+    }
+  }
+]

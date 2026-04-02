@@ -504,9 +504,14 @@ class CoPawAgent(ToolGuardMixin, ReActAgent):
                                 "📡 [GCP_GATEWAY] Token retrieved from "
                                 "Credentials Server."
                             )
+                        else:
+                            logger.info(
+                                "📡 [GCP_GATEWAY] Local Credentials Server "
+                                "unreachable or invalid. Falling back to env."
+                            )
                 except Exception as auth_err:
-                    logger.warning(
-                        "📡 [GCP_GATEWAY] Local auth fetch failed: %s",
+                    logger.debug(
+                        "📡 [GCP_GATEWAY] Local fetch attempted: %s",
                         auth_err,
                     )
 
@@ -516,49 +521,59 @@ class CoPawAgent(ToolGuardMixin, ReActAgent):
 
             # --- GCP REQUEST STEP ---
             logger.info("📡 [GCP_GATEWAY] Firing POST request to GCP Gateway...")
-            # Set timeout to 35s to allow for Cloud Function budget (30s) + transit
-            async with httpx.AsyncClient(timeout=35.0) as client:
-                resp = await client.post(
-                    GCP_GATEWAY_URL,
-                    json={
-                        "query": query,
-                        "user_id": user_id,
-                        "max_results": max_results,
-                        "min_confidence": 0.12,  # Threshold for semantic relevance
-                    },
-                    headers=headers,
-                )
-                logger.info(f"📡 [GCP_GATEWAY] Raw Payload Returned: {resp.text}")
-
-                if resp.status_code != 200:
-                    logger.warning(
-                        "📡 [GCP_GATEWAY] Retrieval failed status: %s",
-                        resp.status_code,
+            try:
+                # Set timeout to 35s to allow for Cloud Function budget (30s) + transit
+                async with httpx.AsyncClient(timeout=35.0) as client:
+                    resp = await client.post(
+                        GCP_GATEWAY_URL,
+                        json={
+                            "query": query,
+                            "user_id": user_id,
+                            "max_results": max_results,
+                            "min_confidence": 0.12,  # Threshold for semantic relevance
+                        },
+                        headers=headers,
                     )
-                    return ""
+                    
+                    if resp.status_code != 200:
+                        logger.error(
+                            "❌ [GCP_GATEWAY] HTTP Error %s: %s",
+                            resp.status_code,
+                            resp.text
+                        )
+                        return ""
 
-                data = resp.json()
-                results = data.get("results", [])
-                if not results:
-                    return ""
+                    data = resp.json()
+                    results = data.get("results", [])
+                    if not results:
+                        logger.info("🔍 Proactive Memory: No matches found.")
+                        return ""
 
-                logger.info(
-                    "🔍 Proactive Memory: %d matches found.",
-                    len(results),
-                )
-                context_block = ["<system_context>", "PROACTIVE MEMORY:"]
-                for mem in results:
-                    content = mem.get("content", "")
-                    context_block.append(f"- {content}")
-                context_block.append("</system_context>")
+                    logger.info(
+                        "🔍 Proactive Memory: %d matches found.",
+                        len(results),
+                    )
+                    context_block = ["<system_context>", "PROACTIVE MEMORY:"]
+                    for mem in results:
+                        content = mem.get("content", "")
+                        context_block.append(f"- {content}")
+                    context_block.append("</system_context>")
 
-                return "\n".join(context_block)
+                    return "\n".join(context_block)
+
+            except httpx.HTTPError as e:
+                logger.error("❌ [GCP_GATEWAY] Network/HTTP Error: %s", e)
+                if hasattr(e, 'response') and e.response:
+                    logger.error("❌ [GCP_GATEWAY] Response Payload: %s", e.response.text)
+                return ""
+            except Exception as e:
+                logger.error("❌ [GCP_GATEWAY] Unexpected Error Type: %s", type(e).__name__)
+                logger.error("❌ [GCP_GATEWAY] Traceback: %s", traceback.format_exc())
+                return ""
         except Exception as e:
-            logger.error(
-                "❌ Proactive Memory Hook Error Type: %s",
-                type(e).__name__,
-            )
-            logger.error("❌ Traceback: %s", traceback.format_exc())
+            logger.error(f"📡 [GCP_GATEWAY] Memory Orchestrator request failed: {e}")
+            if hasattr(e, 'response') and e.response is not None:
+                logger.error(f"📡 [GCP_GATEWAY] Status: {e.response.status_code}, Body: {e.response.text}")
             return ""
 
     async def reply(

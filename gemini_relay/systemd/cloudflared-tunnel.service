@@ -1,0 +1,24 @@
+[Unit]
+Description=Cloudflare Tunnel for Gemini Relay
+Documentation=https://developers.cloudflare.com/cloudflare-one/connections/connect-apps
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/root
+Environment="CLOUDFLARED_TUNNEL_TOKEN=${CLOUDFLARED_TUNNEL_TOKEN:-}"
+ExecStart=/usr/local/bin/cloudflared tunnel --no-autoupdate run
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cloudflared-tunnel
+
+# Security hardening
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

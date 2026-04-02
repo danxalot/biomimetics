@@ -1,0 +1,21 @@
+{
+  "id": "google_ai_studio",
+  "name": "Google AI Studio",
+  "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+  "api_key": "[REDACTED]",
+  "chat_model": "OpenAIChatModel",
+  "models": [],
+  "extra_models": [
+    {
+      "id": "gemini-3.1-flash-lite-preview",
+      "name": "Gemini Flash Lite"
+    }
+  ],
+  "api_key_prefix": "",
+  "is_local": false,
+  "freeze_url": false,
+  "require_api_key": true,
+  "is_custom": true,
+  "support_model_discovery": false,
+  "generate_kwargs": {}
+}

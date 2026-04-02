@@ -1,0 +1,125 @@
+{
+  "mcp_servers": {
+    "computer_use": {
+      "command": "python3",
+      "args": ["/Users/danexall/computer-use-mcp.py"],
+      "transport": "stdio",
+      "description": "Local Computer Use MCP (screen control)",
+      "restricted_tools": [
+        "take_screenshot",
+        "move_mouse",
+        "click",
+        "type_text",
+        "get_screen_info",
+        "press_key",
+        "scroll"
+      ],
+      "require_approval_for": [
+        "click",
+        "type_text",
+        "press_key"
+      ],
+      "vision_routing": {
+        "enabled": true,
+        "local_url": "http://localhost:11435/v1/chat/completions",
+        "local_model": "qwen2.5-vl-7b-instruct",
+        "auto_analyze_screenshots": true
+      }
+    },
+    "puppeteer": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer"],
+      "transport": "stdio",
+      "description": "Puppeteer Browser Automation MCP",
+      "restricted_tools": [
+        "puppeteer_navigate",
+        "puppeteer_screenshot",
+        "puppeteer_click",
+        "puppeteer_type",
+        "puppeteer_select",
+        "puppeteer_evaluate",
+        "puppeteer_get_content"
+      ],
+      "require_approval_for": [
+        "puppeteer_click",
+        "puppeteer_type",
+        "puppeteer_evaluate"
+      ]
+    },
+    "github": {
+      "url": "http://github-mcp-server-xxxx.westus2.azurecontainer.io:8080/mcp",
+      "transport": "http",
+      "headers": {
+        "X-MCP-Tools": "issues,pull_requests"
+      },
+      "description": "GitHub Issues and PRs (Azure ACI)",
+      "restricted_tools": [
+        "github.create_issue",
+        "github.update_issue",
+        "github.search_issues",
+        "github.get_issue",
+        "github.create_pull_request",
+        "github.list_pull_requests",
+        "github.get_pull_request"
+      ]
+    },
+    "serena": {
+      "command": "uvx",
+      "args": ["mcp-server-serena"],
+      "transport": "stdio",
+      "cwd": "${PROJECT_ROOT}",
+      "description": "Serena Code Intelligence MCP"
+    }
+  },
+  "vision_routing": {
+    "enabled": true,
+    "local_vision_url": "http://localhost:11435/v1/chat/completions",
+    "local_vision_model": "qwen2.5-vl-7b-instruct",
+    "cloud_model": "minimax-m2.5",
+    "auto_route_screenshots": true,
+    "token_threshold": 1000,
+    "ui_element_detection": {
+      "enabled": true,
+      "prompt_template": "Detect UI elements and return click coordinates"
+    },
+    "action_planning": {
+      "enabled": true,
+      "max_steps": 10
+    }
+  },
+  "tool_guard": {
+    "enabled": true,
+    "approval_channels": {
+      "notion": {
+        "enabled": true,
+        "database_id": "${NOTION_APPROVAL_DB_ID}"
+      }
+    },
+    "high_risk_patterns": [
+      "click",
+      "type_text",
+      "press_key",
+      "puppeteer_click",
+      "puppeteer_type",
+      "git push",
+      "rm -rf"
+    ],
+    "auto_approve_patterns": [
+      "take_screenshot",
+      "get_screen_info",
+      "puppeteer_navigate",
+      "puppeteer_get_content",
+      "git status"
+    ]
+  },
+  "memory_integration": {
+    "gateway_url": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+    "auto_inject": true,
+    "max_tokens": 2000,
+    "vision_memory": {
+      "enabled": true,
+      "store_screenshot_hashes": true,
+      "store_ui_elements": true
+    }
+  }
+}

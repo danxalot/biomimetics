@@ -1,0 +1,16 @@
+{
+  "id": "zhipu_native",
+  "name": "Zhipu AI (Native)",
+  "base_url": "https://open.bigmodel.cn/api/paas/v4",
+  "api_key": "zhipu_api_key",
+  "chat_model": "OpenAIChatModel",
+  "models": [],
+  "extra_models": [],
+  "api_key_prefix": "",
+  "is_local": false,
+  "freeze_url": false,
+  "require_api_key": true,
+  "is_custom": true,
+  "support_model_discovery": false,
+  "generate_kwargs": {}
+}

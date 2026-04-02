@@ -36,7 +36,7 @@ The audio pipeline is now protected against spectral noise, feedback loops, and 
 | **Config File** | `~/.copaw/config.json` |
 | **Voice Provider** | `gemini_live` |
 | **Voice Model** | `gemini-2.5-flash-native-audio-preview-12-2025` |
-| **API Key** | `AIzaSyDfnNa-IJpPZGB0Jfc4QqvVK_jIJXNWtpY` |
+| **API Key** | `[REDACTED]` |
 | **TTS Provider** | `google` |
 | **STT Provider** | `deepgram` |
 | **Language** | `en-US` |
@@ -63,7 +63,7 @@ The audio pipeline is now protected against spectral noise, feedback loops, and 
   "voice": {
     "voice_provider": "gemini_live",
     "voice_model": "gemini-2.5-flash-native-audio",
-    "api_key": "AIzaSyDfnNa-IJpPZGB0Jfc4QqvVK_jIJXNWtpY"
+    "api_key": "[REDACTED]"
   },
   "execution": {
     "execution_provider": "openai-compatible",
@@ -455,7 +455,7 @@ GCP_GATEWAY_URL=https://us-central1-arca-471022.cloudfunctions.net/memory-orches
 GITHUB_TOKEN=[GITHUB_TOKEN_REDACTED]
 
 # Gemini
-GEMINI_API_KEY=AIzaSyDfnNa-IJpPZGB0Jfc4QqvVK_jIJXNWtpY
+GEMINI_API_KEY=[REDACTED]
 
 # Koyeb
 KOYEB_TOKEN=ov7hvgjlgi7m3yqil12aufkgoeejj2gqbtnkq8q7voz29m011nphncevyuqbva4g

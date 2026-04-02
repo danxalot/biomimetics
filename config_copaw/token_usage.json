@@ -1,0 +1,52 @@
+{
+  "2026-03-18": {
+    "opencode:minimax-m2.5-free": {
+      "provider_id": "opencode",
+      "model_name": "minimax-m2.5-free",
+      "prompt_tokens": 33224,
+      "completion_tokens": 411,
+      "call_count": 5
+    },
+    "google:gemini-3.1-flash-lite-preview": {
+      "provider_id": "google",
+      "model_name": "gemini-3.1-flash-lite-preview",
+      "prompt_tokens": 37360,
+      "completion_tokens": 261,
+      "call_count": 5
+    }
+  },
+  "2026-03-19": {
+    "google:gemini-3.1-flash-lite-preview": {
+      "provider_id": "google",
+      "model_name": "gemini-3.1-flash-lite-preview",
+      "prompt_tokens": 115129,
+      "completion_tokens": 502,
+      "call_count": 8
+    }
+  },
+  "2026-03-27": {
+    "google_ai_studio:gemini-flash-lite-latest": {
+      "provider_id": "google_ai_studio",
+      "model_name": "gemini-flash-lite-latest",
+      "prompt_tokens": 159640,
+      "completion_tokens": 1655,
+      "call_count": 5
+    }
+  },
+  "2026-03-28": {
+    "google_ai_studio:gemini-flash-lite-latest": {
+      "provider_id": "google_ai_studio",
+      "model_name": "gemini-flash-lite-latest",
+      "prompt_tokens": 1057764,
+      "completion_tokens": 6106,
+      "call_count": 32
+    },
+    "google_ai_studio:gemini-3.1-flash-lite-preview": {
+      "provider_id": "google_ai_studio",
+      "model_name": "gemini-3.1-flash-lite-preview",
+      "prompt_tokens": 1069045,
+      "completion_tokens": 3722,
+      "call_count": 51
+    }
+  }
+}

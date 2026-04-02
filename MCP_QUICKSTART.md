@@ -2,7 +2,7 @@
 
 **Date**: 2026-03-19  
 **Status**: Configuration Complete - GitHub MCP Redeployment Required  
-**Projects**: Biomimetics + ARCA
+**Projects**: Biomimetics + BiOS
 
 ---
 
@@ -15,7 +15,7 @@
 | **Notion MCP** | ✅ Ready | None |
 | **GitHub MCP** | ⚠️ Was Deployed | **Redeploy required** |
 | **GCP Gateway** | ✅ Active | None |
-| **ARCA Databases** | ⚠️ Need Verification | Check existing DBs |
+| **BiOS Databases** | ⚠️ Need Verification | Check existing DBs |
 
 ---
 
@@ -65,11 +65,11 @@ After deployment, update the GitHub MCP URL in:
 
 ---
 
-### 2. Create ARCA Notion Databases (10 minutes)
+### 2. Create BiOS Notion Databases (10 minutes)
 
-Create the following databases in Notion for ARCA project tracking:
+Create the following databases in Notion for BiOS project tracking:
 
-#### ARCA Projects Database
+#### BiOS Projects Database
 
 1. Open Notion → Create new database
 2. Add properties:
@@ -83,13 +83,13 @@ Create the following databases in Notion for ARCA project tracking:
    - `Due Date` (Date)
 3. Copy database ID from URL
 
-#### ARCA Tasks Database
+#### BiOS Tasks Database
 
 1. Create new database
 2. Add properties:
    - `Name` (Title)
    - `Status` (Status: Not Started, In Progress, Review, Done)
-   - `Project` (Relation → ARCA Projects)
+   - `Project` (Relation → BiOS Projects)
    - `Assignee` (People)
    - `Priority` (Select: Critical, High, Medium, Low)
    - `Description` (Text)
@@ -105,16 +105,16 @@ Create the following databases in Notion for ARCA project tracking:
 
 ---
 
-### 3. Update Configuration with ARCA Database IDs (5 minutes)
+### 3. Update Configuration with BiOS Database IDs (5 minutes)
 
 Update `cloudflare/wrangler.toml`:
 
 ```toml
 [vars]
-# ARCA Project vars (replace with your IDs)
-ARCA_PROJECTS_DB_ID = "your-arca-projects-db-id"
-ARCA_TASKS_DB_ID = "your-arca-tasks-db-id"
-ARCA_MEMORY_DB_ID = "your-arca-memory-db-id"
+# BiOS Project vars (replace with your IDs)
+BiOS_PROJECTS_DB_ID = "your-arca-projects-db-id"
+BiOS_TASKS_DB_ID = "your-arca-tasks-db-id"
+BiOS_MEMORY_DB_ID = "your-arca-memory-db-id"
 ```
 
 Update `~/.zed/settings.json`:
@@ -122,7 +122,7 @@ Update `~/.zed/settings.json`:
 ```json
 {
   "agent_servers": {
-    "ARCA_PM": {
+    "BiOS_PM": {
       "type": "custom",
       "command": "python3",
       "args": ["~/.copaw/arca_orchestrator.py"],
@@ -305,7 +305,7 @@ cat ~/.gcp/google_drive_credentials.json | jq .
 **Location**: `~/biomimetics/cloudflare/wrangler.toml`
 
 **Contents**:
-- Database IDs (Biomimetics + ARCA)
+- Database IDs (Biomimetics + BiOS)
 - GCP Gateway URL
 - GitHub token (for worker)
 - Other environment variables
@@ -317,7 +317,7 @@ cat ~/.gcp/google_drive_credentials.json | jq .
 ### After Deployment
 
 1. ✅ GitHub MCP deployed and tested
-2. ✅ ARCA Notion databases created
+2. ✅ BiOS Notion databases created
 3. ✅ All configs updated with correct IDs
 4. ✅ Integration tests passing
 
@@ -328,9 +328,9 @@ cat ~/.gcp/google_drive_credentials.json | jq .
    - Add Let's Encrypt certificate
    - Update configs to use HTTPS
 
-2. **Create ARCA-specific agent**
+2. **Create BiOS-specific agent**
    - Copy `bios_orchestrator.py`
-   - Customize for ARCA workflows
+   - Customize for BiOS workflows
    - Configure in Zed/Antigravity
 
 3. **Setup cross-project sync**
@@ -345,7 +345,7 @@ cat ~/.gcp/google_drive_credentials.json | jq .
 | Document | Purpose |
 |----------|---------|
 | `docs/MCP_INTEGRATION_STATUS.md` | Detailed status report |
-| `docs/ARCA_MCP_INTEGRATION.md` | ARCA project integration guide |
+| `docs/BiOS_MCP_INTEGRATION.md` | BiOS project integration guide |
 | `docs/MCP_INTEGRATION.md` | General MCP setup guide |
 | `azure/GITHUB_MCP_KEYVAULT_INTEGRATION.md` | GitHub MCP deployment |
 | `docs/GITHUB_MCP_SSE_DEPLOYMENT.md` | SSE deployment reference |
@@ -365,7 +365,7 @@ cat ~/.gcp/google_drive_credentials.json | jq .
 
 ## Contact & Support
 
-- **Project**: Biomimetics / ARCA
+- **Project**: Biomimetics / BiOS
 - **Repository**: https://github.com/danxalot/biomimetics
 - **Documentation**: `docs/`
 - **Identity**: Claws <claws@arca-vsa.tech>

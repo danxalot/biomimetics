@@ -1,0 +1,12 @@
+{
+  "id": "google_ai_studio",
+  "name": "Google AI Studio",
+  "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+  "api_key_env": "GOOGLE_API_KEY",
+  "chat_model": "OpenAIChatModel",
+  "is_local": false,
+  "models": [
+    { "id": "gemini_flash_lite_latest", "name": "Gemini Flash Lite Latest", "context_window": 1048576, "supports_function_calling": true, "supports_vision": true },
+    { "id": "gemma-3-12b", "name": "Gemma 3 12B", "context_window": 32768, "supports_function_calling": true, "supports_vision": false }
+  ]
+}

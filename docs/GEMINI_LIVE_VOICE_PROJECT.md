@@ -4,8 +4,8 @@
 
 **Name**: ARCA Live Voice Interface (Gemini Live API Implementation)
 **Location**: `~/biomimetics/gemini-live-voice`
-**Status**: ✅ Operational - Ready for deployment
-**Version**: 1.0.0
+**Status**: ✅ Operational (Restored 2026-03-30)
+**Version**: 1.1.0 (Gemini 3.1 Protocol Reconciliation)
 
 ---
 
@@ -384,6 +384,6 @@ npm run deploy
 
 ---
 
-**Last Updated**: 2026-03-18
+**Last Updated**: 2026-03-30
 **Document Owner**: Serena (Biomimetics Orchestrator)
-**Next Review**: 2026-03-25
+**Next Review**: 2026-04-06

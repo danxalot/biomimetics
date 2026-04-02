@@ -1,0 +1,16 @@
+{
+  "id": "opencode_go",
+  "name": "Opencode Go",
+  "base_url": "https://api.opencode.go/v1",
+  "api_key": "opencode_go_api",
+  "chat_model": "OpenAIChatModel",
+  "models": [],
+  "extra_models": [],
+  "api_key_prefix": "",
+  "is_local": false,
+  "freeze_url": false,
+  "require_api_key": true,
+  "is_custom": true,
+  "support_model_discovery": false,
+  "generate_kwargs": {}
+}

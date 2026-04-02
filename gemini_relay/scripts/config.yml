@@ -1,0 +1,63 @@
+# Cloudflare Tunnel Configuration for Gemini Relay
+# 
+# Usage:
+#   1. Create tunnel: cloudflared tunnel create gemini-relay
+#   2. Copy tunnel ID to tunnel_id below
+#   3. Run: cloudflared tunnel run gemini-relay
+#
+# Documentation: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/configuration/
+
+# Tunnel ID (replace with your actual tunnel ID)
+tunnel: gemini-relay
+# tunnel: YOUR_TUNNEL_ID_HERE
+
+# Credentials file (created automatically by cloudflared tunnel create)
+credentials-file: /root/.cloudflared/gemini-relay.json
+
+# Logging
+logfile: /var/log/cloudflared/gemini-relay.log
+loglevel: info
+
+# Ingress rules - route traffic to local WebSocket relay
+ingress:
+  # WebSocket endpoint
+  - hostname: gemini.your-domain.com
+    service: http://localhost:8765
+    path: /ws/live
+  
+  # Health check endpoint
+  - hostname: gemini.your-domain.com
+    service: http://localhost:8765
+    path: /health
+  
+  # Metrics endpoint
+  - hostname: gemini.your-domain.com
+    service: http://localhost:8765
+    path: /metrics
+  
+  # Default - return 404 for unmatched routes
+  - service: http_status:404
+
+# Origin server configuration
+originRequest:
+  # WebSocket-specific settings
+  noTLSVerify: false
+  
+  # Connection timeouts
+  connectTimeout: 30s
+  tcpKeepAlive: 30s
+  
+  # HTTP settings
+  httpHostHeader: gemini.your-domain.com
+  
+  # Keep-alive for WebSocket connections
+  keepAliveConnections: 100
+  keepAliveTimeout: 300s
+
+# Cloudflare Edge configuration
+warp-routing:
+  enabled: true
+
+# Disable auto-updates (managed by system package manager)
+autoupdate: false
+autoupdate_freq: 0

@@ -1,0 +1,33 @@
+[Unit]
+Description=Gemini Live WebSocket Relay
+Documentation=https://github.com/your-repo/gemini_relay
+After=network.target cloudflared.service
+Wants=cloudflared.service
+
+[Service]
+Type=simple
+User=gemini
+Group=gemini
+WorkingDirectory=/opt/gemini_relay
+Environment="PATH=/opt/gemini_relay/venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="PYTHONUNBUFFERED=1"
+EnvironmentFile=-/etc/gemini_relay.env
+ExecStart=/opt/gemini_relay/venv/bin/python /opt/gemini_relay/main.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=gemini-relay
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/root/.gemini_relay /opt/gemini_relay
+
+# Resource limits for micro VPS (0.1 vCPU / 512MB RAM)
+MemoryLimit=256M
+CPUQuota=50%
+
+[Install]
+WantedBy=multi-user.target

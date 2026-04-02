@@ -1,0 +1,145 @@
+{
+  "chats": [
+    {
+      "channel": "console",
+      "created_at": "2026-03-04T06:01:51.840882Z",
+      "id": "6d44e826-d244-4f96-a567-3facad1579e2",
+      "meta": {},
+      "name": "hi claws :",
+      "session_id": "1772604111340",
+      "updated_at": "2026-03-13T20:01:14.176561",
+      "user_id": "default"
+    },
+    {
+      "channel": "console",
+      "created_at": "2026-03-13T20:23:50.989657Z",
+      "id": "027dcc88-2a49-4741-a3fa-e97aa7fa74fc",
+      "meta": {},
+      "name": "hi claws, ",
+      "session_id": "1773433413864",
+      "updated_at": "2026-03-28T14:29:19.663158Z",
+      "user_id": "default"
+    },
+    {
+      "channel": "console",
+      "created_at": "2026-03-28T14:48:08.966568Z",
+      "id": "5617170e-ba1d-40f8-959d-a6a61e137e68",
+      "meta": {},
+      "name": "Hi Claws. ",
+      "session_id": "1774709285150",
+      "updated_at": "2026-03-28T15:24:13.379366Z",
+      "user_id": "default"
+    },
+    {
+      "channel": "console",
+      "created_at": "2026-03-28T15:27:38.219133Z",
+      "id": "4e711e6e-ca2e-4db5-abc4-eb6bd304fd7b",
+      "meta": {},
+      "name": "hey claws,",
+      "session_id": "1774711620842",
+      "updated_at": "2026-03-28T15:48:59.927777Z",
+      "user_id": "default"
+    },
+    {
+      "channel": "console",
+      "created_at": "2026-03-28T15:54:59.447433Z",
+      "id": "f289553e-fb71-43e2-ad6c-2d75438a1c5e",
+      "meta": {},
+      "name": "\"Hi Claws.",
+      "session_id": "1774713269118",
+      "updated_at": "2026-03-28T15:56:28.901163Z",
+      "user_id": "default"
+    },
+    {
+      "channel": "console",
+      "created_at": "2026-03-28T15:57:54.168678Z",
+      "id": "bd487f6e-b922-481f-b2ba-d803fb108fe4",
+      "meta": {},
+      "name": "claws, don",
+      "session_id": "1774713468920",
+      "updated_at": "2026-03-28T15:58:19.026918Z",
+      "user_id": "default"
+    },
+    {
+      "channel": "console",
+      "created_at": "2026-03-28T16:11:59.280513Z",
+      "id": "808b9f00-d214-4ed6-b7d5-99ba893b259d",
+      "meta": {},
+      "name": "hey claws ",
+      "session_id": "1774714130822",
+      "updated_at": "2026-03-28T16:12:08.673231Z",
+      "user_id": "default"
+    },
+    {
+      "channel": "console",
+      "created_at": "2026-03-28T16:17:01.985016Z",
+      "id": "6086372c-ca4b-45e8-9a6b-37221bb8f5c6",
+      "meta": {},
+      "name": "hey claws ",
+      "session_id": "1774714617147",
+      "updated_at": "2026-03-28T16:22:51.896082Z",
+      "user_id": "default"
+    },
+    {
+      "channel": "console",
+      "created_at": "2026-03-28T16:33:28.157764Z",
+      "id": "c274dedc-4c55-4bde-a857-8776aec62db3",
+      "meta": {},
+      "name": "hey claws ",
+      "session_id": "1774715604381",
+      "updated_at": "2026-03-28T16:37:24.878688Z",
+      "user_id": "default"
+    },
+    {
+      "channel": "console",
+      "created_at": "2026-03-28T17:01:50.406796Z",
+      "id": "2318fa26-b208-41cf-8d34-9082290a2d6d",
+      "meta": {},
+      "name": "hey claws ",
+      "session_id": "1774717290260",
+      "updated_at": "2026-03-28T17:02:10.073667Z",
+      "user_id": "default"
+    },
+    {
+      "channel": "console",
+      "created_at": "2026-03-28T18:05:25.780602Z",
+      "id": "d562c057-eda2-41cb-9f0b-8f73fe7ee628",
+      "meta": {},
+      "name": "hey claws ",
+      "session_id": "1774721121215",
+      "updated_at": "2026-03-28T18:05:40.214978Z",
+      "user_id": "default"
+    },
+    {
+      "channel": "console",
+      "created_at": "2026-03-28T18:26:48.104287Z",
+      "id": "4cbf91bb-df2d-4f02-a57c-9e56fba0be25",
+      "meta": {},
+      "name": "routing_te",
+      "session_id": "1774722372276",
+      "updated_at": "2026-03-28T18:27:48.621092Z",
+      "user_id": "default"
+    },
+    {
+      "channel": "console",
+      "created_at": "2026-03-28T19:14:15.007483Z",
+      "id": "18c14c90-80cb-41ae-be3c-aefbc5a7787c",
+      "meta": {},
+      "name": "routing_te",
+      "session_id": "1774725251284",
+      "updated_at": "2026-03-28T23:19:37.109017Z",
+      "user_id": "default"
+    },
+    {
+      "channel": "voice",
+      "created_at": "2026-03-29T22:56:13.056967Z",
+      "id": "d8c898ab-4f4b-41b8-9933-13c31f55cba4",
+      "meta": {},
+      "name": "Hey Gemini",
+      "session_id": "vultr_voice_session",
+      "updated_at": "2026-03-30T07:37:31.187904Z",
+      "user_id": "terminal_user"
+    }
+  ],
+  "version": 1
+}

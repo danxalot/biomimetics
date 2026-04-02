@@ -1,0 +1,201 @@
+-- Journal begins at Mon 2026-03-23 20:19:46 UTC, ends at Wed 2026-04-01 23:41:27 UTC. --
+Apr 01 06:24:32 bios-gemini-relay python3[64447]:   File "/opt/gemini_relay/main.py", line 338, in _gemini_to_client
+Apr 01 06:24:32 bios-gemini-relay python3[64447]:     async for message in self.gemini_ws:
+Apr 01 06:24:32 bios-gemini-relay python3[64447]:   File "/opt/gemini_relay/venv/lib/python3.9/site-packages/websockets/asyncio/connection.py", line 242, in __aiter__
+Apr 01 06:24:32 bios-gemini-relay python3[64447]:     yield await self.recv()
+Apr 01 06:24:32 bios-gemini-relay python3[64447]:   File "/opt/gemini_relay/venv/lib/python3.9/site-packages/websockets/asyncio/connection.py", line 322, in recv
+Apr 01 06:24:32 bios-gemini-relay python3[64447]:     raise self.protocol.close_exc from self.recv_exc
+Apr 01 06:24:32 bios-gemini-relay python3[64447]: websockets.exceptions.ConnectionClosedError: received 1007 (invalid frame payload data) realtime_input.media_chunks is deprecated. Use audio, video, or text instead.; then sent 1007 (invalid frame payload data) realtime_input.media_chunks is deprecated. Use audio, video, or text instead.
+Apr 01 06:24:32 bios-gemini-relay python3[64447]: 2026-04-01 06:24:32,828 [ERROR] ✗ Failed to relay to Gemini: received 1007 (invalid frame payload data) realtime_input.media_chunks is deprecated. Use audio, video, or text instead.; then sent 1007 (invalid frame payload data) realtime_input.media_chunks is deprecated. Use audio, video, or text instead.
+Apr 01 06:24:32 bios-gemini-relay python3[64447]: 2026-04-01 06:24:32,829 [ERROR] Traceback (most recent call last):
+Apr 01 06:24:32 bios-gemini-relay python3[64447]:   File "/opt/gemini_relay/main.py", line 323, in _client_to_gemini
+Apr 01 06:24:32 bios-gemini-relay python3[64447]:     await self.gemini_ws.send(message)
+Apr 01 06:24:32 bios-gemini-relay python3[64447]:   File "/opt/gemini_relay/venv/lib/python3.9/site-packages/websockets/asyncio/connection.py", line 476, in send
+Apr 01 06:24:32 bios-gemini-relay python3[64447]:     async with self.send_context():
+Apr 01 06:24:32 bios-gemini-relay python3[64447]:   File "/usr/lib/python3.9/contextlib.py", line 175, in __aenter__
+Apr 01 06:24:32 bios-gemini-relay python3[64447]:     return await self.gen.__anext__()
+Apr 01 06:24:32 bios-gemini-relay python3[64447]:   File "/opt/gemini_relay/venv/lib/python3.9/site-packages/websockets/asyncio/connection.py", line 957, in send_context
+Apr 01 06:24:32 bios-gemini-relay python3[64447]:     raise self.protocol.close_exc from original_exc
+Apr 01 06:24:32 bios-gemini-relay python3[64447]: websockets.exceptions.ConnectionClosedError: received 1007 (invalid frame payload data) realtime_input.media_chunks is deprecated. Use audio, video, or text instead.; then sent 1007 (invalid frame payload data) realtime_input.media_chunks is deprecated. Use audio, video, or text instead.
+Apr 01 06:24:32 bios-gemini-relay python3[64447]: 2026-04-01 06:24:32,829 [INFO] 🏁 Client->Gemini task finished (session: session_20260401_062431_800357)
+Apr 01 06:24:32 bios-gemini-relay python3[64447]: 2026-04-01 06:24:32,830 [INFO] 🏁 Gemini->Client task finished (session: session_20260401_062431_800357)
+Apr 01 06:24:32 bios-gemini-relay python3[64447]: 2026-04-01 06:24:32,830 [INFO] ✓ Session cleanup complete: session_20260401_062431_800357 (messages: 3)
+Apr 01 06:24:32 bios-gemini-relay python3[64447]: INFO:     connection closed
+Apr 01 06:24:35 bios-gemini-relay python3[64447]: INFO:     100.117.154.85:63161 - "WebSocket /ws/live" [accepted]
+Apr 01 06:24:35 bios-gemini-relay python3[64447]: 2026-04-01 06:24:35,216 [INFO] 🔌 Client connected: session_20260401_062435_216194
+Apr 01 06:24:35 bios-gemini-relay python3[64447]: INFO:     connection open
+Apr 01 06:24:35 bios-gemini-relay python3[64447]: 2026-04-01 06:24:35,296 [INFO] ✓ Connected to Gemini Live API (session: session_20260401_062435_216194)
+Apr 01 06:24:35 bios-gemini-relay python3[64447]: 2026-04-01 06:24:35,296 [INFO] 📝 Memory spooler session started: session_20260401_062435_216194
+Apr 01 06:24:35 bios-gemini-relay python3[64447]: 2026-04-01 06:24:35,594 [INFO] ⬅ Gemini message keys: ['setupComplete']
+Apr 01 06:24:41 bios-gemini-relay python3[64447]: 2026-04-01 06:24:41,837 [ERROR] ✗ Gemini->Client error: received 1007 (invalid frame payload data) realtime_input.media_chunks is deprecated. Use audio, video, or text instead.; then sent 1007 (invalid frame payload data) realtime_input.media_chunks is deprecated. Use audio, video, or text instead.
+Apr 01 06:24:41 bios-gemini-relay python3[64447]: 2026-04-01 06:24:41,838 [ERROR] Traceback (most recent call last):
+Apr 01 06:24:41 bios-gemini-relay python3[64447]:   File "/opt/gemini_relay/main.py", line 338, in _gemini_to_client
+Apr 01 06:24:41 bios-gemini-relay python3[64447]:     async for message in self.gemini_ws:
+Apr 01 06:24:41 bios-gemini-relay python3[64447]:   File "/opt/gemini_relay/venv/lib/python3.9/site-packages/websockets/asyncio/connection.py", line 242, in __aiter__
+Apr 01 06:24:41 bios-gemini-relay python3[64447]:     yield await self.recv()
+Apr 01 06:24:41 bios-gemini-relay python3[64447]:   File "/opt/gemini_relay/venv/lib/python3.9/site-packages/websockets/asyncio/connection.py", line 322, in recv
+Apr 01 06:24:41 bios-gemini-relay python3[64447]:     raise self.protocol.close_exc from self.recv_exc
+Apr 01 06:24:41 bios-gemini-relay python3[64447]: websockets.exceptions.ConnectionClosedError: received 1007 (invalid frame payload data) realtime_input.media_chunks is deprecated. Use audio, video, or text instead.; then sent 1007 (invalid frame payload data) realtime_input.media_chunks is deprecated. Use audio, video, or text instead.
+Apr 01 06:24:41 bios-gemini-relay python3[64447]: 2026-04-01 06:24:41,839 [INFO] 🏁 Gemini->Client task finished (session: session_20260401_062435_216194)
+Apr 01 06:24:41 bios-gemini-relay python3[64447]: 2026-04-01 06:24:41,840 [INFO] ✓ Session cleanup complete: session_20260401_062435_216194 (messages: 4)
+Apr 01 06:24:41 bios-gemini-relay python3[64447]: INFO:     connection closed
+Apr 01 06:24:44 bios-gemini-relay python3[64447]: INFO:     100.117.154.85:63164 - "WebSocket /ws/live" [accepted]
+Apr 01 06:24:44 bios-gemini-relay python3[64447]: 2026-04-01 06:24:44,227 [INFO] 🔌 Client connected: session_20260401_062444_227840
+Apr 01 06:24:44 bios-gemini-relay python3[64447]: INFO:     connection open
+Apr 01 06:24:44 bios-gemini-relay python3[64447]: 2026-04-01 06:24:44,306 [INFO] ✓ Connected to Gemini Live API (session: session_20260401_062444_227840)
+Apr 01 06:24:44 bios-gemini-relay python3[64447]: 2026-04-01 06:24:44,307 [INFO] 📝 Memory spooler session started: session_20260401_062444_227840
+Apr 01 06:24:44 bios-gemini-relay python3[64447]: 2026-04-01 06:24:44,605 [INFO] ⬅ Gemini message keys: ['setupComplete']
+Apr 01 06:24:45 bios-gemini-relay python3[64447]: 2026-04-01 06:24:45,394 [ERROR] ✗ Gemini->Client error: received 1007 (invalid frame payload data) realtime_input.media_chunks is deprecated. Use audio, video, or text instead.; then sent 1007 (invalid frame payload data) realtime_input.media_chunks is deprecated. Use audio, video, or text instead.
+Apr 01 06:24:45 bios-gemini-relay python3[64447]: 2026-04-01 06:24:45,395 [ERROR] Traceback (most recent call last):
+Apr 01 06:24:45 bios-gemini-relay python3[64447]:   File "/opt/gemini_relay/main.py", line 338, in _gemini_to_client
+Apr 01 06:24:45 bios-gemini-relay python3[64447]:     async for message in self.gemini_ws:
+Apr 01 06:24:45 bios-gemini-relay python3[64447]:   File "/opt/gemini_relay/venv/lib/python3.9/site-packages/websockets/asyncio/connection.py", line 242, in __aiter__
+Apr 01 06:24:45 bios-gemini-relay python3[64447]:     yield await self.recv()
+Apr 01 06:24:45 bios-gemini-relay python3[64447]:   File "/opt/gemini_relay/venv/lib/python3.9/site-packages/websockets/asyncio/connection.py", line 322, in recv
+Apr 01 06:24:45 bios-gemini-relay python3[64447]:     raise self.protocol.close_exc from self.recv_exc
+Apr 01 06:24:45 bios-gemini-relay python3[64447]: websockets.exceptions.ConnectionClosedError: received 1007 (invalid frame payload data) realtime_input.media_chunks is deprecated. Use audio, video, or text instead.; then sent 1007 (invalid frame payload data) realtime_input.media_chunks is deprecated. Use audio, video, or text instead.
+Apr 01 06:24:45 bios-gemini-relay python3[64447]: 2026-04-01 06:24:45,396 [ERROR] ✗ Failed to relay to Gemini: received 1007 (invalid frame payload data) realtime_input.media_chunks is deprecated. Use audio, video, or text instead.; then sent 1007 (invalid frame payload data) realtime_input.media_chunks is deprecated. Use audio, video, or text instead.
+Apr 01 06:24:45 bios-gemini-relay python3[64447]: 2026-04-01 06:24:45,397 [ERROR] Traceback (most recent call last):
+Apr 01 06:24:45 bios-gemini-relay python3[64447]:   File "/opt/gemini_relay/main.py", line 323, in _client_to_gemini
+Apr 01 06:24:45 bios-gemini-relay python3[64447]:     await self.gemini_ws.send(message)
+Apr 01 06:24:45 bios-gemini-relay python3[64447]:   File "/opt/gemini_relay/venv/lib/python3.9/site-packages/websockets/asyncio/connection.py", line 476, in send
+Apr 01 06:24:45 bios-gemini-relay python3[64447]:     async with self.send_context():
+Apr 01 06:24:45 bios-gemini-relay python3[64447]:   File "/usr/lib/python3.9/contextlib.py", line 175, in __aenter__
+Apr 01 06:24:45 bios-gemini-relay python3[64447]:     return await self.gen.__anext__()
+Apr 01 06:24:45 bios-gemini-relay python3[64447]:   File "/opt/gemini_relay/venv/lib/python3.9/site-packages/websockets/asyncio/connection.py", line 957, in send_context
+Apr 01 06:24:45 bios-gemini-relay python3[64447]:     raise self.protocol.close_exc from original_exc
+Apr 01 06:24:45 bios-gemini-relay python3[64447]: websockets.exceptions.ConnectionClosedError: received 1007 (invalid frame payload data) realtime_input.media_chunks is deprecated. Use audio, video, or text instead.; then sent 1007 (invalid frame payload data) realtime_input.media_chunks is deprecated. Use audio, video, or text instead.
+Apr 01 06:24:45 bios-gemini-relay python3[64447]: 2026-04-01 06:24:45,397 [INFO] 🏁 Gemini->Client task finished (session: session_20260401_062444_227840)
+Apr 01 06:24:45 bios-gemini-relay python3[64447]: 2026-04-01 06:24:45,398 [INFO] 🏁 Client->Gemini task finished (session: session_20260401_062444_227840)
+Apr 01 06:24:45 bios-gemini-relay python3[64447]: 2026-04-01 06:24:45,398 [INFO] ✓ Session cleanup complete: session_20260401_062444_227840 (messages: 4)
+Apr 01 06:24:45 bios-gemini-relay python3[64447]: INFO:     connection closed
+Apr 01 06:24:47 bios-gemini-relay python3[64447]: INFO:     100.117.154.85:63165 - "WebSocket /ws/live" [accepted]
+Apr 01 06:24:47 bios-gemini-relay python3[64447]: 2026-04-01 06:24:47,784 [INFO] 🔌 Client connected: session_20260401_062447_784458
+Apr 01 06:24:47 bios-gemini-relay python3[64447]: INFO:     connection open
+Apr 01 06:24:47 bios-gemini-relay python3[64447]: 2026-04-01 06:24:47,865 [INFO] ✓ Connected to Gemini Live API (session: session_20260401_062447_784458)
+Apr 01 06:24:47 bios-gemini-relay python3[64447]: 2026-04-01 06:24:47,865 [INFO] 📝 Memory spooler session started: session_20260401_062447_784458
+Apr 01 06:24:48 bios-gemini-relay python3[64447]: 2026-04-01 06:24:48,122 [INFO] ⬅ Gemini message keys: ['setupComplete']
+Apr 01 06:24:50 bios-gemini-relay python3[64447]: 2026-04-01 06:24:50,710 [ERROR] ✗ Gemini->Client error: received 1007 (invalid frame payload data) realtime_input.media_chunks is deprecated. Use audio, video, or text instead.; then sent 1007 (invalid frame payload data) realtime_input.media_chunks is deprecated. Use audio, video, or text instead.
+Apr 01 06:24:50 bios-gemini-relay python3[64447]: 2026-04-01 06:24:50,711 [ERROR] Traceback (most recent call last):
+Apr 01 06:24:50 bios-gemini-relay python3[64447]:   File "/opt/gemini_relay/main.py", line 338, in _gemini_to_client
+Apr 01 06:24:50 bios-gemini-relay python3[64447]:     async for message in self.gemini_ws:
+Apr 01 06:24:50 bios-gemini-relay python3[64447]:   File "/opt/gemini_relay/venv/lib/python3.9/site-packages/websockets/asyncio/connection.py", line 242, in __aiter__
+Apr 01 06:24:50 bios-gemini-relay python3[64447]:     yield await self.recv()
+Apr 01 06:24:50 bios-gemini-relay python3[64447]:   File "/opt/gemini_relay/venv/lib/python3.9/site-packages/websockets/asyncio/connection.py", line 322, in recv
+Apr 01 06:24:50 bios-gemini-relay python3[64447]:     raise self.protocol.close_exc from self.recv_exc
+Apr 01 06:24:50 bios-gemini-relay python3[64447]: websockets.exceptions.ConnectionClosedError: received 1007 (invalid frame payload data) realtime_input.media_chunks is deprecated. Use audio, video, or text instead.; then sent 1007 (invalid frame payload data) realtime_input.media_chunks is deprecated. Use audio, video, or text instead.
+Apr 01 06:24:50 bios-gemini-relay python3[64447]: 2026-04-01 06:24:50,712 [ERROR] ✗ Failed to relay to Gemini: received 1007 (invalid frame payload data) realtime_input.media_chunks is deprecated. Use audio, video, or text instead.; then sent 1007 (invalid frame payload data) realtime_input.media_chunks is deprecated. Use audio, video, or text instead.
+Apr 01 06:24:50 bios-gemini-relay python3[64447]: 2026-04-01 06:24:50,713 [ERROR] Traceback (most recent call last):
+Apr 01 06:24:50 bios-gemini-relay python3[64447]:   File "/opt/gemini_relay/main.py", line 323, in _client_to_gemini
+Apr 01 06:24:50 bios-gemini-relay python3[64447]:     await self.gemini_ws.send(message)
+Apr 01 06:24:50 bios-gemini-relay python3[64447]:   File "/opt/gemini_relay/venv/lib/python3.9/site-packages/websockets/asyncio/connection.py", line 476, in send
+Apr 01 06:24:50 bios-gemini-relay python3[64447]:     async with self.send_context():
+Apr 01 06:24:50 bios-gemini-relay python3[64447]:   File "/usr/lib/python3.9/contextlib.py", line 175, in __aenter__
+Apr 01 06:24:50 bios-gemini-relay python3[64447]:     return await self.gen.__anext__()
+Apr 01 06:24:50 bios-gemini-relay python3[64447]:   File "/opt/gemini_relay/venv/lib/python3.9/site-packages/websockets/asyncio/connection.py", line 957, in send_context
+Apr 01 06:24:50 bios-gemini-relay python3[64447]:     raise self.protocol.close_exc from original_exc
+Apr 01 06:24:50 bios-gemini-relay python3[64447]: websockets.exceptions.ConnectionClosedError: received 1007 (invalid frame payload data) realtime_input.media_chunks is deprecated. Use audio, video, or text instead.; then sent 1007 (invalid frame payload data) realtime_input.media_chunks is deprecated. Use audio, video, or text instead.
+Apr 01 06:24:50 bios-gemini-relay python3[64447]: 2026-04-01 06:24:50,714 [INFO] 🏁 Gemini->Client task finished (session: session_20260401_062447_784458)
+Apr 01 06:24:50 bios-gemini-relay python3[64447]: 2026-04-01 06:24:50,714 [INFO] 🏁 Client->Gemini task finished (session: session_20260401_062447_784458)
+Apr 01 06:24:50 bios-gemini-relay python3[64447]: 2026-04-01 06:24:50,714 [INFO] ✓ Session cleanup complete: session_20260401_062447_784458 (messages: 3)
+Apr 01 06:24:50 bios-gemini-relay python3[64447]: INFO:     connection closed
+Apr 01 16:08:10 bios-gemini-relay python3[64447]: INFO:     100.117.154.85:51806 - "WebSocket /ws/live" [accepted]
+Apr 01 16:08:10 bios-gemini-relay python3[64447]: 2026-04-01 16:08:10,852 [INFO] 🔌 Client connected: session_20260401_160810_852920
+Apr 01 16:08:10 bios-gemini-relay python3[64447]: INFO:     connection open
+Apr 01 16:08:11 bios-gemini-relay python3[64447]: 2026-04-01 16:08:11,002 [INFO] ✓ Connected to Gemini Live API (session: session_20260401_160810_852920)
+Apr 01 16:08:11 bios-gemini-relay python3[64447]: 2026-04-01 16:08:11,002 [INFO] 📝 Memory spooler session started: session_20260401_160810_852920
+Apr 01 16:08:11 bios-gemini-relay python3[64447]: 2026-04-01 16:08:11,291 [INFO] ⬅ Gemini message keys: ['setupComplete']
+Apr 01 16:08:13 bios-gemini-relay python3[64447]: 2026-04-01 16:08:13,047 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:13 bios-gemini-relay python3[64447]: 2026-04-01 16:08:13,884 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:14 bios-gemini-relay python3[64447]: 2026-04-01 16:08:14,280 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:15 bios-gemini-relay python3[64447]: 2026-04-01 16:08:15,123 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:16 bios-gemini-relay python3[64447]: 2026-04-01 16:08:16,292 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:17 bios-gemini-relay python3[64447]: 2026-04-01 16:08:17,127 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:17 bios-gemini-relay python3[64447]: 2026-04-01 16:08:17,508 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:17 bios-gemini-relay python3[64447]: 2026-04-01 16:08:17,800 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:18 bios-gemini-relay python3[64447]: 2026-04-01 16:08:18,116 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:18 bios-gemini-relay python3[64447]: 2026-04-01 16:08:18,614 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:18 bios-gemini-relay python3[64447]: 2026-04-01 16:08:18,977 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:19 bios-gemini-relay python3[64447]: 2026-04-01 16:08:19,404 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:20 bios-gemini-relay python3[64447]: 2026-04-01 16:08:20,247 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:20 bios-gemini-relay python3[64447]: 2026-04-01 16:08:20,995 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:21 bios-gemini-relay python3[64447]: 2026-04-01 16:08:21,373 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:22 bios-gemini-relay python3[64447]: 2026-04-01 16:08:22,048 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:22 bios-gemini-relay python3[64447]: 2026-04-01 16:08:22,613 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:24 bios-gemini-relay python3[64447]: 2026-04-01 16:08:24,203 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:25 bios-gemini-relay python3[64447]: 2026-04-01 16:08:25,790 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:26 bios-gemini-relay python3[64447]: 2026-04-01 16:08:26,802 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:29 bios-gemini-relay python3[64447]: 2026-04-01 16:08:29,665 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:30 bios-gemini-relay python3[64447]: 2026-04-01 16:08:30,026 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:32 bios-gemini-relay python3[64447]: 2026-04-01 16:08:32,196 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:34 bios-gemini-relay python3[64447]: 2026-04-01 16:08:34,219 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:34 bios-gemini-relay python3[64447]: 2026-04-01 16:08:34,919 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:37 bios-gemini-relay python3[64447]: 2026-04-01 16:08:37,035 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:37 bios-gemini-relay python3[64447]: 2026-04-01 16:08:37,866 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:38 bios-gemini-relay python3[64447]: 2026-04-01 16:08:38,186 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:39 bios-gemini-relay python3[64447]: 2026-04-01 16:08:39,206 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:39 bios-gemini-relay python3[64447]: 2026-04-01 16:08:39,603 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:40 bios-gemini-relay python3[64447]: 2026-04-01 16:08:40,208 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:40 bios-gemini-relay python3[64447]: 2026-04-01 16:08:40,611 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:40 bios-gemini-relay python3[64447]: 2026-04-01 16:08:40,897 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:41 bios-gemini-relay python3[64447]: 2026-04-01 16:08:41,495 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:41 bios-gemini-relay python3[64447]: 2026-04-01 16:08:41,901 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:42 bios-gemini-relay python3[64447]: 2026-04-01 16:08:42,405 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:42 bios-gemini-relay python3[64447]: 2026-04-01 16:08:42,747 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:43 bios-gemini-relay python3[64447]: 2026-04-01 16:08:43,025 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:43 bios-gemini-relay python3[64447]: 2026-04-01 16:08:43,320 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:44 bios-gemini-relay python3[64447]: 2026-04-01 16:08:44,177 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:44 bios-gemini-relay python3[64447]: 2026-04-01 16:08:44,500 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:45 bios-gemini-relay python3[64447]: 2026-04-01 16:08:45,376 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:45 bios-gemini-relay python3[64447]: 2026-04-01 16:08:45,774 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:47 bios-gemini-relay python3[64447]: 2026-04-01 16:08:47,233 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:47 bios-gemini-relay python3[64447]: 2026-04-01 16:08:47,490 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:47 bios-gemini-relay python3[64447]: 2026-04-01 16:08:47,804 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:48 bios-gemini-relay python3[64447]: 2026-04-01 16:08:48,857 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:49 bios-gemini-relay python3[64447]: 2026-04-01 16:08:49,049 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:49 bios-gemini-relay python3[64447]: 2026-04-01 16:08:49,362 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:49 bios-gemini-relay python3[64447]: 2026-04-01 16:08:49,758 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:50 bios-gemini-relay python3[64447]: 2026-04-01 16:08:50,079 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:50 bios-gemini-relay python3[64447]: 2026-04-01 16:08:50,983 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:51 bios-gemini-relay python3[64447]: 2026-04-01 16:08:51,272 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:55 bios-gemini-relay python3[64447]: 2026-04-01 16:08:55,087 [INFO] ⊘ Client requested disconnect (session: session_20260401_160810_852920)
+Apr 01 16:08:55 bios-gemini-relay python3[64447]: 2026-04-01 16:08:55,088 [ERROR] ✗ WebSocket send error:
+Apr 01 16:08:55 bios-gemini-relay python3[64447]: 2026-04-01 16:08:55,089 [INFO] ⬅ Gemini message keys: ['sessionResumptionUpdate']
+Apr 01 16:08:55 bios-gemini-relay python3[64447]: 2026-04-01 16:08:55,089 [ERROR] ✗ WebSocket send error: Cannot call "send" once a close message has been sent.
+Apr 01 16:08:55 bios-gemini-relay python3[64447]: INFO:     connection closed
+Apr 01 16:08:55 bios-gemini-relay python3[64447]: 2026-04-01 16:08:55,090 [INFO] 🏁 Client->Gemini task finished (session: session_20260401_160810_852920)
+Apr 01 16:08:55 bios-gemini-relay python3[64447]: 2026-04-01 16:08:55,140 [INFO] ✓ Session cleanup complete: session_20260401_160810_852920 (messages: 1017)
+Apr 01 21:00:44 bios-gemini-relay python3[64447]: INFO:     185.247.137.89:41905 - "GET / HTTP/1.1" 404 Not Found
+Apr 01 21:54:14 bios-gemini-relay python3[64447]: INFO:     100.117.154.85:63029 - "WebSocket /ws/live" [accepted]
+Apr 01 21:54:14 bios-gemini-relay python3[64447]: 2026-04-01 21:54:14,374 [INFO] 🔌 Client connected: session_20260401_215414_374790
+Apr 01 21:54:14 bios-gemini-relay python3[64447]: INFO:     connection open
+Apr 01 21:54:14 bios-gemini-relay python3[64447]: 2026-04-01 21:54:14,462 [INFO] ✓ Connected to Gemini Live API (session: session_20260401_215414_374790)
+Apr 01 21:54:14 bios-gemini-relay python3[64447]: 2026-04-01 21:54:14,462 [INFO] 📝 Memory spooler session started: session_20260401_215414_374790
+Apr 01 21:54:14 bios-gemini-relay python3[64447]: 2026-04-01 21:54:14,698 [INFO] ⬅ Gemini message keys: ['setupComplete']
+Apr 01 21:54:15 bios-gemini-relay python3[64447]: 2026-04-01 21:54:15,860 [INFO] ⬅ Gemini message keys: ['serverContent']
+Apr 01 21:54:37 bios-gemini-relay python3[64447]: 2026-04-01 21:54:37,929 [INFO] ⊘ Client requested disconnect (session: session_20260401_215414_374790)
+Apr 01 21:54:37 bios-gemini-relay python3[64447]: INFO:     connection closed
+Apr 01 21:54:37 bios-gemini-relay python3[64447]: 2026-04-01 21:54:37,931 [INFO] 🏁 Client->Gemini task finished (session: session_20260401_215414_374790)
+Apr 01 21:54:37 bios-gemini-relay python3[64447]: 2026-04-01 21:54:37,974 [INFO] ✓ Session cleanup complete: session_20260401_215414_374790 (messages: 244)
+Apr 01 23:24:13 bios-gemini-relay python3[64447]: INFO:     100.117.154.85:65519 - "WebSocket /ws/live" [accepted]
+Apr 01 23:24:13 bios-gemini-relay python3[64447]: 2026-04-01 23:24:13,945 [INFO] 🔌 Client connected: session_20260401_232413_944978
+Apr 01 23:24:13 bios-gemini-relay python3[64447]: INFO:     connection open
+Apr 01 23:24:14 bios-gemini-relay python3[64447]: 2026-04-01 23:24:14,022 [INFO] ✓ Connected to Gemini Live API (session: session_20260401_232413_944978)
+Apr 01 23:24:14 bios-gemini-relay python3[64447]: 2026-04-01 23:24:14,023 [INFO] 📝 Memory spooler session started: session_20260401_232413_944978
+Apr 01 23:24:14 bios-gemini-relay python3[64447]: 2026-04-01 23:24:14,297 [INFO] ⬅ Gemini message keys: ['setupComplete']
+Apr 01 23:24:16 bios-gemini-relay python3[64447]: 2026-04-01 23:24:16,730 [INFO] ⬅ Gemini message keys: ['serverContent']
+Apr 01 23:24:28 bios-gemini-relay python3[64447]: 2026-04-01 23:24:28,632 [INFO] ⊘ Client requested disconnect (session: session_20260401_232413_944978)
+Apr 01 23:24:28 bios-gemini-relay python3[64447]: INFO:     connection closed
+Apr 01 23:24:28 bios-gemini-relay python3[64447]: 2026-04-01 23:24:28,634 [INFO] 🏁 Client->Gemini task finished (session: session_20260401_232413_944978)
+Apr 01 23:24:28 bios-gemini-relay python3[64447]: 2026-04-01 23:24:28,680 [INFO] ✓ Session cleanup complete: session_20260401_232413_944978 (messages: 176)
+Apr 01 23:28:01 bios-gemini-relay python3[64447]: INFO:     100.117.154.85:49237 - "WebSocket /ws/live" [accepted]
+Apr 01 23:28:01 bios-gemini-relay python3[64447]: 2026-04-01 23:28:01,415 [INFO] 🔌 Client connected: session_20260401_232801_415023
+Apr 01 23:28:01 bios-gemini-relay python3[64447]: INFO:     connection open
+Apr 01 23:28:01 bios-gemini-relay python3[64447]: 2026-04-01 23:28:01,511 [INFO] ✓ Connected to Gemini Live API (session: session_20260401_232801_415023)
+Apr 01 23:28:01 bios-gemini-relay python3[64447]: 2026-04-01 23:28:01,512 [INFO] 📝 Memory spooler session started: session_20260401_232801_415023
+Apr 01 23:28:01 bios-gemini-relay python3[64447]: 2026-04-01 23:28:01,727 [INFO] ⬅ Gemini message keys: ['setupComplete']
+Apr 01 23:28:04 bios-gemini-relay python3[64447]: 2026-04-01 23:28:04,311 [INFO] ⬅ Gemini message keys: ['serverContent']
+Apr 01 23:28:16 bios-gemini-relay python3[64447]: 2026-04-01 23:28:16,222 [INFO] ⊘ Client requested disconnect (session: session_20260401_232801_415023)
+Apr 01 23:28:16 bios-gemini-relay python3[64447]: INFO:     connection closed
+Apr 01 23:28:16 bios-gemini-relay python3[64447]: 2026-04-01 23:28:16,223 [INFO] 🏁 Client->Gemini task finished (session: session_20260401_232801_415023)
+Apr 01 23:28:16 bios-gemini-relay python3[64447]: 2026-04-01 23:28:16,268 [INFO] ✓ Session cleanup complete: session_20260401_232801_415023 (messages: 127)

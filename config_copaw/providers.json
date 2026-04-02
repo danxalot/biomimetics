@@ -1,0 +1,172 @@
+{
+  "providers": {
+    "google_ai_studio": {
+      "name": "Google AI Studio",
+      "base_url": "https://generativelanguage.googleapis.com/v1beta",
+      "api_type": "google",
+      "auth_type": "api_key",
+      "secret_name": "gemini-api-key",
+      "models": {
+        "gemini_flash_lite_latest": {
+          "name": "Gemini Flash Lite Latest",
+          "context_window": 1048576,
+          "rpm": 60,
+          "tpm": 125000,
+          "input_cost_per_token": 0.0,
+          "output_cost_per_token": 0.0,
+          "supports_function_calling": true,
+          "supports_vision": true,
+          "description": "Fast, efficient model for high-volume tasks"
+        },
+        "gemma-3-12b": {
+          "name": "Gemma 3 12B",
+          "context_window": 32768,
+          "rpm": 60,
+          "tpm": 125000,
+          "input_cost_per_token": 0.0,
+          "output_cost_per_token": 0.0,
+          "supports_function_calling": true,
+          "supports_vision": false,
+          "description": "Open weights model for reasoning tasks"
+        }
+      }
+    },
+    "opencode_go": {
+      "name": "Opencode Go",
+      "base_url": "https://api.opencode.go/v1",
+      "api_type": "openai",
+      "auth_type": "api_key",
+      "secret_name": "opencode_go_api",
+      "models": {
+        "minimax_m2.5_free": {
+          "name": "MiniMax M2.5 Free",
+          "context_window": 256000,
+          "rpm": 30,
+          "tpm": 100000,
+          "input_cost_per_token": 0.0,
+          "output_cost_per_token": 0.0,
+          "supports_function_calling": true,
+          "supports_vision": false,
+          "description": "Primary code generation model (free tier)"
+        },
+        "minimax_2.7": {
+          "name": "MiniMax 2.7",
+          "context_window": 256000,
+          "rpm": 30,
+          "tpm": 100000,
+          "input_cost_per_token": 0.0,
+          "output_cost_per_token": 0.0,
+          "supports_function_calling": true,
+          "supports_vision": true,
+          "description": "Enhanced MiniMax with vision support"
+        },
+        "super_nemotron_3_free": {
+          "name": "Super Nemotron 3 Free",
+          "context_window": 1048576,
+          "rpm": 15,
+          "tpm": 50000,
+          "input_cost_per_token": 0.0,
+          "output_cost_per_token": 0.0,
+          "supports_function_calling": true,
+          "supports_vision": false,
+          "description": "The Architect - Deep repository planning (1M context)"
+        },
+        "kimi_k2.5_thinking": {
+          "name": "Kimi K2.5 Thinking",
+          "context_window": 256000,
+          "rpm": 15,
+          "tpm": 50000,
+          "input_cost_per_token": 0.0,
+          "output_cost_per_token": 0.0,
+          "supports_function_calling": true,
+          "supports_vision": false,
+          "description": "Extended reasoning with chain-of-thought"
+        },
+        "glm-5-opencode": {
+          "name": "GLM-5 (Opencode)",
+          "context_window": 256000,
+          "rpm": 30,
+          "tpm": 100000,
+          "input_cost_per_token": 0.0,
+          "output_cost_per_token": 0.0,
+          "supports_function_calling": true,
+          "supports_vision": false,
+          "description": "Zhipu GLM-5 via Opencode gateway"
+        }
+      }
+    },
+    "alibaba_studio": {
+      "name": "Alibaba DashScope Studio",
+      "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      "api_type": "openai",
+      "auth_type": "oauth_bearer",
+      "secret_name": "qwen_oauth_token",
+      "models": {
+        "qwen-max": {
+          "name": "Qwen Max",
+          "context_window": 256000,
+          "rpm": 30,
+          "tpm": 100000,
+          "input_cost_per_token": 0.0,
+          "output_cost_per_token": 0.0,
+          "supports_function_calling": true,
+          "supports_vision": true,
+          "description": "Flagship Qwen model for complex tasks"
+        },
+        "qwen-coder": {
+          "name": "Qwen Coder",
+          "context_window": 256000,
+          "rpm": 30,
+          "tpm": 100000,
+          "input_cost_per_token": 0.0,
+          "output_cost_per_token": 0.0,
+          "supports_function_calling": true,
+          "supports_vision": false,
+          "description": "Specialized code generation and review"
+        }
+      }
+    },
+    "zhipu_native": {
+      "name": "Zhipu AI (Native)",
+      "base_url": "https://open.bigmodel.cn/api/paas/v4",
+      "api_type": "openai",
+      "auth_type": "api_key",
+      "secret_name": "zhipu_api_key",
+      "models": {
+        "glm-5": {
+          "name": "GLM-5",
+          "context_window": 256000,
+          "rpm": 30,
+          "tpm": 100000,
+          "input_cost_per_token": 0.0,
+          "output_cost_per_token": 0.0,
+          "supports_function_calling": true,
+          "supports_vision": false,
+          "description": "Zhipu GLM-5 via native API (direct)"
+        },
+        "glm-5-turbo": {
+          "name": "GLM-5 Turbo",
+          "context_window": 256000,
+          "rpm": 60,
+          "tpm": 200000,
+          "input_cost_per_token": 0.0,
+          "output_cost_per_token": 0.0,
+          "supports_function_calling": true,
+          "supports_vision": false,
+          "description": "Optimized GLM-5 for high-throughput tasks"
+        }
+      }
+    }
+  },
+  "model_routing": {
+    "default_provider": "google_ai_studio",
+    "fallback_order": ["google_ai_studio", "opencode_go", "alibaba_studio", "zhipu_native"],
+    "specializations": {
+      "code_generation": ["opencode_go/minimax_m2.5_free", "alibaba_studio/qwen-coder"],
+      "deep_planning": ["opencode_go/super_nemotron_3_free"],
+      "reasoning": ["opencode_go/kimi_k2.5_thinking", "alibaba_studio/qwen-max"],
+      "high_volume": ["google_ai_studio/gemini_flash_lite_latest"],
+      "vision": ["google_ai_studio/gemini_flash_lite_latest", "alibaba_studio/qwen-max"]
+    }
+  }
+}

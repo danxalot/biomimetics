@@ -1,6 +1,6 @@
 # Biomimetics
 
-> **Project Management & Optimization Layer for ARCA Development Ecosystem**
+> **Project Management & Optimization Layer for BiOS Development Ecosystem**
 
 Biomimetics is the infrastructure automation system that provides:
 - 🔐 **Secret Management** - Azure Key Vault integration (single source of truth)
@@ -111,7 +111,7 @@ npx wrangler deploy
 ### MCP Integration
 - **[MCP Integration Status](docs/MCP_INTEGRATION_STATUS.md)** - Current status and configuration
 - **[MCP Integration Summary](docs/MCP_INTEGRATION_SUMMARY.md)** - What was done and next steps
-- **[ARCA MCP Integration](docs/ARCA_MCP_INTEGRATION.md)** - ARCA project integration guide
+- **[BiOS MCP Integration](docs/BiOS_MCP_INTEGRATION.md)** - BiOS project integration guide
 - **[General MCP Guide](docs/MCP_INTEGRATION.md)** - MCP server setup for all clients
 
 ### System Documentation
@@ -159,7 +159,7 @@ npx wrangler deploy
 
 ## License
 
-Private - ARCA Project
+Private - BiOS Project
 
 ---
 

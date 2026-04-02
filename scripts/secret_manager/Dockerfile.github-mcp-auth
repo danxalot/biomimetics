@@ -1,0 +1,32 @@
+# GitHub MCP Server with Authentication - Full Stack
+# Runs both supergateway (GitHub MCP) and auth gateway (FastAPI proxy)
+
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install Node.js for supergateway
+RUN apt-get update && apt-get install -y curl \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install GitHub MCP server and supergateway
+RUN npm install -g @modelcontextprotocol/server-github supergateway
+
+# Install Python dependencies
+RUN pip install --no-cache-dir fastapi uvicorn httpx
+
+# Copy auth gateway
+COPY github_mcp_auth_gateway.py .
+
+# Copy entrypoint script
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
+
+# Expose auth gateway port
+EXPOSE 8080
+
+# Run both supergateway (background) and auth gateway (foreground)
+CMD ["./entrypoint.sh"]

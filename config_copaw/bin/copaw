@@ -1,0 +1,21 @@
+#!/usr/bin/env python3
+# CoPaw CLI wrapper — fetches secrets from Azure Credentials Server
+# All secrets are dynamically fetched - no hardcoded secrets
+import os
+import sys
+
+COPAW_HOME = os.getenv("COPAW_HOME", os.path.expanduser("~/.copaw"))
+WRAPPER_SCRIPT = os.path.join(COPAW_HOME, "bin/copaw-secrets-wrapper.py")
+REAL_BIN = os.path.join(COPAW_HOME, "venv/bin/copaw")
+
+# Check if wrapper exists
+if os.path.isfile(WRAPPER_SCRIPT) and os.access(WRAPPER_SCRIPT, os.X_OK):
+    os.execv("/usr/bin/python3", ["/usr/bin/python3", WRAPPER_SCRIPT] + sys.argv[1:])
+
+# Fallback to direct execution if wrapper is missing
+if not os.path.isfile(REAL_BIN):
+    print(f"Error: CoPaw environment not found at {COPAW_HOME}/venv", file=sys.stderr)
+    print("Please reinstall copaw", file=sys.stderr)
+    sys.exit(1)
+
+os.execv(REAL_BIN, [REAL_BIN] + sys.argv[1:])

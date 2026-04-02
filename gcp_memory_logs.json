@@ -1,0 +1,1868 @@
+[
+  {
+    "httpRequest": {
+      "latency": "0.111726026s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "824",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdb0ad0008659c8e4db93b",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:56:29.846590647Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "a5df9cf07ce7f458",
+    "timestamp": "2026-04-01T23:56:29.436879Z",
+    "trace": "projects/arca-471022/traces/db6a109ebe78b3f7bbc63f70ee2d1312"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.079411674s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "840",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdb0a5000c2f4507b20298",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:56:21.855188493Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "6d33541112cc7242",
+    "timestamp": "2026-04-01T23:56:21.717074Z",
+    "trace": "projects/arca-471022/traces/4e0953b5d3e8a2a213c5e178e27c8111"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.092075352s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "838",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdb0a50002cc0e07132a25",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:56:21.192093035Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "b2c303130139dfc3",
+    "timestamp": "2026-04-01T23:56:21.084509Z",
+    "trace": "projects/arca-471022/traces/95f50fc8d6add10dd28be21701109ac8",
+    "traceSampled": true
+  },
+  {
+    "httpRequest": {
+      "latency": "0.085716532s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "824",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdb0720005ce1aa9e579db",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:55:30.640816144Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "fcf19ebb23461239",
+    "timestamp": "2026-04-01T23:55:30.293038Z",
+    "trace": "projects/arca-471022/traces/3a9b7043be3a7dbce259d4784294fa7c"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.111249077s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "839",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdb06a000f01da44741b6d",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:55:23.314988205Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "9305ece8a89486a8",
+    "timestamp": "2026-04-01T23:55:22.870087Z",
+    "trace": "projects/arca-471022/traces/e6aad745a71494546c709d106fa794ce"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.141709375s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "837",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdb06a0004b323a2100ed9",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:55:22.314682689Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "16d2c3686bdc4c1c",
+    "timestamp": "2026-04-01T23:55:22.158639Z",
+    "trace": "projects/arca-471022/traces/d9f0b0267351bf29ac6e02d233ce8df3",
+    "traceSampled": true
+  },
+  {
+    "httpRequest": {
+      "latency": "0.191685678s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "824",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdb037000868d2ddcc4b4e",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:54:31.756857430Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "080c48978968850d",
+    "timestamp": "2026-04-01T23:54:31.357404Z",
+    "trace": "projects/arca-471022/traces/3ad466cdf76e3fc7b86a22fa31211341"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.097200908s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "839",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdb0300000db2922cccf0d",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:54:24.095997636Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "c126cf57c47d6244",
+    "timestamp": "2026-04-01T23:54:23.956904Z",
+    "trace": "projects/arca-471022/traces/6c667acd8b5fe3bbef59077d201ff2a3"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.069125543s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "836",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdb02f00016a5856cbc72f",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:54:23.099591683Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "3736fb6156c49a37",
+    "timestamp": "2026-04-01T23:54:23.016901Z",
+    "trace": "projects/arca-471022/traces/b8dc09f2a20060d897e6c290b5e66ad4",
+    "traceSampled": true
+  },
+  {
+    "httpRequest": {
+      "latency": "0.123761804s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "824",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdaff90000cc06617c5f7a",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:53:29.093262813Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "f1ddfb15b416012d",
+    "timestamp": "2026-04-01T23:53:28.926490Z",
+    "trace": "projects/arca-471022/traces/6cf922478784cb1603c593755ea51ab3"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.062223089s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "839",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdaff0000a89c576d233b0",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:53:20.769509177Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "569dd9701d13d66f",
+    "timestamp": "2026-04-01T23:53:20.626445Z",
+    "trace": "projects/arca-471022/traces/cdabe523928393f015c2857bdb9fe2e3"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.129694648s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "837",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdaff0000179680dd5911e",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:53:20.103756039Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "378df77a0faf7616",
+    "timestamp": "2026-04-01T23:53:19.959391Z",
+    "trace": "projects/arca-471022/traces/69d3303bfd3f080afd6591a57b482431",
+    "traceSampled": true
+  },
+  {
+    "httpRequest": {
+      "latency": "0.070599713s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "823",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdafba0005cb51fe9c1bc7",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:52:26.640764780Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "2498c58eeeeed545",
+    "timestamp": "2026-04-01T23:52:26.307326Z",
+    "trace": "projects/arca-471022/traces/13b0c0815c552896961eb25f5b668346"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.097265680s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "840",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdafb1000ebe9909f2f31e",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:52:17.980768765Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "8084617d261242a1",
+    "timestamp": "2026-04-01T23:52:17.867310Z",
+    "trace": "projects/arca-471022/traces/410c23a747e7b467ff052e2928740292"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.067826793s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "836",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdafb10004b5350a23326a",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:52:17.317095242Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "65da61bf998fdb32",
+    "timestamp": "2026-04-01T23:52:17.234007Z",
+    "trace": "projects/arca-471022/traces/aa8edb4cf0b056588118edfb02a3a201",
+    "traceSampled": true
+  },
+  {
+    "httpRequest": {
+      "latency": "0.036982471s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "823",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdaf7d0002f9f79d53a5e7",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:51:25.364295480Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "c282da17a8d0e606",
+    "timestamp": "2026-04-01T23:51:25.156268Z",
+    "trace": "projects/arca-471022/traces/1e88db36d8ce397e6dc08786b9cd5dc8"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.138654810s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "840",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdaf760000bd4de727d4d1",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:51:18.369764273Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "9e37eb9806bd75a4",
+    "timestamp": "2026-04-01T23:51:17.908339Z",
+    "trace": "projects/arca-471022/traces/7e96bd3767b01a73930017f1ccb8ff49"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.218401550s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "838",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdaf750005931fb4bb9c0a",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:51:17.373487531Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "c314f678499377d0",
+    "timestamp": "2026-04-01T23:51:17.140829Z",
+    "trace": "projects/arca-471022/traces/65089d3dfbd01164b164707655ba88d8",
+    "traceSampled": true
+  },
+  {
+    "httpRequest": {
+      "latency": "0.090962581s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "823",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdaf3f0007685a90866799",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:50:23.562829902Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "afd445ac6ce0e9a4",
+    "timestamp": "2026-04-01T23:50:23.392626Z",
+    "trace": "projects/arca-471022/traces/a3f78c7660694deb6b854c567f0a7906"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.132307057s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "839",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdaf37000488b9e9b29b36",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:50:15.571843170Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "7a01e4cf7f85124f",
+    "timestamp": "2026-04-01T23:50:15.162849Z",
+    "trace": "projects/arca-471022/traces/0fd135fbe7c3c2035f10fcfe0d958dde"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.223252483s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "838",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdaf360008a1c73decf5cb",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:50:14.569929786Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "545b2ad6fd3b3252",
+    "timestamp": "2026-04-01T23:50:14.334631Z",
+    "trace": "projects/arca-471022/traces/c341e6ea0b452148dbbcf38859009450",
+    "traceSampled": true
+  },
+  {
+    "httpRequest": {
+      "latency": "0.166653289s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "823",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdaf020008a47b3b4416d4",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:49:22.757916254Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "82e57c2be34201c9",
+    "timestamp": "2026-04-01T23:49:22.397942Z",
+    "trace": "projects/arca-471022/traces/08803d6edda7b40854df07f2da8a5c57"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.037786313s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "839",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdaefa000dae10f90eb68f",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:49:15.098162613Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "61d02785c915a7a7",
+    "timestamp": "2026-04-01T23:49:14.856778Z",
+    "trace": "projects/arca-471022/traces/0b45f9c5c8d96e7d719302e8bfff4d5e"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.171888159s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "838",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdaefa00016859080dcdac",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:49:14.098851983Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "4f70b9fd8de74d42",
+    "timestamp": "2026-04-01T23:49:13.913827Z",
+    "trace": "projects/arca-471022/traces/38f32982b56a7905f77028f31d02eb0f",
+    "traceSampled": true
+  },
+  {
+    "httpRequest": {
+      "latency": "0.128580176s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "823",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdaec3000c31b5f2334087",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:48:20.064344253Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "c1e0dd6fee54cc31",
+    "timestamp": "2026-04-01T23:48:19.668552Z",
+    "trace": "projects/arca-471022/traces/3fa6d932ae0f9cdd0a05a70abe268fd8"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.110395684s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "840",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdaebc00016472ef526098",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:48:12.404211908Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "1d2abddfe128a048",
+    "timestamp": "2026-04-01T23:48:11.978239Z",
+    "trace": "projects/arca-471022/traces/234ee7d07084491b02c82b3c2db607c9"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.034824370s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "837",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdaebb000617a962d39b7f",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:48:11.406475817Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "8d89b418871fde86",
+    "timestamp": "2026-04-01T23:48:11.357431Z",
+    "trace": "projects/arca-471022/traces/3fab4616e581ce3e7aa1e49baf55feef",
+    "traceSampled": true
+  },
+  {
+    "httpRequest": {
+      "latency": "0.112676946s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "824",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdae86000c606c5a979a94",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:47:19.087863646Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "2d93b5424538c3ce",
+    "timestamp": "2026-04-01T23:47:18.696513Z",
+    "trace": "projects/arca-471022/traces/0f078c7f4ec579e57406f694d5938fcc"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.080043850s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "839",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdae7e000a8a32ebf71b6a",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:47:10.761776980Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "9a57728beec23948",
+    "timestamp": "2026-04-01T23:47:10.608613Z",
+    "trace": "projects/arca-471022/traces/3b4a6167f7db69468944ded7634dc484"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.069563153s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "837",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdae7e00015dc1a8542b2f",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:47:10.096832565Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "8c1c708739d74580",
+    "timestamp": "2026-04-01T23:47:10.013488Z",
+    "trace": "projects/arca-471022/traces/dc56a790f5c0f8d083ceb0264e755bf1",
+    "traceSampled": true
+  },
+  {
+    "httpRequest": {
+      "latency": "0.111470736s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "823",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdae4b000c36bd3dcc4fc2",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:46:19.975142100Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "9543119ca63f2bc4",
+    "timestamp": "2026-04-01T23:46:19.687282Z",
+    "trace": "projects/arca-471022/traces/c802dffd89e78f90765761f52fc0c271"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.188060522s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "839",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdae4400012a89b98ed9b6",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:46:12.314093160Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "7708a508c99fcf19",
+    "timestamp": "2026-04-01T23:46:11.886464Z",
+    "trace": "projects/arca-471022/traces/aa9144c64d0f2c0e363610e9add086d5"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.098653098s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "837",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdae430004b43c5925ac36",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:46:11.313856401Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "f8a8a15401ca4adf",
+    "timestamp": "2026-04-01T23:46:11.203285Z",
+    "trace": "projects/arca-471022/traces/01f3b39e7f45f4747b03c6f3b1a54313",
+    "traceSampled": true
+  },
+  {
+    "httpRequest": {
+      "latency": "0.061433261s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "824",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdae100005c8b0df93fbfd",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:45:20.390369094Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "9bdce01b3ef15670",
+    "timestamp": "2026-04-01T23:45:20.315138Z",
+    "trace": "projects/arca-471022/traces/b9073a7e69cfefa138e8988694924cd8"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.116441208s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "839",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdae0900013e9913e919f4",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:45:13.401445025Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "06327a6505fc9f71",
+    "timestamp": "2026-04-01T23:45:12.963231Z",
+    "trace": "projects/arca-471022/traces/a3b373c33030261d05539aeec765586f"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.143269365s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "837",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdae080000e627916b5b1a",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:45:12.064700211Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "9dd646c0db4622e3",
+    "timestamp": "2026-04-01T23:45:11.908007Z",
+    "trace": "projects/arca-471022/traces/647dd2526c9ade280f80d8edb6b92a45",
+    "traceSampled": true
+  },
+  {
+    "httpRequest": {
+      "latency": "0.152135398s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "823",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdadd500049d610572eae8",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:44:21.485307218Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "6348864c2609d436",
+    "timestamp": "2026-04-01T23:44:21.148479Z",
+    "trace": "projects/arca-471022/traces/7a250c03b76770fe2ad1163b59e7e046"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.090768351s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "839",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdadcd0004927813dc6eac",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:44:13.495073216Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "e4d991a29d9cc6ac",
+    "timestamp": "2026-04-01T23:44:13.206546Z",
+    "trace": "projects/arca-471022/traces/ed6f7d9379e284f054a0967e6f7c9d0a"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.123460039s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "837",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdadcc000771cca3b8b35a",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:44:12.496781752Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "157b3c5bf60b08e0",
+    "timestamp": "2026-04-01T23:44:12.353981Z",
+    "trace": "projects/arca-471022/traces/37fd531ddd274a54ebc7e3c6b1656a48",
+    "traceSampled": true
+  },
+  {
+    "httpRequest": {
+      "latency": "0.172562865s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "823",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdad990008dfe25b7fc7bd",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:43:21.801035876Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "515352a0f148da8f",
+    "timestamp": "2026-04-01T23:43:21.407178Z",
+    "trace": "projects/arca-471022/traces/e89adecbe698bfe1ff1c826e878f34df"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.077458980s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "839",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdad920002ff7c1617b03c",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:43:14.472902929Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "a4a6f1201014c73d",
+    "timestamp": "2026-04-01T23:43:14.117219Z",
+    "trace": "projects/arca-471022/traces/6b0d0ad5c05118195fb96637427da572"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.202443511s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "838",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdad91000722dc404f410f",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:43:13.473676126Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "f87dba5f47121564",
+    "timestamp": "2026-04-01T23:43:13.258590Z",
+    "trace": "projects/arca-471022/traces/19bceeb8476e21a1a2d40bdd89625398",
+    "traceSampled": true
+  },
+  {
+    "httpRequest": {
+      "latency": "0.138244174s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "823",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdad5d000c2d3d98efdca4",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:42:22.131480522Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "1f41e285623935e8",
+    "timestamp": "2026-04-01T23:42:21.657909Z",
+    "trace": "projects/arca-471022/traces/fe9505c0af2452b5df331a5b5f0e3735"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.028637593s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "839",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdad550005e5e22a1e1ff5",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:42:13.472243541Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "06bb652b9188d586",
+    "timestamp": "2026-04-01T23:42:13.356127Z",
+    "trace": "projects/arca-471022/traces/19ca738e3a071320d1fecc66eee55bea"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.121603450s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "837",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdad54000c384a63437da2",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:42:12.806048553Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "03a34bfa89543644",
+    "timestamp": "2026-04-01T23:42:12.670146Z",
+    "trace": "projects/arca-471022/traces/d70672994318230454f2b8b41803301c",
+    "traceSampled": true
+  },
+  {
+    "httpRequest": {
+      "latency": "0.106497406s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "824",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdad20000877484aee8196",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:41:20.755688043Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "03f054ed39e1e9bc",
+    "timestamp": "2026-04-01T23:41:20.446398Z",
+    "trace": "projects/arca-471022/traces/afa6e437582806e6bee96fcf8dd0fb3e"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.140445237s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "839",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdad18000c491a7ddf1340",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:41:13.095658715Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "7e66feeea3669c60",
+    "timestamp": "2026-04-01T23:41:12.662692Z",
+    "trace": "projects/arca-471022/traces/0a527dcb8314ac5a4e3b3edd3e4bc441"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.083480704s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "837",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdad1800015f7cf358d3e0",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:41:12.096359635Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "adc4f833540d5e33",
+    "timestamp": "2026-04-01T23:41:11.998721Z",
+    "trace": "projects/arca-471022/traces/b1aa86563147132c4577347c0c67d184",
+    "traceSampled": true
+  },
+  {
+    "httpRequest": {
+      "latency": "0.119767570s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "823",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdace40001696fb2656b94",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:40:20.217634903Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "e219781f364578ef",
+    "timestamp": "2026-04-01T23:40:19.971137Z",
+    "trace": "projects/arca-471022/traces/bf9a08f438af31a6ceb2c035656dbad7"
+  },
+  {
+    "httpRequest": {
+      "latency": "0.191548965s",
+      "protocol": "HTTP/1.1",
+      "remoteIp": "31.171.155.202",
+      "requestMethod": "POST",
+      "requestSize": "840",
+      "requestUrl": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+      "responseSize": "374",
+      "serverIp": "216.239.36.54",
+      "status": 200,
+      "userAgent": "python-requests/2.32.4"
+    },
+    "insertId": "69cdacdc0004847ce8972707",
+    "labels": {
+      "goog-drz-cloudfunctions-id": "memory-orchestrator",
+      "goog-drz-cloudfunctions-location": "us-central1",
+      "goog-managed-by": "cloudfunctions",
+      "instanceId": "008c15ff08643557e4fc5e942749273f7670ba742f2e88b0c94bc532740f0516d216abaaaa9ec8e89f20175abab756706ecb0a18d2f22673cda36cd414f13e7076796b85c37eb80cad211997d4f034"
+    },
+    "logName": "projects/arca-471022/logs/run.googleapis.com%2Frequests",
+    "receiveTimestamp": "2026-04-01T23:40:12.559856737Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "memory-orchestrator",
+        "location": "us-central1",
+        "project_id": "arca-471022",
+        "revision_name": "memory-orchestrator-00008-kav",
+        "service_name": "memory-orchestrator"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "spanId": "0f73eb4bc03a213f",
+    "timestamp": "2026-04-01T23:40:12.102576Z",
+    "trace": "projects/arca-471022/traces/1d1d83031305fbf921a586b944d14874"
+  }
+]

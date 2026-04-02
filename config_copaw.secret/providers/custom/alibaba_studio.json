@@ -1,0 +1,16 @@
+{
+  "id": "alibaba_studio",
+  "name": "Alibaba DashScope Studio",
+  "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+  "api_key": "qwen_oauth_token",
+  "chat_model": "OpenAIChatModel",
+  "models": [],
+  "extra_models": [],
+  "api_key_prefix": "",
+  "is_local": false,
+  "freeze_url": false,
+  "require_api_key": true,
+  "is_custom": true,
+  "support_model_discovery": false,
+  "generate_kwargs": {}
+}

@@ -236,7 +236,7 @@ Execute Approved Action
 
 | Secret | Value | Purpose |
 |--------|-------|---------|
-| `GEMINI_API_KEY` | `AIzaSyDfnNa-IJpPZGB0Jfc4QqvVK_jIJXNWtpY` | Google AI Studio access (PM Agent) |
+| `GEMINI_API_KEY` | `[REDACTED_GEMINI_API_KEY]` | Google AI Studio access (PM Agent) |
 | `GITHUB_TOKEN` | `[GITHUB_TOKEN_REDACTED]` | GitHub API access |
 | `NOTION_DB_ID` | `3224d2d9fc7c80deb18dd94e22e5bb21` | Biomimetic OS database |
 | `BIOMIMETIC_DB_ID` | `3224d2d9fc7c80deb18dd94e22e5bb21` | Alias for NOTION_DB_ID |
@@ -283,7 +283,7 @@ Execute Approved Action
      "enabled": true,
      "tts_provider": "google",
      "stt_provider": "deepgram",
-     "gemini_api_key": "AIzaSyDfnNa-IJpPZGB0Jfc4QqvVK_jIJXNWtpY"
+     "gemini_api_key": "[REDACTED_GEMINI_API_KEY]"
    }
    ```
 

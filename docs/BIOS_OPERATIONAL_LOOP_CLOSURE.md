@@ -26,7 +26,7 @@ All four critical gaps identified in the System Configuration Audit have been ad
   "channels": {
     "voice": {
       "enabled": true,
-      "gemini_api_key": "AIzaSyDfnNa-IJpPZGB0Jfc4QqvVK_jIJXNWtpY",
+      "gemini_api_key": "[REDACTED]",
       "tts_provider": "google",
       "stt_provider": "deepgram",
       "language": "en-US"
@@ -43,7 +43,7 @@ All four critical gaps identified in the System Configuration Audit have been ad
       "cloud": {
         "provider_id": "google",
         "model": "gemini-2.5-flash",
-        "api_key": "AIzaSyDfnNa-IJpPZGB0Jfc4QqvVK_jIJXNWtpY"
+        "api_key": "[REDACTED]"
       }
     }
   }

@@ -1,0 +1,80 @@
+#copaw-hud-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 350px;
+    max-height: 80vh;
+    background: rgba(18, 18, 18, 0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    color: #f0f0f0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    z-index: 99999;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    overflow-y: auto;
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+    display: none; /* Hidden until content is received */
+}
+
+#copaw-hud-container.active {
+    display: block;
+    animation: slideIn 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%) scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+    }
+}
+
+#copaw-hud-container h1, 
+#copaw-hud-container h2, 
+#copaw-hud-container h3 {
+    margin-top: 0;
+    color: #4facfe;
+    background: linear-gradient(to right, #00f2fe 0%, #4facfe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+#copaw-hud-container p {
+    line-height: 1.6;
+    margin-bottom: 15px;
+}
+
+#copaw-hud-container code {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.9em;
+}
+
+#copaw-hud-container pre {
+    background: rgba(0, 0, 0, 0.4);
+    padding: 12px;
+    border-radius: 8px;
+    overflow-x: auto;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+#copaw-hud-container ul {
+    padding-left: 20px;
+    margin-bottom: 15px;
+}
+
+#copaw-hud-container li {
+    margin-bottom: 8px;
+}
+
+/* Hide matching generic toasts if they look like Markdown */
+.ant-notification-notice-description:has(p:contains("##")) {
+    display: none !important;
+}

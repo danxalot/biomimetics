@@ -1,0 +1,37 @@
+{
+  "memory_interceptor": {
+    "enabled": true,
+    "gateway_url": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+    "max_tokens": 2000,
+    "min_confidence": 0.3,
+    "timeout": 10.0
+  },
+  "notion_integration": {
+    "enabled": true,
+    "webhook_path": "/notion",
+    "skills": {
+      "analyze_notion_page": {
+        "enabled": true,
+        "auto_execute": true
+      },
+      "process_notion_comment": {
+        "enabled": true,
+        "auto_execute": true
+      },
+      "plan_feature": {
+        "enabled": true,
+        "auto_execute": false,
+        "requires_confirmation": true
+      },
+      "review_code": {
+        "enabled": true,
+        "auto_execute": false,
+        "requires_confirmation": true
+      },
+      "summarize_meeting": {
+        "enabled": true,
+        "auto_execute": true
+      }
+    }
+  }
+}

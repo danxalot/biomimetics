@@ -1,0 +1,11 @@
+{
+  "mcp_servers": {
+    "github": {
+      "url": "https://github-mcp-server-arca-vsa-3c648978.koyeb.app/sse",
+      "transport": "sse",
+      "headers": {
+        "X-API-Key": "40489880280b34e1436636197236b04a079604ab4c656763bc19e340ea85dcf7"
+      }
+    }
+  }
+}

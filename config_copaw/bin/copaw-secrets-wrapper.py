@@ -1,0 +1,112 @@
+#!/usr/bin/env python3
+"""
+Copaw Secrets Wrapper - Dynamic Pass-Through
+Fetches ANY secret from ARCA Credentials Server dynamically.
+No hardcoded secret lists - 1:1 pass-through to Credentials Server.
+"""
+
+import os
+import sys
+import json
+import urllib.request
+from pathlib import Path
+from typing import Optional
+
+# Configuration
+CREDENTIALS_SERVER_URL = "http://localhost:8089"
+MASTER_KEY_PATH = "/Users/danexall/biomimetics/secrets/credentials_api_key"
+COPAW_HOME = Path(os.getenv("COPAW_HOME", Path.home() / ".copaw"))
+SECRETS_DIR = COPAW_HOME / ".secrets"
+LOCAL_SECRETS_DIR = Path("/Users/danexall/biomimetics/secrets")
+
+
+def get_master_key() -> Optional[str]:
+    """Load Credentials API key from secure file."""
+    if not os.path.exists(MASTER_KEY_PATH):
+        return None
+    with open(MASTER_KEY_PATH, "r") as f:
+        return f.read().strip()
+
+
+def fetch_secret(secret_name: str) -> Optional[str]:
+    """
+    Fetch a secret dynamically from Credentials Server.
+    No hardcoded allowlists - any secret name can be requested.
+
+    Fallback: Check local secrets directory if server is unavailable.
+    Handles both hyphen and underscore naming conventions.
+    """
+    # 1. Get the Master Key
+    master_key = get_master_key()
+    if not master_key:
+        return None
+
+    # 2. Query the Credentials Server Dynamically
+    url = f"{CREDENTIALS_SERVER_URL}/secrets/{secret_name}"
+    req = urllib.request.Request(url)
+    req.add_header("X-API-Key", master_key)
+
+    try:
+        with urllib.request.urlopen(req, timeout=10) as response:
+            data = json.loads(response.read().decode("utf-8"))
+            return data.get("value")
+    except Exception:
+        # Fallback: Check local directory directly if server is down
+        # Handle both hyphen and underscore naming conventions
+        alt_name = secret_name.replace("-", "_")
+        for name in [secret_name, alt_name]:
+            local_path = LOCAL_SECRETS_DIR / name
+            if local_path.exists():
+                with open(local_path, "r") as f:
+                    return f.read().strip()
+        return None
+
+
+def setup_secrets() -> dict:
+    """
+    Fetch secrets on-demand and create secret files.
+    No predefined list - secrets are created as requested.
+    """
+    SECRETS_DIR.mkdir(parents=True, exist_ok=True)
+    return {}  # Secrets are fetched on-demand by copaw
+
+
+def run_copaw():
+    """Run the actual copaw binary with secrets configured."""
+    print("Starting copaw with dynamic secrets...", file=sys.stderr)
+
+    # Setup secrets directory
+    setup_secrets()
+
+    # Find the real copaw binary in venv
+    venv_copaw = COPAW_HOME / "venv" / "bin" / "copaw"
+
+    if not venv_copaw.exists():
+        print(f"Error: Copaw venv binary not found at {venv_copaw}", file=sys.stderr)
+        sys.exit(1)
+
+    # Run copaw with inherited environment
+    env = os.environ.copy()
+
+    # Set credentials API key for copaw to use
+    master_key = get_master_key()
+    if master_key:
+        env["COPAW_CREDENTIALS_API_KEY"] = master_key
+
+    # Fetch and set GOOGLE_API_KEY for Gemini/Gemma models (via Credentials Server)
+    # Try gemini-api-key first (from credentials server), then fall back to google_api_key (local)
+    google_api_key = fetch_secret("gemini-api-key")
+    if not google_api_key:
+        google_api_key = fetch_secret("google_api_key")
+    if google_api_key:
+        env["GOOGLE_API_KEY"] = google_api_key
+        print(
+            f"✓ Set GOOGLE_API_KEY (value: {google_api_key[:10]}...)", file=sys.stderr
+        )
+
+    print(f"Starting copaw from {venv_copaw}...", file=sys.stderr)
+    os.execv(str(venv_copaw), [str(venv_copaw)] + sys.argv[1:])
+
+
+if __name__ == "__main__":
+    run_copaw()

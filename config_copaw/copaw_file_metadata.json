@@ -1,0 +1,53 @@
+{
+  "memory": {
+    "/Users/danexall/biomimetics/config_copaw/memory/test-file-json.md": {
+      "path": "/Users/danexall/biomimetics/config_copaw/memory/test-file-json.md",
+      "hash": "3a32dae6439e78f5b2e18d8cc0f2ad9f9576b978e044956d72815a1c0369c114",
+      "mtime_ms": 1774136484100.5742,
+      "size": 38,
+      "chunk_count": 1
+    },
+    "/Users/danexall/biomimetics/config_copaw/memory/test-file.md": {
+      "path": "/Users/danexall/biomimetics/config_copaw/memory/test-file.md",
+      "hash": "9c0cc0826564190abeed9e9e4986f23a40fedca17b005abf4063f067080ae007",
+      "mtime_ms": 1774136917461.026,
+      "size": 16,
+      "chunk_count": 1
+    },
+    "/Users/danexall/biomimetics/config_copaw/memory/test_direct.md": {
+      "path": "/Users/danexall/biomimetics/config_copaw/memory/test_direct.md",
+      "hash": "6ed9d5cc1f58efe4c9431170a5742a72f785d2fbb6d17598a81262e225d4b38b",
+      "mtime_ms": 1774137380022.1997,
+      "size": 19,
+      "chunk_count": 1
+    },
+    "/Users/danexall/biomimetics/config_copaw/memory/simple-test.txt.md": {
+      "path": "/Users/danexall/biomimetics/config_copaw/memory/simple-test.txt.md",
+      "hash": "9c0cc0826564190abeed9e9e4986f23a40fedca17b005abf4063f067080ae007",
+      "mtime_ms": 1774136747523.7927,
+      "size": 16,
+      "chunk_count": 1
+    },
+    "/Users/danexall/biomimetics/config_copaw/memory/test-save-memory.md": {
+      "path": "/Users/danexall/biomimetics/config_copaw/memory/test-save-memory.md",
+      "hash": "82e087c3217308d30c2f350de75bd29409c9ef3e4d3293ff3ff27d657023db8c",
+      "mtime_ms": 1774137262797.6318,
+      "size": 36,
+      "chunk_count": 1
+    },
+    "/Users/danexall/biomimetics/config_copaw/memory.md": {
+      "path": "/Users/danexall/biomimetics/config_copaw/memory.md",
+      "hash": "1c0572cf0e3ff3058e5928d727a4ef7834121e2451c277b72b2c2cdf9e0d7fcb",
+      "mtime_ms": 1773743258874.3435,
+      "size": 511,
+      "chunk_count": 1
+    },
+    "/Users/danexall/biomimetics/config_copaw/MEMORY.md": {
+      "path": "/Users/danexall/biomimetics/config_copaw/MEMORY.md",
+      "hash": "1c0572cf0e3ff3058e5928d727a4ef7834121e2451c277b72b2c2cdf9e0d7fcb",
+      "mtime_ms": 1773743258874.3435,
+      "size": 511,
+      "chunk_count": 1
+    }
+  }
+}
