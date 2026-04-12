@@ -11,11 +11,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Canary Diagnostic
+        env:
+          MY_PAT: ${{ secrets.BIOS_PROJECT_PAT }}
         run: |
           echo "Runner is alive."
-          echo "Secret bound: ${{ secrets.BIOS_PROJECT_PAT != '' }}"
-          SECRET_VAL="${{ secrets.BIOS_PROJECT_PAT }}"
-          echo "Secret length: ${#SECRET_VAL}"
+          if [ -n "$MY_PAT" ]; then
+            echo "Secret is bound."
+            echo "Secret length: ${#MY_PAT}"
+          else
+            echo "Secret is EMPTY."
+          fi
 
       - name: Sync to BiOS Project Board
         uses: actions/add-to-project@v0.5.0
