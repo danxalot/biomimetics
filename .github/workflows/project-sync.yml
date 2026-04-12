@@ -10,6 +10,13 @@ jobs:
   sync_project:
     runs-on: ubuntu-latest
     steps:
+      - name: Canary Diagnostic
+        run: |
+          echo "Runner is alive."
+          echo "Secret bound: ${{ secrets.BIOS_PROJECT_PAT != '' }}"
+          SECRET_VAL="${{ secrets.BIOS_PROJECT_PAT }}"
+          echo "Secret length: ${#SECRET_VAL}"
+
       - name: Sync to BiOS Project Board
         uses: actions/add-to-project@v0.5.0
         with:
