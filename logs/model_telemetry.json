@@ -1,0 +1,37 @@
+{
+  "kimi-k2.5": {
+    "success_rate": 1.0,
+    "latency_avg_ms": 1500,
+    "known_quirks": [],
+    "brief_sensitivity": 0.5,
+    "last_updated": "2026-04-04T18:51:00Z"
+  },
+  "glm-4v": {
+    "success_rate": 1.0,
+    "latency_avg_ms": 1200,
+    "known_quirks": [],
+    "brief_sensitivity": 0.5,
+    "last_updated": "2026-04-04T18:51:00Z"
+  },
+  "minimax-m2.5": {
+    "success_rate": 1.0,
+    "latency_avg_ms": 2000,
+    "known_quirks": [],
+    "brief_sensitivity": 0.5,
+    "last_updated": "2026-04-04T18:51:00Z"
+  },
+  "free-tier": {
+    "success_rate": 1.0,
+    "latency_avg_ms": 800,
+    "known_quirks": [],
+    "brief_sensitivity": 0.8,
+    "last_updated": "2026-04-04T18:51:00Z"
+  },
+  "gemma-4-31b-it": {
+    "success_rate": 1.0,
+    "latency_avg_ms": 1200,
+    "known_quirks": [],
+    "brief_sensitivity": 0.4,
+    "last_updated": "2026-04-04T18:51:00Z"
+  }
+}

@@ -103,7 +103,8 @@ scripts/secret_manager/
 config_copaw/
 config_copaw.secret/
 .serena/
-scripts/copaw/
+scripts/copaw/src/
+docs/
 models/
 scratch/
 knowledge/
@@ -111,3 +112,4 @@ knowledge/
 pythia/conversations/
 pythia/export/
 actions_logs/
+
