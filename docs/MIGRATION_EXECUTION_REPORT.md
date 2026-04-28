@@ -1,3 +1,8 @@
+---
+tags: [bios/architecture, bios/security, source/legacy]
+status: active
+---
+
 # Migration Execution Report - BLOCKED
 
 **Date**: 2026-03-19  

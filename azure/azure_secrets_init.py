@@ -290,7 +290,7 @@ def update_notion_mcp_config(secrets):
     mcp_config = {
         "mcpServers": {
             "notion": {
-                "command": "npx",
+                "command": "/usr/local/bin/npx",
                 "args": ["-y", "@notionhq/notion-mcp-server"],
                 "env": {"NOTION_TOKEN": notion_token},
             }

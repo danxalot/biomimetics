@@ -1,3 +1,8 @@
+---
+tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, source/legacy]
+status: active
+---
+
 # Biomimetics System Architecture
 
 > **Biomimetics** is the project management and optimization layer that brings structure, automation, and intelligence to the ARCA development ecosystem and related projects.

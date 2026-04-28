@@ -1,3 +1,8 @@
+---
+tags: [bios/architecture, bios/security, bios/swarm, source/legacy]
+status: active
+---
+
 # Phase 5: Desktop & Vision Actuator Integration
 
 ## Architecture Overview

@@ -1,3 +1,8 @@
+---
+tags: [bios/infrastructure, bios/memory, bios/security, source/legacy]
+status: active
+---
+
 # Dual-Protocol Email Daemon Implementation
 
 **Date:** 2026-03-22  

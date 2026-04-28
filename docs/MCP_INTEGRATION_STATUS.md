@@ -1,3 +1,8 @@
+---
+tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, source/legacy]
+status: active
+---
+
 # MCP Integration Status Report
 
 **Date**: 2026-03-19  
@@ -26,7 +31,7 @@
 - Notion MCP server configured and operational (token: `ntn_2071...`)
 - GCP Memory Gateway active and routing
 - Cloudflare Worker multi-system integration hub deployed
-- Notion databases exist: `3224d2d9fc7c80deb18dd94e22e5bb21` (Biomimetic OS)
+- Notion databases exist: `3284d2d9fc7c811188deeeaba9c5f845` (Biomimetic OS)
 
 **⚠️ What Needs Attention**:
 - **GitHub MCP container not running** - Previously deployed to `arca-consolidated` RG, but container was deleted/stopped
@@ -66,14 +71,14 @@ Resource Group: arca-rg (eastus)
       "command": "python3",
       "args": ["~/.copaw/bios_orchestrator.py"],
       "env": {
-        "NOTION_DB_ID": "3224d2d9fc7c80deb18dd94e22e5bb21",
+        "NOTION_DB_ID": "3284d2d9fc7c811188deeeaba9c5f845",
         "GCP_GATEWAY": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator"
       }
     }
   },
   "mcp_servers": {
     "notion": {
-      "command": "npx",
+      "command": "/usr/local/bin/npx",
       "args": ["-y", "@notionhq/notion-mcp-server"],
       "env": {
         "NOTION_TOKEN": "[NOTION_TOKEN_REDACTED]"
@@ -129,7 +134,7 @@ Resource Group: arca-rg (eastus)
 {
   "mcp_servers": {
     "notion": {
-      "command": "npx",
+      "command": "/usr/local/bin/npx",
       "args": ["-y", "@notionhq/notion-mcp-server"],
       "env": {
         "NOTION_TOKEN": "[NOTION_TOKEN_REDACTED]"
@@ -241,7 +246,7 @@ Resource Group: arca-rg (eastus)
 {
   "mcpServers": {
     "notion": {
-      "command": "npx",
+      "command": "/usr/local/bin/npx",
       "args": ["-y", "@notionhq/notion-mcp-server"],
       "env": {
         "NOTION_TOKEN": "[NOTION_TOKEN_REDACTED]"
@@ -255,10 +260,10 @@ Resource Group: arca-rg (eastus)
 
 | Database | ID | Purpose |
 |----------|-----|---------|
-| **Biomimetic OS** | `3224d2d9fc7c80deb18dd94e22e5bb21` | Project tracking |
-| **Life OS Triage** | `3254d2d9fc7c81228daefc564e912546` | Email/webhook triage |
-| **Tool Guard** | `3254d2d9fc7c81228daefc564e912546` | Security & approvals |
-| **CoPaw Approval** | `3274d2d9fc7c8161a00cd9995cff5520` | Tool approvals |
+| **Biomimetic OS** | `3284d2d9fc7c811188deeeaba9c5f845` | Project tracking |
+| **Life OS Triage** | `3284d2d9fc7c81bd9a91e865511e642f` | Email/webhook triage |
+| **Tool Guard** | `3284d2d9fc7c8113bfecca75f4235ece` | Security & approvals |
+| **CoPaw Approval** | `3284d2d9fc7c8113bfecca75f4235ece` | Tool approvals |
 
 #### Integration Status
 
@@ -486,7 +491,7 @@ az container logs -g arca-mcp-services -n github-mcp-sse
 
 ```bash
 # Test Notion token
-npx -y @notionhq/notion-mcp-server
+/usr/local/bin/npx -y @notionhq/notion-mcp-server
 
 # Check database access
 # Open Notion → Database → ... → Connect to → Select integration
@@ -532,7 +537,7 @@ grep GCP_GATEWAY cloudflare/wrangler.toml
 {
   "mcp_servers": {
     "notion": {
-      "command": "npx",
+      "command": "/usr/local/bin/npx",
       "args": ["-y", "@notionhq/notion-mcp-server"],
       "env": {
         "NOTION_TOKEN": "[NOTION_TOKEN_REDACTED]"
@@ -550,7 +555,7 @@ grep GCP_GATEWAY cloudflare/wrangler.toml
       "command": "python3",
       "args": ["~/.copaw/bios_orchestrator.py"],
       "env": {
-        "NOTION_DB_ID": "3224d2d9fc7c80deb18dd94e22e5bb21",
+        "NOTION_DB_ID": "3284d2d9fc7c811188deeeaba9c5f845",
         "GCP_GATEWAY": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator"
       }
     }
@@ -566,7 +571,7 @@ grep GCP_GATEWAY cloudflare/wrangler.toml
 {
   "mcp_servers": {
     "notion": {
-      "command": "npx",
+      "command": "/usr/local/bin/npx",
       "args": ["-y", "@notionhq/notion-mcp-server"],
       "env": {
         "NOTION_TOKEN": "[NOTION_TOKEN_REDACTED]"

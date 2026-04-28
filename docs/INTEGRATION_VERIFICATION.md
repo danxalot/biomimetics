@@ -1,3 +1,8 @@
+---
+tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, context/life, source/legacy]
+status: active
+---
+
 # Integration Endpoint Verification Report
 
 **Generated:** 2026-03-22  
@@ -39,12 +44,12 @@
 
 **Environment Variables:**
 ```toml
-NOTION_DB_ID = "3224d2d9fc7c80deb18dd94e22e5bb21"
-BIOMIMETIC_DB_ID = "3224d2d9fc7c80deb18dd94e22e5bb21"
-LIFE_OS_TRIAGE_DB_ID = "3254d2d9fc7c81228daefc564e912546"
-TOOL_GUARD_DB_ID = "3254d2d9fc7c81228daefc564e912546"
+NOTION_DB_ID = "3284d2d9fc7c811188deeeaba9c5f845"
+BIOMIMETIC_DB_ID = "3284d2d9fc7c811188deeeaba9c5f845"
+LIFE_OS_TRIAGE_DB_ID = "3284d2d9fc7c81bd9a91e865511e642f"
+TOOL_GUARD_DB_ID = "3284d2d9fc7c8113bfecca75f4235ece"
 GCP_GATEWAY = "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator"
-COPAW_APPROVAL_DB_ID = "3274d2d9fc7c8161a00cd9995cff5520"
+COPAW_APPROVAL_DB_ID = "3284d2d9fc7c8113bfecca75f4235ece"
 GEMINI_API_KEY = "AIzaSyDfnNa-IJpPZGB0Jfc4QqvVK_jIJXNWtpY"
 GITHUB_TOKEN = "[GITHUB_TOKEN_REDACTED]"
 ```

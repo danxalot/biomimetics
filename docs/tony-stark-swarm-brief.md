@@ -1,3 +1,8 @@
+---
+tags: [bios/architecture, bios/infrastructure, bios/memory, bios/swarm, bios/voice, source/legacy]
+status: active
+---
+
 # Tony Stark Swarm - Meta-Cognitive Project Development System
 
 ## Executive Summary

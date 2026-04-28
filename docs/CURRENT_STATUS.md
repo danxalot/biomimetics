@@ -1,3 +1,8 @@
+---
+tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/voice, context/life, source/legacy]
+status: active
+---
+
 # Biomimetics Project - Current Development Status
 
 **Last Updated**: 2026-03-18  
@@ -64,9 +69,9 @@
 
 | Database | ID | Status | Purpose |
 |----------|-----|--------|---------|
-| **Biomimetic OS** | `3224d2d9-fc7c-80de-b18d-d94e22e5bb21` | ✅ Active | Project tracking |
+| **Biomimetic OS** | `3284d2d9-fc7c-8111-88de-eeaba9c5f845` | ✅ Active | Project tracking |
 | **Life OS Triage** | Same as above | ✅ Active | Email/webhook triage |
-| **Tool Guard** | `3254d2d9-fc7c-8122-8dae-fc564e912546` | ✅ Active | Security & approvals |
+| **Tool Guard** | `3284d2d9-fc7c-8113-bfe-ecca75f4235ece` | ✅ Active | Security & approvals |
 
 ### Pending Creation
 

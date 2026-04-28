@@ -1,3 +1,8 @@
+---
+tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, source/legacy]
+status: active
+---
+
 # Phase 6: Unified Inbox & File Pipeline
 
 ## Architecture Overview

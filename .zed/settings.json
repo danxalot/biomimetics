@@ -1,7 +1,7 @@
 {
   "mcp_servers": {
     "notion": {
-      "command": "npx",
+      "command": "/usr/local/bin/npx",
       "args": ["-y", "@notionhq/notion-mcp-server"],
       "env": {
         "NOTION_TOKEN": "[NOTION_TOKEN_REDACTED]"
@@ -15,10 +15,10 @@
   "agent_servers": {
     "BiOS_PM": {
       "type": "custom",
-      "command": "python3",
+      "command": "/usr/bin/python3",
       "args": ["~/.copaw/bios_orchestrator.py"],
       "env": {
-        "NOTION_DB_ID": "3224d2d9fc7c80deb18dd94e22e5bb21",
+        "NOTION_DB_ID": "3284d2d9fc7c811188deeeaba9c5f845",
         "GCP_GATEWAY": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator"
       }
     }

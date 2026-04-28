@@ -1,3 +1,8 @@
+---
+tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, bios/voice, context/life, source/legacy]
+status: active
+---
+
 # Project Documentation Assessment
 
 **Date**: 2026-03-19  
@@ -138,10 +143,10 @@ cd ~/biomimetics/azure
 
 | Database | ID | Status | Purpose |
 |----------|-----|--------|---------|
-| **Biomimetic OS** | `3224d2d9fc7c80deb18dd94e22e5bb21` | ✅ Active | Project tracking |
-| **Life OS Triage** | `3254d2d9fc7c81228daefc564e912546` | ✅ Active | Email/webhook triage |
-| **Tool Guard** | `3254d2d9fc7c81228daefc564e912546` | ✅ Active | Security & approvals |
-| **CoPaw Approval** | `3274d2d9fc7c8161a00cd9995cff5520` | ✅ Active | Tool approvals |
+| **Biomimetic OS** | `3284d2d9fc7c811188deeeaba9c5f845` | ✅ Active | Project tracking |
+| **Life OS Triage** | `3284d2d9fc7c81bd9a91e865511e642f` | ✅ Active | Email/webhook triage |
+| **Tool Guard** | `3284d2d9fc7c8113bfecca75f4235ece` | ✅ Active | Security & approvals |
+| **CoPaw Approval** | `3284d2d9fc7c8113bfecca75f4235ece` | ✅ Active | Tool approvals |
 
 **MCP Server**: `@notionhq/notion-mcp-server` (npx)
 - Token: `[NOTION_TOKEN_REDACTED]`
@@ -177,11 +182,11 @@ cd ~/biomimetics/azure
 
 **Secrets** (wrangler.toml):
 ```toml
-NOTION_DB_ID = "3224d2d9fc7c80deb18dd94e22e5bb21"
-BIOMIMETIC_DB_ID = "3224d2d9fc7c80deb18dd94e22e5bb21"
-LIFE_OS_TRIAGE_DB_ID = "3254d2d9fc7c81228daefc564e912546"
-TOOL_GUARD_DB_ID = "3254d2d9fc7c81228daefc564e912546"
-COPAW_APPROVAL_DB_ID = "3274d2d9fc7c8161a00cd9995cff5520"
+NOTION_DB_ID = "3284d2d9fc7c811188deeeaba9c5f845"
+BIOMIMETIC_DB_ID = "3284d2d9fc7c811188deeeaba9c5f845"
+LIFE_OS_TRIAGE_DB_ID = "3284d2d9fc7c81bd9a91e865511e642f"
+TOOL_GUARD_DB_ID = "3284d2d9fc7c8113bfecca75f4235ece"
+COPAW_APPROVAL_DB_ID = "3284d2d9fc7c8113bfecca75f4235ece"
 GCP_GATEWAY = "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator"
 GEMINI_API_KEY = "AIzaSyDfnNa-IJpPZGB0Jfc4QqvVK_jIJXNWtpY"
 GITHUB_TOKEN = "[GITHUB_TOKEN_REDACTED]"

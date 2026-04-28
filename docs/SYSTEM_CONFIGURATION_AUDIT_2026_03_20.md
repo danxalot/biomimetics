@@ -1,3 +1,8 @@
+---
+tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, bios/voice, context/life, source/legacy]
+status: active
+---
+
 # System Configuration & Voice Routing Audit
 
 **Generated:** 2026-03-20  
@@ -50,7 +55,7 @@ Return summary
 | **Status** | ⚠️ Partial - Webhooks configured |
 | **Worker Routes** | `issues`, `pull_request`, `push` events |
 | **Endpoint** | `https://arca-github-notion-sync.dan-exall.workers.dev` |
-| **Databases** | Biomimetic OS: `3224d2d9fc7c80deb18dd94e22e5bb21` |
+| **Databases** | Biomimetic OS: `3284d2d9fc7c811188deeeaba9c5f845` |
 
 **⚠️ DISCONNECTED BRIDGE:** No GitHub workflows found in `~/.github/workflows/`. The PM Agent relies solely on Cloudflare cron triggers, not native GitHub Actions integration.
 
@@ -108,7 +113,7 @@ Return summary
 |-----------|-------|
 | **Status** | ✅ Active |
 | **Location** | `scripts/copaw/copaw-tool-guard.py` |
-| **Approval DB** | `3274d2d9fc7c8161a00cd9995cff5520` (CoPaw Approval) |
+| **Approval DB** | `3284d2d9fc7c8113bfecca75f4235ece` (CoPaw Approval) |
 | **High-Risk Patterns** | `git push`, `git commit`, `rm -rf`, `sudo`, `curl|sh`, `serena.execute_shell_command` |
 
 **⚠️ CRITICAL DISCONNECTS:**
@@ -238,11 +243,11 @@ Execute Approved Action
 |--------|-------|---------|
 | `GEMINI_API_KEY` | `AIzaSyDfnNa-IJpPZGB0Jfc4QqvVK_jIJXNWtpY` | Google AI Studio access (PM Agent) |
 | `GITHUB_TOKEN` | `[GITHUB_TOKEN_REDACTED]` | GitHub API access |
-| `NOTION_DB_ID` | `3224d2d9fc7c80deb18dd94e22e5bb21` | Biomimetic OS database |
-| `BIOMIMETIC_DB_ID` | `3224d2d9fc7c80deb18dd94e22e5bb21` | Alias for NOTION_DB_ID |
-| `LIFE_OS_TRIAGE_DB_ID` | `3254d2d9fc7c81228daefc564e912546` | Life OS Triage database |
-| `TOOL_GUARD_DB_ID` | `3254d2d9fc7c81228daefc564e912546` | Tool Guard database |
-| `COPAW_APPROVAL_DB_ID` | `3274d2d9fc7c8161a00cd9995cff5520` | CoPaw approvals database |
+| `NOTION_DB_ID` | `3284d2d9fc7c811188deeeaba9c5f845` | Biomimetic OS database |
+| `BIOMIMETIC_DB_ID` | `3284d2d9fc7c811188deeeaba9c5f845` | Alias for NOTION_DB_ID |
+| `LIFE_OS_TRIAGE_DB_ID` | `3284d2d9fc7c81bd9a91e865511e642f` | Life OS Triage database |
+| `TOOL_GUARD_DB_ID` | `3284d2d9fc7c8113bfecca75f4235ece` | Tool Guard database |
+| `COPAW_APPROVAL_DB_ID` | `3284d2d9fc7c8113bfecca75f4235ece` | CoPaw approvals database |
 | `GCP_GATEWAY` | `https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator` | Memory gateway URL |
 
 ### Koyeb Deployment

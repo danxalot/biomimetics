@@ -26,7 +26,7 @@ NOTION_API_KEY = os.environ.get(
 )
 NOTION_APPROVAL_DB_ID = os.environ.get(
     "NOTION_APPROVAL_DB_ID", 
-    "3274d2d9fc7c8161a00cd9995cff5520"
+    "3284d2d9fc7c8113bfecca75f4235ece"
 )
 GCP_GATEWAY_URL = os.environ.get(
     "GCP_GATEWAY_URL",

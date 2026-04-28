@@ -1,3 +1,8 @@
+---
+tags: [bios/architecture, bios/infrastructure, bios/security, bios/swarm, source/legacy]
+status: active
+---
+
 # X-Arca-Source Routing Implementation
 
 ## Deployment Complete ✓
