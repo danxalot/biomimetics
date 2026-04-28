@@ -1,3 +1,8 @@
+---
+tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, source/legacy]
+status: active
+---
+
 # Worker Routing Logic Update
 
 ## Deployment Complete ✓

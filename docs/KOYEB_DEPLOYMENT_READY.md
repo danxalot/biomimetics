@@ -1,3 +1,8 @@
+---
+tags: [bios/architecture, bios/security, bios/swarm, context/life, source/legacy]
+status: active
+---
+
 # Koyeb Deployment - Ready Status
 
 **Date**: 2026-03-19  

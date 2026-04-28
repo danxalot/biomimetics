@@ -1,3 +1,8 @@
+---
+tags: [bios/architecture, bios/security, source/legacy]
+status: active
+---
+
 # "Fix the Bleeding" - Execution Report
 
 **Date**: 2026-03-19  

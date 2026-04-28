@@ -1,3 +1,8 @@
+---
+tags: [bios/architecture, bios/infrastructure, bios/security, source/legacy]
+status: active
+---
+
 # Email Sync Fix Summary
 
 ## Problem Identified

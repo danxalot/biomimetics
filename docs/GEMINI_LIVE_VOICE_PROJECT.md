@@ -1,3 +1,8 @@
+---
+tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, bios/voice, source/legacy]
+status: active
+---
+
 # Gemini Live Voice API - Project Knowledge Graph
 
 ## 🎯 Project Overview
@@ -289,9 +294,9 @@ GCP_GATEWAY_URL = "https://us-central1-arca-471022.cloudfunctions.net/memory-orc
 - **Status**: ✅ Operational (needs voice action handlers)
 
 ### 3. **Notion Databases**
-- **Biomimetic OS**: `3224d2d9-fc7c-80de-b18d-d94e22e5bb21`
-- **Life OS Triage**: `3224d2d9-fc7c-80de-b18d-d94e22e5bb21`
-- **Tool Guard**: `3254d2d9-fc7c-8122-8dae-fc564e912546`
+- **Biomimetic OS**: `3284d2d9-fc7c-8111-88de-eeaba9c5f845`
+- **Life OS Triage**: `3284d2d9-fc7c-8111-88de-eeaba9c5f845`
+- **Tool Guard**: `3284d2d9-fc7c-8113-bfe-ecca75f4235ece`
 - **Status**: ⏳ Voice Session Logs DB needs creation
 
 ---

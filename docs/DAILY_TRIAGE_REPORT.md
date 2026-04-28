@@ -1,3 +1,8 @@
+---
+tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, bios/voice, context/legal, context/life, source/legacy]
+status: active
+---
+
 # Daily Triage Report
 
 **Generated:** 2026-03-20T04:15:00Z  
@@ -201,10 +206,10 @@ The BiOS infrastructure is now **operational** but requires attention on data in
 | Database | ID | Status |
 |----------|-----|--------|
 | **BiOS Root** | `3284d2d9fc7c81e4ae09c5769c3b4ed4` | ✅ Active |
-| **Biomimetic OS** | `3224d2d9fc7c80deb18dd94e22e5bb21` | ✅ Active |
-| **Life OS Triage** | `3254d2d9fc7c81228daefc564e912546` | ✅ Active (awaiting email) |
-| **Tool Guard** | `3254d2d9fc7c81228daefc564e912546` | ✅ Active |
-| **CoPaw Approval** | `3274d2d9fc7c8161a00cd9995cff5520` | ✅ Active |
+| **Biomimetic OS** | `3284d2d9fc7c811188deeeaba9c5f845` | ✅ Active |
+| **Life OS Triage** | `3284d2d9fc7c81bd9a91e865511e642f` | ✅ Active (awaiting email) |
+| **Tool Guard** | `3284d2d9fc7c8113bfecca75f4235ece` | ✅ Active |
+| **CoPaw Approval** | `3284d2d9fc7c8113bfecca75f4235ece` | ✅ Active |
 | **Memory Archive** | `3284d2d9fc7c81e4ae09c5769c3b4ed4` | ✅ Active |
 
 ---

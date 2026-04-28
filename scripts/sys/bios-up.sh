@@ -4,7 +4,6 @@
 
 USER_ID=$(id -u)
 LA=~/Library/LaunchAgents
-LOG=~/biomimetics/logs/jarvis.log
 
 echo "⚡ BiOS Master Ignition — Bringing systems online..."
 
@@ -45,19 +44,7 @@ else
     fi
 fi
 
-# 5. Jarvis Daemon (Voice Interface)
-echo "  [5/5] Starting Jarvis daemon..."
-JARVIS_PID=$(pgrep -f "jarvis_daemon.py" 2>/dev/null | head -1)
-if [ -n "$JARVIS_PID" ]; then
-    echo "    ✅ Jarvis running (PID $JARVIS_PID)"
-else
-    nohup python3 ~/biomimetics/scripts/copaw/jarvis_daemon.py >> "$LOG" 2>&1 &
-    sleep 2
-    JARVIS_PID=$(pgrep -f "jarvis_daemon.py" 2>/dev/null | head -1)
-    [ -n "$JARVIS_PID" ] \
-        && echo "    ✅ Jarvis started (PID $JARVIS_PID)" \
-        || echo "    ❌ Jarvis failed — check $LOG"
-fi
+# 5. [VACANT] - Previously Jarvis Daemon
 
 # 6. Log Reviewer (periodic Notion sync)
 echo "  [6/6] Starting log reviewer..."

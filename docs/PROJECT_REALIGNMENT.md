@@ -1,3 +1,8 @@
+---
+tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, source/legacy]
+status: active
+---
+
 # Project Realignment & Discovery Report
 
 **Date**: 2026-03-19  
@@ -49,10 +54,10 @@
 
 | Database | ID | Status |
 |----------|-----|--------|
-| **Biomimetic OS** | `3224d2d9fc7c80deb18dd94e22e5bb21` | ✅ Active |
-| **Life OS Triage** | `3254d2d9fc7c81228daefc564e912546` | ✅ Active |
-| **Tool Guard** | `3254d2d9fc7c81228daefc564e912546` | ✅ Active |
-| **CoPaw Approval** | `3274d2d9fc7c8161a00cd9995cff5520` | ✅ Active |
+| **Biomimetic OS** | `3284d2d9fc7c811188deeeaba9c5f845` | ✅ Active |
+| **Life OS Triage** | `3284d2d9fc7c81bd9a91e865511e642f` | ✅ Active |
+| **Tool Guard** | `3284d2d9fc7c8113bfecca75f4235ece` | ✅ Active |
+| **CoPaw Approval** | `3284d2d9fc7c8113bfecca75f4235ece` | ✅ Active |
 
 #### ARCA Project (Unknown ❌)
 

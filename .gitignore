@@ -21,6 +21,11 @@ scripts/secrets/__pycache__/
 *.log
 *.err
 .arca/
+node_modules/
+dist/
+build/
+.next/
+out/
 
 # State files
 *.state
@@ -54,3 +59,55 @@ temp/
 proton_exports/
 *.pyc
 **/__pycache__/
+all_logs.zip
+DEPRECATED_gemini-live-voice/
+canary_fix_*/
+
+# Llama-cpp-python Precision Ignores (Keep scripts, ignore bloat)
+llama_cpp_bypass/**/build/
+llama_cpp_bypass/**/vendor/
+llama_cpp_bypass/**/_skbuild/
+llama_cpp_bypass/**/external/
+llama_cpp_bypass/**/*.so
+llama_cpp_bypass/**/*.dylib
+llama_cpp_bypass/**/*.a
+llama_cpp_bypass/**/*.o
+llama_cpp_bypass/**/*.pyd
+llama_cpp_bypass/**/__pycache__/
+/llama_cpp_bypass/llama-cpp-python-build/
+/llama_cpp_bypass/venv/
+canary_logs_*/
+canary_fix_completed_dir/
+canary_fix_final_dir/
+canary_fix_logs_dir/
+canary_logs_PROVED_dir/
+canary_logs_dir/
+canary_logs_final_dir/
+/llama_cpp_bypass/venv/
+/llama_cpp_bypass/llama-cpp-python-build/
+**/node_modules/
+**/venv/
+**/.venv/
+**/dist/
+**/build/
+**/.next/
+**/out/
+
+# Large dataset bundles (uploaded to Kaggle separately)
+pythia/data/kinematics/unpacked_bundle/
+scripts/secret_manager/.env
+.local_gdrive_token.json
+pythia/data/
+llama_cpp_bypass/
+scripts/secret_manager/
+config_copaw/
+config_copaw.secret/
+.serena/
+scripts/copaw/
+models/
+scratch/
+knowledge/
+*.zip
+pythia/conversations/
+pythia/export/
+actions_logs/

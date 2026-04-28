@@ -1,3 +1,8 @@
+---
+tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, bios/voice, source/legacy]
+status: active
+---
+
 # Biomimetics Project - Comprehensive Audit & Consolidation Report
 
 **Date**: 2026-03-18  
@@ -119,9 +124,9 @@ This document provides a complete audit of all project files scattered across th
 
 | Component | Status | Location |
 |-----------|--------|----------|
-| Biomimetic OS DB | ✅ Active | `3224d2d9-fc7c-80de-b18d-d94e22e5bb21` |
-| Life OS Triage DB | ✅ Same as Biomimetic OS | `3224d2d9-fc7c-80de-b18d-d94e22e5bb21` |
-| Tool Guard DB | ✅ Configured | `3254d2d9-fc7c-8122-8dae-fc564e912546` |
+| Biomimetic OS DB | ✅ Active | `3284d2d9-fc7c-8111-88de-eeaba9c5f845` |
+| Life OS Triage DB | ✅ Same as Biomimetic OS | `3284d2d9-fc7c-8111-88de-eeaba9c5f845` |
+| Tool Guard DB | ✅ Configured | `3284d2d9-fc7c-8113-bfe-ecca75f4235ece` |
 | GitHub→Notion Worker | ✅ Deployed | Cloudflare Worker |
 
 ### 4.3 Notion Documentation Gaps

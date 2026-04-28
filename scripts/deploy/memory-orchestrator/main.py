@@ -12,7 +12,8 @@ import functions_framework
 
 # Configuration
 # NOTE: Using GCP Internal IP 10.128.0.3 (requires Serverless VPC Access).
-MUNINN_VM_URL = os.environ.get("MUNINN_VM_URL", "http://10.128.0.3:8097")
+# Consolidating to native Go service on port 8475.
+MUNINN_VM_URL = os.environ.get("MUNINN_VM_URL", "http://10.128.0.3:8475")
 MEMU_URL = os.environ.get("MEMU_URL", "https://memu-757330161781.us-central1.run.app")
 
 # Token budgeting configuration
@@ -150,25 +151,31 @@ def handle_search(payload: dict) -> tuple:
     muninn_budget = MUNINN_TOKEN_BUDGET
     memu_budget = MEMU_TOKEN_BUDGET
     
-    # Query MuninnDB (working memory)
+    # Query MuninnDB (native Go REST API)
     muninn_payload = {
         "query": query,
-        "user_id": user_id,
-        "limit": 20,  # Get more, filter by token budget later
+        "vault": "default",
+        "limit": 20,
         "min_confidence": MIN_CONFIDENCE_THRESHOLD
     }
-    muninn_results = call_endpoint(f"{MUNINN_VM_URL}/Activate", muninn_payload)
+    # Go service uses /api/activate for semantic search
+    muninn_raw = call_endpoint(f"{MUNINN_VM_URL}/api/activate", muninn_payload)
     
-    # Fallback to /search if /Activate doesn't exist
-    if "error" in muninn_results or not muninn_results.get("results"):
-        muninn_results = call_endpoint(f"{MUNINN_VM_URL}/search", {
-            "query": query,
-            "limit": 20
-        })
+    # Map Go 'activations' to expected 'results' format
+    muninn_results = []
+    if "activations" in muninn_raw:
+        for act in muninn_raw["activations"]:
+            muninn_results.append({
+                "id": act.get("id"),
+                "content": act.get("content"),
+                "confidence": act.get("confidence", 0.0),
+                "metadata": act.get("metadata", {}),
+                "source": "muninn_working"
+            })
     
     # Apply token budgeting to MuninnDB results
     muninn_budgeted = apply_token_budget(
-        muninn_results.get("results", []),
+        muninn_results,
         muninn_budget,
         "muninn_working"
     )
@@ -241,13 +248,13 @@ def handle_memorize(payload: dict) -> tuple:
     if content_tokens > MAX_TOTAL_TOKENS:
         content = truncate_to_token_budget(content, MAX_TOTAL_TOKENS)
     
-    # Store in MuninnDB (working memory)
+    # Store in MuninnDB (native Go REST API - /api/engrams)
     muninn_payload = {
         "content": content,
         "metadata": metadata,
-        "user_id": user_id
+        "vault": "default"
     }
-    muninn_result = call_endpoint(f"{MUNINN_VM_URL}/memorize", muninn_payload)
+    muninn_result = call_endpoint(f"{MUNINN_VM_URL}/api/engrams", muninn_payload)
     
     # Build response
     response = {

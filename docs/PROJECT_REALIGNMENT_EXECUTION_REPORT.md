@@ -1,3 +1,8 @@
+---
+tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, source/legacy]
+status: active
+---
+
 # Project Realignment - Execution Report
 
 **Date**: 2026-03-19  
@@ -48,9 +53,9 @@ Searched entire codebase for 32-character hex strings (Notion DB ID format):
 ```
 Found 61 matches total:
 - 4 Biomimetics OS databases: 
-  - 3224d2d9fc7c80deb18dd94e22e5bb21 (Biomimetic OS)
-  - 3254d2d9fc7c81228daefc564e912546 (Life OS Triage / Tool Guard)
-  - 3274d2d9fc7c8161a00cd9995cff5520 (CoPaw Approval)
+  - 3284d2d9fc7c811188deeeaba9c5f845 (Biomimetic OS)
+  - 3284d2d9fc7c81bd9a91e865511e642f (Life OS Triage / Tool Guard)
+  - 3284d2d9fc7c8113bfecca75f4235ece (CoPaw Approval)
   - 3244d2d9fc7c808b97c3ce78648d77a1 (Old Biomimetic OS)
 - Azure subscription/tenant IDs
 - Cloudflare tunnel IDs
@@ -66,11 +71,11 @@ The worker (`cloudflare/index.js`) only has Biomimetics databases configured:
 
 ```javascript
 // wrangler.toml configuration
-NOTION_DB_ID = "3224d2d9fc7c80deb18dd94e22e5bb21"  // Biomimetics
-BIOMIMETIC_DB_ID = "3224d2d9fc7c80deb18dd94e22e5bb21"
-LIFE_OS_TRIAGE_DB_ID = "3254d2d9fc7c81228daefc564e912546"
-TOOL_GUARD_DB_ID = "3254d2d9fc7c81228daefc564e912546"
-COPAW_APPROVAL_DB_ID = "3274d2d9fc7c8161a00cd9995cff5520"
+NOTION_DB_ID = "3284d2d9fc7c811188deeeaba9c5f845"  // Biomimetics
+BIOMIMETIC_DB_ID = "3284d2d9fc7c811188deeeaba9c5f845"
+LIFE_OS_TRIAGE_DB_ID = "3284d2d9fc7c81bd9a91e865511e642f"
+TOOL_GUARD_DB_ID = "3284d2d9fc7c8113bfecca75f4235ece"
+COPAW_APPROVAL_DB_ID = "3284d2d9fc7c8113bfecca75f4235ece"
 
 // NO ARCA_PROJECTS_DB_ID
 // NO ARCA_TASKS_DB_ID

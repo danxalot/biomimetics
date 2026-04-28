@@ -1,3 +1,8 @@
+---
+tags: [bios/architecture, bios/infrastructure, bios/memory, bios/voice, source/legacy]
+status: active
+---
+
 # Phase 7: Multimodal Live API Voice Interface
 
 ## Architecture Overview

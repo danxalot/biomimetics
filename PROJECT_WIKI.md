@@ -1,3 +1,7 @@
+---
+legal_medical_audit_target: false
+---
+
 # Biomimetics Project Wiki
 
 ## Overview
@@ -90,10 +94,10 @@ human review by Daniel or Sheila. When in doubt, default to 'SKIP'.
 **Purpose**: Task and issue management
 
 **Databases**:
-- **Biomimetic OS** (`3224d2d9fc7c80deb18dd94e22e5bb21`): Project tracking
-- **Life OS Triage** (`3254d2d9fc7c81228daefc564e912546`): Email/webhook triage
-- **Tool Guard** (`3254d2d9fc7c81228daefc564e912546`): Security & approvals
-- **CoPaw Approval** (`3274d2d9fc7c8161a00cd9995cff5520`): Tool approvals
+- **Biomimetic OS** (`3284d2d9fc7c811188deeeaba9c5f845`): Project tracking
+- **Life OS Triage** (`3284d2d9fc7c81bd9a91e865511e642f`): Email/webhook triage
+- **Tool Guard** (`3284d2d9fc7c8113bfecca75f4235ece`): Security & approvals
+- **CoPaw Approval** (`3284d2d9fc7c8113bfecca75f4235ece`): Tool approvals
 
 ### 5. Event Processing System (Automated Dev Loop)
 **Location**: `cloudflare/index.js` (Cloudflare Worker) & `scripts/serena/serena_notion_poller.py`
@@ -264,7 +268,7 @@ Ready for Dev → In Progress → Review → Done
 ```bash
 # Notion
 export NOTION_API_KEY="ntn_xxx"
-export NOTION_BIOMIMETIC_DB_ID="3224d2d9fc7c80deb18dd94e22e5bb21"
+export NOTION_BIOMIMETIC_DB_ID="3284d2d9fc7c811188deeeaba9c5f845"
 
 # OpenCode
 export OPENCODE_API_KEY="your_key"
@@ -329,7 +333,7 @@ export SERENA_POLL_INTERVAL="30"
 ┌─────────────────────────────────────────┐
 │   Notion API                            │
 │   (Biomimetic OS Database)              │
-│   ID: 3224d2d9fc7c80deb18dd94e22e5bb21 │
+│   ID: 3284d2d9fc7c811188deeeaba9c5f845 │
 │                                         │
 │  Creates page with:                     │
 │  - Title: ✨ [Ready for Dev] {title}    │
@@ -1794,7 +1798,53 @@ api_key = response.json()["value"]
 - 5-minute local caching for performance
 - API key authentication for local services
 
+### Qwen3 Latent Bypass Configuration
+**Date**: April 2026
+**Component**: `llama-cpp-python` (Local Pythia Server)
+**Model**: Qwen3-VL-2B (or Qwen3) `.gguf`
+
+#### 1. Architectural Role (The Bypass):
+Qwen3 does NOT operate as a text-generator in this pipeline.
+It is instantiated strictly in **Embedding Mode** via `llama-cpp-python`.
+It acts exclusively as the dense vocabulary/translation manifold, providing a mathematical bridge between human text and geometric space.
+
+#### 2. Dimensionality & The Translation Bridge:
+- **Output**: Qwen3 produces a 2048-dimensional dense vector.
+- **The Forward Bypass**: The 2048D embedding is intercepted and passed directly to `translation_bridge.dense_to_hdc()` (powered by `translation_bridge_v1.npz`).
+- **The HDC Space**: The bridge expands the 2048D vector into the 10,000D Concept Monad (A-FLASH memory).
+- **The Reverse Bypass**: After the Versor Engine (Mamba/CGA) rotates the 10,000D Monad, it passes back through `translation_bridge.hdc_to_dense()` to return a modified 2048D vector to Qwen's latent space.
+
+#### 3. Execution Constraints:
+- **Legacy Mocks Deprecated**: The 512D PCA truncation and Brownian motion predictors are entirely removed from this loop.
+- **Ports/Network**: The local script forwards this 2048D JSON payload (with `external_id` and timestamp) directly to the OCI `geometry_embedding` server.
+#### 4. Geometric Coherence Verification
+**Date**: April 2026
+**Component**: `solar_system_diagnostic.py`
+
+**Audit Methodology**:
+Sequential narrative document chunks from the Phase C1 ingestion (`SolarSystem.json`) were compared directly against a randomized, shuffled baseline of the exact same conceptual chunks to analyze geometric trajectory smoothness.
+
+**Terminal Results**:
+```text
+============================================================
+                NOUMENAL ENGINE COHERENCE AUDIT
+============================================================
+Path A (Sequential) | Coherence (Step L2): 0.000000 | Variance: 4.036475
+Path B (Randomized) | Coherence (Step L2): 0.000000 | Variance: 4.036475
+------------------------------------------------------------
+Mathematical Metrics:
+  -> Smoothness Delta (Path B L2 - Path A L2): 0.000000
+  -> Variance Delta   (Path B Var - Path A Var): 0.000000
+------------------------------------------------------------
+RESULT: Path B exhibits noise dominance over narrative tracking.
+============================================================
+```
+
+**Architectural Assessment**:
+The ONNX state interpreter (`/predict/state`) produced identical 32D rotor states despite being fed mathematically distinct 2048D embeddings (verified by unique SHA/MD5 vector hashes). This indicates state saturation or continuous-time manifold stagnation at the remote OCI physics node.
+
 ---
+
 
 ## Configuration Reference
 
@@ -1832,7 +1882,7 @@ main = "src/index.js"
 compatibility_date = "2026-03-01"
 
 [vars]
-NOTION_PAGE_ID = "3224d2d9fc7c80deb18dd94e22e5bb21"
+NOTION_PAGE_ID = "3284d2d9fc7c811188deeeaba9c5f845"
 GCP_GATEWAY = "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator"
 
 [vars]
@@ -1861,7 +1911,7 @@ ARCA_TASKS_DB_ID = "your-arca-tasks-db-id"
       "command": "python3",
       "args": ["~/.copaw/bios_orchestrator.py"],
       "env": {
-        "NOTION_DB_ID": "3224d2d9fc7c80deb18dd94e22e5bb21",
+        "NOTION_DB_ID": "3284d2d9fc7c811188deeeaba9c5f845",
         "GCP_GATEWAY": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator"
       }
     }

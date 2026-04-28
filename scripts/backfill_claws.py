@@ -29,7 +29,7 @@ SINCE_DATE = "25-Dec-2025"  # Format: DD-Mon-YYYY
 GCP_GATEWAY_URL = (
     "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator"
 )
-NOTION_TRIAGE_DB_ID = "3254d2d9fc7c81228daefc564e912546"
+NOTION_TRIAGE_DB_ID = "3284d2d9fc7c81bd9a91e865511e642f"
 
 # Setup logging
 logging.basicConfig(

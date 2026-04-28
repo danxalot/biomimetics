@@ -9,7 +9,7 @@ Before executing any structural modifications or multi-file code changes, agents
 If execution loops occur, previous instructions are ignored, or errors compound, agents must recognize they have exceeded their operational context window. Cease current execution, output a summary of the progress and current state to a planning document, and instantiate a fresh session using the saved state as the new baseline.
 
 3. Adhere to Persistent Rules
-Agents must ingest and prioritize project-specific rules files (e.g., .clauderc, .cursorrules, or agents.md) at the beginning of every session. These files act as the persistent memory for architectural preferences, naming conventions, and constraints, ensuring consistent execution across ephemeral chat sessions.
+Agents must ingest and prioritize project-specific rules files (e.g. agents.md) at the beginning of every session. These files act as the persistent memory for architectural preferences, naming conventions, and constraints, ensuring consistent execution across ephemeral chat sessions.
 
 4. Execute via Small Bets
 Minimize the "blast radius" of any given operation. Do not attempt sweeping, multi-system refactors in a single prompt. Break complex feature requests into isolated, modular tasks. Execute, validate completeness, and secure a save point for each individual component before proceeding to the next.
@@ -20,7 +20,19 @@ Agents must autonomously identify and address critical operational gaps that are
 - Enforce strict data boundaries (e.g., row-level security) and never output or log raw secret keys or payment information.
 - Design architecture relative to expected scaling requirements rather than defaulting to minimum viable local configurations.
 
-6. Maintain the Active Project Knowledge Graph (System Protocol)
-As agents execute tasks, they must dynamically orient themselves to the currently open IDE workspace. Agents must continuously document structural changes, workflows, and system states within the Documentation database corresponding to the active project.
-- Structure: Documentation must remain thin, hierarchical, and optimized for both human readability and agent ingestion.
-- Relational Interlinking: Always link documentation entries to their corresponding Projects and Tasks database entries for the active workspace. This cross-linking naturally builds a persistent, navigable knowledge graph, preventing context loss and ensuring all future agent sessions can seamlessly orient themselves within the system state, regardless of which specific project directory is currently in focus.
+6. Artifact Handoff & The Obsidian Knowledge Graph (Decoupled Documentation)
+Agents executing tasks in the IDE are strictly 'Generators,' not 'Archivists.' You are not responsible for formatting final documentation into the Obsidian vault.
+
+The Handoff Protocol: Upon completing a task, the IDE agent must dump all raw context (architectural decisions, SITREPs, modified file paths, and execution logs) directly into the active Notion Task card.
+
+Status Update: Once the raw artifacts are logged, change the Notion task status to Ready for Sync (or Done).
+
+The Archivist: A dedicated background agent handles the synthesis of these Notion artifacts into the local Obsidian Markdown vault and pushes them via the GDrive MCP. IDE agents must not attempt to write directly to the Obsidian vault unless explicitly commanded to do so by the host to bypass the Archivist.
+
+## BiOS Operational Lockdown (Strict Constraints)
+The following absolute constraints govern all agent operations:
+
+1. **No Headless Spawning**: Headless background agents, daemons, or long-running detached processes (e.g., `&`) are strictly prohibited. All commands must run synchronously in the primary terminal.
+2. **'One and Done' Rule**: Execute exactly one task at a time. Explicit host approval is required before pulling a new task or performing subsequent system state modifications.
+3. **Read-Only Configuration**: Files within `/config_copaw/` and all `.env` files are read-only. Modification requires explicit, prior host authorization.
+4. **Cloud Cost Constraint**: All Cloud Provider infrastructure maintainance and development must remain within free tier limits.

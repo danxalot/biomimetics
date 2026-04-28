@@ -1,3 +1,8 @@
+---
+tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, bios/voice, source/legacy]
+status: active
+---
+
 # BiOS Operational Loop - Closure Report
 
 **Date:** 2026-03-20  
@@ -127,7 +132,7 @@ HIGH_RISK_PATTERNS = [
 | Feature | Description |
 |---------|-------------|
 | **Poll Interval** | 15 seconds (configurable via `APPROVAL_POLL_INTERVAL`) |
-| **Target DB** | CoPaw Approval DB (`3274d2d9fc7c8161a00cd9995cff5520`) |
+| **Target DB** | CoPaw Approval DB (`3284d2d9fc7c8113bfecca75f4235ece`) |
 | **Signal File** | `~/.arca/approved_actions.json` |
 | **State Tracking** | `~/.arca/approval_poller_state.json` |
 
@@ -195,7 +200,7 @@ python3 ~/biomimetics/scripts/copaw/approval_poller.py
 
 ### Output Destinations
 
-1. **Notion** - Tool Guard Database (`3254d2d9fc7c81228daefc564e912546`)
+1. **Notion** - Tool Guard Database (`3284d2d9fc7c8113bfecca75f4235ece`)
 2. **GCP Gateway** - Memory archival via `memory-orchestrator`
 3. **Local Log** - `~/.arca/cloud_usage.log`
 

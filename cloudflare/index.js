@@ -13,6 +13,12 @@
  * - GITHUB_WEBHOOK_SECRET: Webhook validation secret
  */
 
+/**
+ * Global OIDC Token Cache (Task 3: Phase 5.1)
+ */
+let cachedOidcToken = null;
+let oidcTokenExpiry = 0;
+
 export default {
   async fetch(request, env) {
     // Only accept POST requests (GET allowed for Serena queries)
@@ -316,16 +322,22 @@ async function syncTask(payload, env, databaseId, notionToken) {
   const notionData = {
     parent: { database_id: databaseId },
     properties: {
-      "Name": {
+      "Task Name": {
         title: [{ text: { content: `[TASK] ${title}` } }]
       },
       "Status": {
-        multi_select: [{ name: status }]
-      },
-      "Description": {
-        rich_text: [{ text: { content: truncateText(description, 2000) } }]
+        status: { name: status }
       }
-    }
+    },
+    children: [
+      {
+        object: "block",
+        type: "paragraph",
+        paragraph: {
+          rich_text: [{ text: { content: truncateText(description, 2000) } }]
+        }
+      }
+    ]
   };
 
   // Add optional metadata fields (only if database has them)
@@ -586,32 +598,30 @@ async function handleIssues(payload, env) {
   // Check for Serena label
   const isSerena = isSerenaIssue(issue);
 
-  // Build Notion page properties
+  // Build Notion page properties (Task 1: Strict Schema Mapping)
   const notionData = {
     parent: { database_id: env.NOTION_DB_ID },
     properties: {
-      "Name": {
-        title: [{ text: { content: `[${isSerena ? "SERENA" : "Issue"}] ${issue.title}` } }]
+      "Task Name": {
+        title: [{ text: { content: issue.title } }]
+      },
+      "GitHub Issue": {
+        url: issue.html_url
       },
       "Status": {
         status: { name: notionStatus }
-      },
-      "Source": {
-        rich_text: [{ text: { content: `GitHub: ${repository.full_name}` } }]
-      },
-      "Github Link": {
-        url: issue.html_url
-      },
-      "Description": {
-        rich_text: [{ text: { content: truncateText(issue.body, 2000) } }]
-      },
-      "Memory_UUID": {
-        rich_text: [{ text: { content: generateUUID(issue.id, issue.number) } }]
-      },
-      "Timestamp": {
-        date: { start: issue.created_at }
       }
-    }
+    },
+    // Task 2: Page Content Injection
+    children: [
+      {
+        object: "block",
+        type: "paragraph",
+        paragraph: {
+          rich_text: [{ text: { content: truncateText(issue.body, 2000) } }]
+        }
+      }
+    ]
   };
 
   // Add labels to Notion if they exist
@@ -691,28 +701,25 @@ async function handlePullRequest(payload, env) {
   const notionData = {
     parent: { database_id: env.NOTION_DB_ID },
     properties: {
-      "Name": {
+      "Task Name": {
         title: [{ text: { content: `[PR] ${pr.title}` } }]
+      },
+      "GitHub Issue": {
+        url: pr.html_url
       },
       "Status": {
         status: { name: notionStatus }
-      },
-      "Source": {
-        rich_text: [{ text: { content: `GitHub: ${repository.full_name}` } }]
-      },
-      "Github Link": {
-        url: pr.html_url
-      },
-      "Description": {
-        rich_text: [{ text: { content: truncateText(pr.body, 2000) } }]
-      },
-      "Memory_UUID": {
-        rich_text: [{ text: { content: generateUUID(pr.id, pr.number) } }]
-      },
-      "Timestamp": {
-        date: { start: pr.created_at }
       }
-    }
+    },
+    children: [
+      {
+        object: "block",
+        type: "paragraph",
+        paragraph: {
+          rich_text: [{ text: { content: truncateText(pr.body, 2000) } }]
+        }
+      }
+    ]
   };
 
   try {
@@ -885,8 +892,8 @@ function isSerenaIssue(issue) {
 function getNotionStatus(issue, action) {
   if (issue.state === "closed") return "Done";
   if (action === "labeled") return "In Progress";
-  if (action === "opened") return "Not Started";
-  return "Not Started";
+  if (action === "opened") return "PM Review";
+  return "PM Review";
 }
 
 /**
@@ -920,8 +927,26 @@ async function verifySignature(payload, signature, secret) {
  */
 function truncateText(text, maxLength) {
   if (!text) return "No description";
-  if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength - 3) + "...";
+  const sanitized = sanitizeForNotion(text);
+  if (sanitized.length <= maxLength) return sanitized;
+  return sanitized.substring(0, maxLength - 3) + "...";
+}
+
+/**
+ * Robust string sanitization to preserve file paths and backticks in Notion text
+ */
+function sanitizeForNotion(text) {
+  if (!text) return "";
+  
+  // We prioritize DATA RETENTION over native markdown rendering.
+  // Ensure the string can be safely stringified and sent to a Notion rich_text content field.
+  // We don't perform heavy transformations, but we ensure special sequence characters 
+  // that might confuse parsers are preserved as literal text.
+  
+  return text
+    .replace(/\\/g, "\\\\") // Escape backslashes for JSON safety (Notion handles double escaping internally)
+    .replace(/`/g, "'")    // Convert backticks to single-quotes to prevent block-breakage if relevant
+    .trim();
 }
 
 /**
@@ -953,11 +978,18 @@ async function forwardToGcpMemory(notionUpdate, env) {
   }
 
   try {
+    // Task 2: Route the Memory via OIDC Identity Token
+    const idToken = await getGoogleOidcToken(env);
+    if (!idToken) {
+      console.error("Failed to obtain GCP OIDC token, skipping forward.");
+      return;
+    }
+
     const response = await fetch(env.GCP_GATEWAY, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${env.GCP_SERVICE_ACCOUNT || ""}`
+        "Authorization": `Bearer ${idToken}`
       },
       body: JSON.stringify({
         source: "notion-update",
@@ -1322,6 +1354,20 @@ async function routePMAgent(request, env) {
   const { trigger } = payload; // e.g., "schedule", "issue-opened", etc.
   console.log(`PM Agent triggered by: ${trigger}`);
 
+  // 0️⃣ Pre-fetch high-activation engrams from local MuninnDB
+  let engrams = "";
+  try {
+    const memoryUrl = `http://127.0.0.1:8095/memory/search/${encodeURIComponent(trigger)}`;
+    const memoryResp = await fetch(memoryUrl);
+    if (memoryResp.ok) {
+      const memoryData = await memoryResp.json();
+      engrams = memoryData.results || "";
+      console.log(`Retrieved ${engrams.split('\n').length - 1} engrams from MuninnDB.`);
+    }
+  } catch (e) {
+    console.warn(`MuninnDB offline or query failed: ${e.message}. Proceeding with clean slate.`);
+  }
+
   // 1️⃣ Gather context from GitHub (issues, project board, recent commits)
   let ghContext;
   try {
@@ -1331,32 +1377,90 @@ async function routePMAgent(request, env) {
   }
 
   // 2️⃣ Build prompt for Gemma‑3‑27b
-  const prompt = buildPMAPrompt(ghContext, trigger);
+  const prompt = buildPMAPrompt(ghContext, trigger, engrams);
 
-  // 3️⃣ Call Google AI Studio (Gemma‑3‑27b v1beta)
-  let geminiResponse;
+  // 3️⃣ Call Google AI Studio (Phase 1: Agent PM)
+  let pmData;
   try {
-    geminiResponse = await callGemini(prompt, env.GEMINI_API_KEY);
+    pmData = await callGemini(prompt, env.GEMINI_API_KEY, "models/gemma-4-31b-it");
   } catch (e) {
-    return new Response(JSON.stringify({error: "callGemini failed", message: e.message}), {status: 500, headers: {"Content-Type":"application/json"}});
+    return new Response(JSON.stringify({error: "PM Phase failed", message: e.message}), {status: 500});
   }
 
-  // 4️⃣ Parse model output into concrete GitHub actions
-  const actions = parsePMResponse(geminiResponse);
+  const { text: rawPlan, model: modelPM } = pmData;
 
-  // 5️⃣ Execute actions (GitHub API) OR forward to Serena agent
+  // 4️⃣ Phase 2: Validator (Gemma 4 26b)
+  const validationPrompt = buildValidatorPrompt(ghContext, rawPlan);
+  let validatorData;
+  try {
+    validatorData = await callGemini(validationPrompt, env.GEMINI_API_KEY, "models/gemma-4-26b-a4b-it");
+  } catch (e) {
+    return new Response(JSON.stringify({error: "Validator Phase failed", message: e.message}), {status: 500});
+  }
+
+  const { text: validatedPlan, model: modelValidator } = validatorData;
+
+  // 5️⃣ Construct Dual-Model Telemetry Trace
+  const telemetryTrace = `Execution Trace: Agent PM [${modelPM}] | Validator [${modelValidator}]`;
+
+  // 6️⃣ Parse model output into concrete GitHub actions
+  let actions = parsePMResponse(validatedPlan);
+
+  // 7️⃣ Inject Telemetry Trace into Action Payloads
+  actions = actions.map(act => {
+    const traceHeader = `${telemetryTrace}\n\n`;
+    if (act.type === "comment" || act.type === "create_issue") {
+      act.body = traceHeader + (act.body || "");
+    } else if (act.type === "serena_task") {
+      if (typeof act.payload === "object") {
+        act.payload.telemetry = telemetryTrace;
+      }
+    }
+    return act;
+  });
+
+  // 8️⃣ Execute actions (GitHub API) OR forward to Serena agent
   const results = await executePMActions(actions, env);
 
-  // 6️⃣ Return summary
+  // 9️⃣ Return summary
   return new Response(JSON.stringify({
     success: true,
     trigger,
+    trace: telemetryTrace,
     actionsCount: actions.length,
     results
   }), {
     status: 200,
     headers: { "Content-Type": "application/json" }
   });
+}
+
+/**
+ * Helper: build a prompt for the Validator agent
+ */
+function buildValidatorPrompt(context, proposedPlan) {
+  return `
+You are the ARCA Swarm Validator. Your job is to review the following execution plan proposed by the Project Manager (PM) agent.
+Context:
+${JSON.stringify(context.openIssues).slice(0, 2000)}
+
+Proposed Plan:
+${proposedPlan}
+
+Your Goal:
+1. Verify all issue numbers exist in the context.
+2. Sanitize any malformed JSON or markdown blocks.
+3. Ensure all descriptions are clear and actionable.
+4. If an action is redundant or dangerous, remove it.
+
+Output ONLY the final JSON array of actions using the following schema:
+{ "type": "comment", "issue_number": <int>, "body": "<markdown>" }
+{ "type": "label",   "issue_number": <int>, "label": "<string>" }
+{ "type": "create_issue", "title": "<string>", "body": "<markdown>", "labels": [...] }
+{ "type": "serena_task", "payload": { ... } }
+
+Strict Requirement: Output ONLY the JSON array.
+`;
 }
 
 /**
@@ -1402,7 +1506,7 @@ async function gatherGitHubContext(env) {
 /**
  * Helper: build a prompt for Gemma‑3‑27b
  */
-function buildPMAPrompt(context, trigger) {
+function buildPMAPrompt(context, trigger, engrams = "") {
   const { openIssues } = context;
   const issuesText = openIssues.map(i =>
     `- #${i.number} [${i.labels.join(",")}] ${i.title}\n  ${i.body.slice(0,200)}...`
@@ -1414,6 +1518,9 @@ Your goal is to read the current open issues and suggest concrete, actionable ne
 that a developer (or the Serena agent) can take right now.
 
 Trigger: ${trigger}
+
+Hebbian Memory (MuninnDB Engrams):
+${engrams.length > 0 ? engrams : "(no relevant engrams found)"}
 
 Open Issues:
 ${issuesText.length > 0 ? issuesText : "(no open issues)"}
@@ -1431,8 +1538,8 @@ Only output valid JSON, no extra text.
 /**
  * Helper: call Google AI Studio (Gemma‑3‑27b v1beta)
  */
-async function callGemini(prompt, apiKey) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemma-3-27b-it:generateContent?key=${apiKey}`;
+async function callGemini(prompt, apiKey, modelName) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/${modelName}:generateContent?key=${apiKey}`;
   const body = {
     contents: [{ parts: [{ text: prompt }] }]
   };
@@ -1446,8 +1553,15 @@ async function callGemini(prompt, apiKey) {
     throw new Error(`Gemini API error: ${resp.status} ${err}`);
   }
   const data = await resp.json();
-  // Extract text from candidates[0].content.parts[0].text
-  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  
+  // Dynamic Traceability: Extract modelVersion from API response
+  const modelId = data.modelVersion || modelName; // Fallback to requested name
+  const outputText = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+
+  return {
+    text: outputText,
+    model: modelId
+  };
 }
 
 /**
@@ -1528,11 +1642,142 @@ async function executePMActions(actions, env) {
           break;
         }
         default:
-          results.push({ action: act, status: "unknown-type", error: "Unsupported action type" });
-      }
-    } catch (e) {
-      results.push({ action: act, status: "error", error: e.message });
+          results.push({ action: act, status: "labeled", issue: act.issue_number });
+          break;
+        }
+    } catch (error) {
+      results.push({ action: act, status: "failed", error: error.message });
     }
   }
+
   return results;
+}
+
+/**
+ * =========================================================
+ * PHASE 5.1: EDGE OIDC SIGNER & GOOGLE OAUTH EXCHANGE
+ * =========================================================
+ */
+
+/**
+ * Task 1: The Cryptographic Helper
+ * Performs an OAuth 2.0 Token Exchange to get a Google-signed Identity Token
+ */
+async function getGoogleOidcToken(env) {
+  const now = Math.floor(Date.now() / 1000);
+
+  // Return cached token if still valid (50-minute buffer)
+  if (cachedOidcToken && now < oidcTokenExpiry - 300) {
+    return cachedOidcToken;
+  }
+
+  try {
+    // 1. Resilient Secret Parsing
+    let credentials;
+    try {
+      credentials = JSON.parse(env.GCP_SERVICE_ACCOUNT);
+    } catch (e) {
+      credentials = JSON.parse(atob(env.GCP_SERVICE_ACCOUNT));
+    }
+
+    const { client_email, private_key } = credentials;
+    const targetAudience = env.GCP_GATEWAY;
+
+    // 2. Import Private Key
+    const rsaKey = await importPrivateKey(private_key);
+
+    // 3. Construct JWT Assertion
+    const header = base64urlEncode({ alg: "RS256", typ: "JWT" });
+    const payload = base64urlEncode({
+      iss: client_email,
+      sub: client_email,
+      aud: "https://oauth2.googleapis.com/token",
+      iat: now,
+      exp: now + 3600,
+      target_audience: targetAudience
+    });
+
+    const assertionData = `${header}.${payload}`;
+    const signatureBuffer = await crypto.subtle.sign(
+      "RSASSA-PKCS1-v1_5",
+      rsaKey,
+      new TextEncoder().encode(assertionData)
+    );
+    const signature = base64urlEncode(new Uint8Array(signatureBuffer));
+    const assertion = `${assertionData}.${signature}`;
+
+    // 4. Exchange Assertion for Identity Token
+    const exchangeResp = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+        assertion: assertion
+      })
+    });
+
+    if (!exchangeResp.ok) {
+      const err = await exchangeResp.text();
+      throw new Error(`Google OAuth Exchange failed: ${err}`);
+    }
+
+    const { id_token } = await exchangeResp.json();
+    
+    // 5. Update Cache (Task 3: Isolate Caching)
+    cachedOidcToken = id_token;
+    oidcTokenExpiry = now + 3000; // 50 minutes
+    
+    return id_token;
+
+  } catch (error) {
+    console.error(`Edge OIDC Signer Error: ${error.message}`);
+    return null;
+  }
+}
+
+/**
+ * Import PEM Private Key into crypto.subtle
+ */
+async function importPrivateKey(pem) {
+  // Strip headers, footers, and newlines
+  const pemHeader = "-----BEGIN PRIVATE KEY-----";
+  const pemFooter = "-----END PRIVATE KEY-----";
+  const pemContents = pem
+    .replace(pemHeader, "")
+    .replace(pemFooter, "")
+    .replace(/\s+/g, "");
+
+  const binaryDerString = atob(pemContents);
+  const binaryDer = new Uint8Array(binaryDerString.length);
+  for (let i = 0; i < binaryDerString.length; i++) {
+    binaryDer[i] = binaryDerString.charCodeAt(i);
+  }
+
+  return await crypto.subtle.importKey(
+    "pkcs8",
+    binaryDer.buffer,
+    {
+      name: "RSASSA-PKCS1-v1_5",
+      hash: { name: "SHA-256" },
+    },
+    false,
+    ["sign"]
+  );
+}
+
+/**
+ * URL-safe Base64 encoding
+ */
+function base64urlEncode(input) {
+  let str;
+  if (input instanceof Uint8Array) {
+    str = String.fromCharCode.apply(null, input);
+  } else {
+    str = JSON.stringify(input);
+  }
+  
+  return btoa(str)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
 }

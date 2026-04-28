@@ -41,7 +41,7 @@ fi
 # Configuration values
 GITHUB_MCP_URL="http://github-mcp-sse.westus2.azurecontainer.io:8080/sse"
 GCP_GATEWAY_URL="https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator"
-NOTION_DB_ID="3224d2d9fc7c80deb18dd94e22e5bb21"
+NOTION_DB_ID="3284d2d9fc7c811188deeeaba9c5f845"
 
 echo ""
 echo "Configuration:"

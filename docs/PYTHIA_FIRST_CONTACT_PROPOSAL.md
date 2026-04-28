@@ -1,3 +1,8 @@
+---
+tags: [bios/architecture, bios/memory, bios/security, bios/swarm, source/legacy]
+status: active
+---
+
 # Pythia Dragonfly First Contact Proposal
 
 **Document Type:** System Reconnaissance & Integration Proposal  

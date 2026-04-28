@@ -1,3 +1,8 @@
+---
+tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, bios/voice, context/life, source/legacy]
+status: active
+---
+
 # BiOS Master Architecture
 
 **Document Version:** 1.0  
@@ -160,7 +165,7 @@ load_tensors: Vulkan0 model buffer size = 1908.35 MiB
 | **Status** | ✅ SECURED & GATED |
 | **Script** | `/Users/danexall/computer-use-mcp.py` |
 | **Default State** | `PENDING` |
-| **Approval DB** | `3274d2d9fc7c8161a00cd9995cff5520` (CoPaw Approval) |
+| **Approval DB** | `3284d2d9fc7c8113bfecca75f4235ece` (CoPaw Approval) |
 | **Guarded Tools** | 5 tools |
 
 **High-Risk Patterns (Require Approval):**
@@ -198,7 +203,7 @@ AUTO_APPROVE_PATTERNS = [
 | **Status** | ✅ ACTIVE |
 | **Script** | `~/biomimetics/scripts/copaw/approval_poller.py` |
 | **Poll Interval** | 15 seconds |
-| **Target DB** | CoPaw Approval DB (`3274d2d9fc7c8161a00cd9995cff5520`) |
+| **Target DB** | CoPaw Approval DB (`3284d2d9fc7c8113bfecca75f4235ece`) |
 | **Signal File** | `~/.arca/approved_actions.json` |
 | **State File** | `~/.arca/approval_poller_state.json` |
 
@@ -259,7 +264,7 @@ AUTO_APPROVE_PATTERNS = [
 | **Modal** | Usage API | GPU hours, function invocations |
 
 **Output Destinations:**
-1. **Notion** - Tool Guard Database (`3254d2d9fc7c81228daefc564e912546`)
+1. **Notion** - Tool Guard Database (`3284d2d9fc7c8113bfecca75f4235ece`)
 2. **GCP Gateway** - Memory archival via `memory-orchestrator`
 3. **Local Log** - `~/.arca/cloud_usage.log`
 
@@ -316,10 +321,10 @@ AUTO_APPROVE_PATTERNS = [
 | Database | ID | Purpose |
 |----------|-----|---------|
 | **BiOS Root** | `3284d2d9fc7c81e4ae09c5769c3b4ed4` | Global memory schema |
-| **Biomimetic OS** | `3224d2d9fc7c80deb18dd94e22e5bb21` | Project tracking |
-| **Life OS Triage** | `3254d2d9fc7c81228daefc564e912546` | Email/webhook triage |
-| **Tool Guard** | `3254d2d9fc7c81228daefc564e912546` | Security & approvals |
-| **CoPaw Approval** | `3274d2d9fc7c8161a00cd9995cff5520` | Tool execution approvals |
+| **Biomimetic OS** | `3284d2d9fc7c811188deeeaba9c5f845` | Project tracking |
+| **Life OS Triage** | `3284d2d9fc7c81bd9a91e865511e642f` | Email/webhook triage |
+| **Tool Guard** | `3284d2d9fc7c8113bfecca75f4235ece` | Security & approvals |
+| **CoPaw Approval** | `3284d2d9fc7c8113bfecca75f4235ece` | Tool execution approvals |
 | **Memory Archive** | `3284d2d9fc7c81e4ae09c5769c3b4ed4` | Long-term memory (MemU) |
 
 ### Memory Integration
@@ -445,8 +450,8 @@ GGML_METAL=0
 
 # Notion
 NOTION_API_KEY=[NOTION_TOKEN_REDACTED]
-NOTION_APPROVAL_DB_ID=3274d2d9fc7c8161a00cd9995cff5520
-TOOL_GUARD_DB_ID=3254d2d9fc7c81228daefc564e912546
+NOTION_APPROVAL_DB_ID=3284d2d9fc7c8113bfecca75f4235ece
+TOOL_GUARD_DB_ID=3284d2d9fc7c8113bfecca75f4235ece
 
 # GCP Gateway
 GCP_GATEWAY_URL=https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator
@@ -585,7 +590,7 @@ curl -I https://github-mcp-server-arca-vsa-3c648978.koyeb.app/sse
 | **Status** | ⚠️ Requires Mount |
 | **Mount Point** | `/Volumes/GoogleDrive/` |
 | **Sync Tool** | Google Drive for Desktop |
-| **Target DB** | Life OS Triage (`3254d2d9fc7c81228daefc564e912546`) |
+| **Target DB** | Life OS Triage (`3284d2d9fc7c81bd9a91e865511e642f`) |
 
 **Mount Verification:**
 ```bash
@@ -601,7 +606,7 @@ mount | grep GoogleDrive
 | **LaunchAgent** | `com.arca.proton-sync` |
 | **Script** | `~/biomimetics/scripts/proton_sync_hourly.sh` |
 | **Backfill From** | **December 25, 2025** |
-| **Target DB** | Life OS Triage (`3254d2d9fc7c81228daefc564e912546`) |
+| **Target DB** | Life OS Triage (`3284d2d9fc7c81bd9a91e865511e642f`) |
 | **Gateway** | `https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator` |
 
 **Restart Command:**

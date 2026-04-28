@@ -1,3 +1,8 @@
+---
+tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, source/legacy]
+status: active
+---
+
 # MCP Integration Summary - CORRECTED
 
 **Date**: 2026-03-19  
@@ -78,7 +83,7 @@ arca-rg            (eastus)  ← Key Vaults here
   "agent_servers": {
     "BiOS_PM": {
       "env": {
-        "NOTION_DB_ID": "3224d2d9fc7c80deb18dd94e22e5bb21",
+        "NOTION_DB_ID": "3284d2d9fc7c811188deeeaba9c5f845",
         "GCP_GATEWAY": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator"
       }
     }

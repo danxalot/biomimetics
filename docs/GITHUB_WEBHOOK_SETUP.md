@@ -1,3 +1,8 @@
+---
+tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, source/legacy]
+status: active
+---
+
 # GitHub Webhook Setup Guide
 
 ## Worker Deployed ✓

@@ -1,3 +1,8 @@
+---
+tags: [bios/architecture, bios/security, bios/swarm, source/legacy]
+status: active
+---
+
 # MCP Integration Guide
 
 This guide covers Model Context Protocol (MCP) integrations across all supported editors and tools.
