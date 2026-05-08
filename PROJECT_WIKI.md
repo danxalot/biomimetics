@@ -1382,7 +1382,63 @@ Review → Complete
 | | `telegram-bot-token` | Telegram bot |
 | | `whatsapp-verify-token` | WhatsApp Business API |
 
-### Secret Migration Automation
+### SecretsProvider Client Library
+
+**Module**: `scripts/secrets/azure_secrets_provider.py`
+
+**Purpose**: Unified Python client for fetching secrets from the Credentials Server or Azure Key Vault directly.
+
+**Installation**: Already included in project at `~/biomimetics/scripts/secrets/`
+
+**Usage**:
+```python
+import os
+sys.path.insert(0, os.path.expanduser("~/biomimetics/scripts/secrets"))
+from azure_secrets_provider import SecretsProvider
+
+# Initialize (connects to Credentials Server at http://127.0.0.1:8089)
+secrets = SecretsProvider()
+
+# Fetch single secret
+github_token = secrets.get("github-token")
+notion_key = secrets.get("notion-api-key")
+gemini_key = secrets.get("gemini-api-key")
+
+# Batch fetch (more efficient)
+secrets = secrets.get_batch(["github-token", "notion-api-key", "gemini-api-key"])
+
+# With fallback to environment variable or default
+api_key = secrets.get("gemini-api-key") or os.environ.get("GEMINI_API_KEY", "default-value")
+
+# Using file fallback (legacy pattern)
+api_key = secrets.get("opencode-api-key")
+if not api_key:
+    with open("/path/to/local/file") as f:
+        api_key = f.read().strip()
+```
+
+**Configuration Options**:
+| Option | Default | Description |
+|--------|---------|-------------|
+| `server_url` | `http://127.0.0.1:8089` | Credentials Server URL |
+| `api_key` | from env `CREDENTIALS_API_KEY` | API key for auth |
+| `use_azure_direct` | `False` | Bypass server, use Azure KV directly |
+| `cache_ttl` | `300` | Cache time-to-live in seconds |
+
+**Environment Variables**:
+- `CREDENTIALS_SERVER_URL` - Override server URL
+- `CREDENTIALS_API_KEY` - API key for Credentials Server
+- `AZURE_KEY_VAULT_NAME` - Vault name (direct mode)
+- `AZURE_TENANT_ID` - Azure tenant ID (direct mode)
+- `AZURE_CLIENT_ID` - Service principal app ID (direct mode)
+- `AZURE_CLIENT_SECRET` - Service principal secret (direct mode)
+
+**Benefits**:
+- Single unified interface for all secret fetching
+- Built-in caching (5 min TTL)
+- Automatic retry with exponential backoff
+- Fallback to direct Azure KV if server unavailable
+- Thread-safe
 
 **Script**: `scripts/secret_manager/azure_secret_migrator.py`
 
@@ -1476,12 +1532,14 @@ The system utilizes a central `credentials_server.py` daemon running as a macOS 
 **API Key Configuration**:
 ```python
 # MUST use dynamic secret fetching - NO hardcoded keys
-from copaw_secrets_wrapper import fetch_secret
+import os
+sys.path.insert(0, os.path.expanduser("~/biomimetics/scripts/secrets"))
+from azure_secrets_provider import SecretsProvider
 
-GEMINI_API_KEY = fetch_secret('google_api_key')
+_secrets = SecretsProvider()
+GEMINI_API_KEY = _secrets.get("gemini-api-key") or os.environ.get("GEMINI_API_KEY")
 
 # Set environment variable for Gemini SDK
-import os
 os.environ['GEMINI_API_KEY'] = GEMINI_API_KEY
 ```
 
@@ -1508,19 +1566,37 @@ CoPaw MUST ALWAYS have access to these three core tool nodes:
 
 | Secret | Canonical Name | Source | Env Var |
 |--------|---------------|--------|---------|
-| Gemini API Key | `google_api_key` | Credentials Server | `GEMINI_API_KEY` |
-| GCP Service Account | `gcp-service-account` | Local file | N/A |
+| Gemini API Key | `gemini-api-key` | Credentials Server | `GEMINI_API_KEY` |
+| GCP Service Account | `gcp-service-account` | Credentials Server | N/A |
 | Proton Bridge Password | `proton-bridge-password` | Credentials Server | N/A |
 | Notion API Key | `notion-api-key` | Credentials Server | `NOTION_TOKEN` |
+| OpenCode API Key | `opencode-api-key` | Credentials Server | N/A |
+| Notion BiOS Root Page | `notion-bios-root-page` | Credentials Server | `NOTION_BIOS_ROOT_PAGE` |
 
-**Fetching Pattern**:
+**Fetching Pattern (Recommended)**:
 ```python
-# ALWAYS use the secrets wrapper - never read files directly
-from copaw_secrets_wrapper import fetch_secret
+# Use SecretsProvider for dynamic secret fetching
+import os
+sys.path.insert(0, os.path.expanduser("~/biomimetics/scripts/secrets"))
+from azure_secrets_provider import SecretsProvider
+
+_secrets = SecretsProvider()
 
 # Correct:
-api_key = fetch_secret('google_api_key')
+api_key = _secrets.get('gemini-api-key')
 
+# With environment variable fallback:
+api_key = _secrets.get("gemini-api-key") or os.environ.get("GEMINI_API_KEY")
+
+# For file-based fallbacks (legacy):
+api_key = _secrets.get("opencode-api-key")
+if not api_key:
+    with open("/path/to/local/file") as f:
+        api_key = f.read().strip()
+```
+
+**Legacy Pattern (Deprecated)**:
+```python
 # INCORRECT (forbidden):
 # with open('~/.copaw/.secrets/google_api_key') as f: ...
 # api_key = os.environ.get('HARDCODED_KEY')

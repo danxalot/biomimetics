@@ -12,6 +12,11 @@ from typing import Any
 from google import genai
 from openai import OpenAI
 
+sys.path.insert(0, os.path.expanduser("~/biomimetics/scripts/secrets"))
+from azure_secrets_provider import SecretsProvider
+
+_secrets = SecretsProvider()
+
 # Logging setup
 LOG_DIR = os.path.expanduser("~/biomimetics/logs")
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -42,7 +47,7 @@ CHUNK_SIZE = 1024
 
 pya = pyaudio.PyAudio()
 
-API_KEY = os.environ.get("GEMINI_API_KEY", "")
+API_KEY = _secrets.get("gemini-api-key") or os.environ.get("GEMINI_API_KEY")
 COPAW_URL = "http://127.0.0.1:8088"
 OPENCODE_TOKEN_PATH = "/Users/danexall/biomimetics/secrets/opencode_api"
 OPENCODE_ZEN_URL = "https://opencode.ai/zen/v1"
@@ -57,7 +62,7 @@ OPENCODE_GO_MODELS = {
     "minimax": "minimax-m2.7",
     "minimax-m2.5": "minimax-m2.5",
 }
-NOTION_BIOS_ROOT_PAGE = os.environ.get("NOTION_BIOS_ROOT_PAGE", "3284d")
+NOTION_BIOS_ROOT_PAGE = _secrets.get("notion-bios-root-page") or os.environ.get("NOTION_BIOS_ROOT_PAGE")
 
 _opencode_cache = {}
 _CACHE_TTL = 300
@@ -89,11 +94,13 @@ def _trigger_opencode_agent_sync(system_prompt, user_command, model_choice="nemo
             "rate_limited": True,
         }
 
-    try:
-        with open(OPENCODE_TOKEN_PATH, "r") as f:
-            api_key = f.read().strip()
-    except FileNotFoundError:
-        return {"error": f"OpenCode token not found at {OPENCODE_TOKEN_PATH}"}
+    api_key = _secrets.get("opencode-api-key")
+    if not api_key:
+        try:
+            with open(OPENCODE_TOKEN_PATH, "r") as f:
+                api_key = f.read().strip()
+        except FileNotFoundError:
+            return {"error": f"OpenCode token not found at {OPENCODE_TOKEN_PATH}"}
 
     go_model = OPENCODE_GO_MODELS.get(model_choice)
     if go_model and _opencode_using_go:

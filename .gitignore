@@ -98,6 +98,9 @@ pythia/data/kinematics/unpacked_bundle/
 scripts/secret_manager/.env
 .local_gdrive_token.json
 pythia/data/
+*.pt
+*.npz
+**/.env
 llama_cpp_bypass/
 scripts/secret_manager/
 config_copaw/
