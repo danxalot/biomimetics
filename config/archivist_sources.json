@@ -11,8 +11,22 @@
       "name": "raw_docs",
       "base_path": "/Users/danexall/biomimetics/docs/",
       "artifact_names": ["*.md"],
-      "ignore": ["obsidian_staging", "KNOWLEDGE_GRAPH", "_MOC.md", "_ARCHIVIST_PROMPT.md", "standards", "alignment", "phases"],
+      "ignore": ["obsidian_staging", "KNOWLEDGE_GRAPH", "_MOC.md", "_ARCHIVIST_PROMPT.md", "alignment", "phases"],
       "default_tags": ["source/manual", "bios/infrastructure"],
+      "moc": "Biomimetics_MOC"
+    },
+    {
+      "name": "arca_awake",
+      "base_path": "/Users/danexall/Documents/VS Code Projects/ARCA/shared_storage/Awake/",
+      "artifact_names": ["*.md"],
+      "default_tags": ["source/arca", "arca"],
+      "moc": "ARCA_MOC"
+    },
+    {
+      "name": "bios_standards",
+      "base_path": "/Users/danexall/biomimetics/docs/standards/",
+      "artifact_names": ["*.md"],
+      "default_tags": ["source/bios", "bios/architecture"],
       "moc": "Biomimetics_MOC"
     }
   ],

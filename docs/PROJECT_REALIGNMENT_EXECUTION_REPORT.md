@@ -1,5 +1,5 @@
 ---
-tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, source/legacy]
+tags: ["#bios/architecture", "#bios/swarm", "#bios/infrastructure"]
 status: active
 ---
 
@@ -18,20 +18,20 @@ status: active
 1. **Environment Discovery** ✅
    - Searched all biomimetics files for 32-character hex strings
    - **Finding**: NO ARCA-specific Notion database IDs found in any configuration
-   - Only Biomimetics OS databases are configured (4 databases)
+   - Only Biomimetics OS databases are configured (4 databases)   
 
 2. **Secrets Mapping** ✅
    - Location: `/Users/danexall/Documents/VS Code Projects/ARCA/.secrets/`
    - GitHub MCP required secrets identified:
      - `github_token` → `[GITHUB_TOKEN_REDACTED]` ✅
-   - 140+ other secret files mapped (not exposed)
+   - 140+ other secret files mapped (not exposed)   
 
 3. **Path Corrections** ✅
    - Updated 3 files with environment variable support:
      - `scripts/deploy/redeploy-github-mcp.sh`
      - `scripts/deploy/deploy-github-mcp-sse.sh`
      - `scripts/memory/migrate_claws_data.py`
-   - All now use `$ARCA_SECRETS_DIR` with fallback to absolute path
+   - All now use `$ARCA_SECRETS_DIR` with fallback to absolute path   
 
 4. **Migration Scripts** ✅
    - `scripts/migrate/deploy-to-koyeb.sh` - Koyeb deployment
@@ -86,7 +86,7 @@ COPAW_APPROVAL_DB_ID = "3284d2d9fc7c8113bfecca75f4235ece"
 
 **GitHub MCP Migration**: ✅ Can proceed (doesn't need Notion IDs)  
 **ARCA Integration**: ⏸️ Blocked until database IDs are provided  
-**Notion MCP**: ✅ Already working for Biomimetics
+**Notion MCP**: ✅ Already working for Biomimetics   
 
 ---
 
@@ -124,7 +124,7 @@ ARCA_MEMORY_DB_ID=________________________
 - `cloudflare/wrangler.toml` - Add ARCA database variables
 - `cloudflare/index.js` - Add ARCA routing logic (code exists, needs DB IDs)
 - `~/.zed/settings.json` - Add ARCA_PM agent config
-- `~/biomimetics/.antigravity/settings.json` - Add ARCA namespaces
+- `~/biomimetics/.antigravity/settings.json` - Add ARCA namespaces   
 
 ### 2. Koyeb Deployment
 
@@ -167,7 +167,7 @@ The following exist but are NOT needed for GitHub MCP:
 - `notion_api_key` - Used by Notion MCP (separate)
 - `google_api_studio` - Used by GCP Gateway (separate)
 - `gcp_credentials.json` - Used by memory services
-- `aws_*`, `azure_*`, `oci_*`, etc. - Various other services
+- `aws_*`, `azure_*`, `oci_*`, etc. - Various other services   
 
 **Total secrets in `.secrets/`**: 140+ files  
 **Required for this migration**: 1 file (`github_token`)
@@ -235,23 +235,23 @@ The following exist but are NOT needed for GitHub MCP:
    cd ~/biomimetics
    ./scripts/migrate/deploy-to-koyeb.sh
    ```
-   
-   **Prerequisites**:
+
+**Prerequisites**:
    - `koyeb login` (install CLI if needed)
    - Docker Hub account (free)
-   
-   **Takes**: 10-15 minutes
+
+**Takes**: 10-15 minutes
 
 4. **Teardown Azure Container**
    ```bash
    cd ~/biomimetics
    ./scripts/migrate/azure-teardown.sh --yes
    ```
-   
-   **Prerequisites**:
+
+**Prerequisites**:
    - `az login`
-   
-   **Takes**: 2 minutes
+
+**Takes**: 2 minutes
 
 ### Post-Migration (After ARCA IDs Provided)
 

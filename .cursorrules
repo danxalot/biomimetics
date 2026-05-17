@@ -24,3 +24,10 @@ Agents must autonomously identify and address critical operational gaps that are
 As agents execute tasks, they must dynamically orient themselves to the currently open IDE workspace. Agents must continuously document structural changes, workflows, and system states within the Documentation database corresponding to the active project.
 - Structure: Documentation must remain thin, hierarchical, and optimized for both human readability and agent ingestion.
 - Relational Interlinking: Always link documentation entries to their corresponding Projects and Tasks database entries for the active workspace. This cross-linking naturally builds a persistent, navigable knowledge graph, preventing context loss and ensuring all future agent sessions can seamlessly orient themselves within the system state, regardless of which specific project directory is currently in focus.
+
+7. Dual-IDE Coordination (Antigravity + Claude Code)
+- Before starting: Check AGENT_HANDOFF.md for tasks left by the other agent.
+- After finishing: Update AGENT_HANDOFF.md with status and any follow-on tasks.
+- GitHub is the bridge: Use `gh issue comment` to log progress — both agents can read it.
+- File conflicts: Only one agent edits a file at a time. Check handoff log before opening in Composer/Edit mode.
+- Role split: Antigravity (Gemini) = Architecture, planning, UI/UX, browser tasks. Claude Code = Terminal ops, refactoring, backend logic, migrations.

@@ -1,5 +1,5 @@
 ---
-tags: [bios/architecture, bios/security, bios/swarm, source/legacy]
+tags: ["#bios/architecture", "#bios/swarm", "#bios/infrastructure"]
 status: active
 ---
 
@@ -49,7 +49,7 @@ python3 azure/azure_secrets_init.py --refresh
 |----------|-----|
 | Biomimetic OS | `3244d2d9fc7c808b97c3ce78648d77a1` |
 | Life OS Triage | Auto-detected |
-| Tool Guard | Auto-detected |
+| Tool Guard | Auto-detected |   
 
 **Usage in Copilot Chat**:
 - "Search my Notion for [topic]"
@@ -199,7 +199,7 @@ python3 azure/azure_secrets_init.py --refresh
 
 - Ensure database IDs are correct in config
 - Check Notion integration has access to databases
-- In Notion: Open database → `...` → `Connect to` → Select integration
+- In Notion: Open database → `...` → `Connect to` → Select integration   
 
 ### Permission Errors
 
@@ -231,4 +231,4 @@ python3 ~/biomimetics/azure/azure_secrets_init.py --refresh
 - All secrets stored in `~/biomimetics/secrets/azure_secrets.json` (mode 600)
 - Editor configs with secrets are gitignored
 - Use Azure Key Vault for centralized secret management
-- Rotate tokens regularly via `az keyvault secret set`
+- Rotate tokens regularly via `az keyvault secret set` `. `. `.

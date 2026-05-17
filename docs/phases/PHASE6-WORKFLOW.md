@@ -367,4 +367,4 @@ The daemon is designed to be lightweight:
 - Store credentials in config file (chmod 600)
 - Use App Passwords, not main passwords
 - State files contain processed IDs (not sensitive)
-- Logs may contain email subjects (review before sharing)
+- Logs may contain email subjects (review before sharing) #bios/architecture #bios/swarm #bios/infrastructure

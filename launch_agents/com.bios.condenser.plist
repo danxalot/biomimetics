@@ -21,9 +21,9 @@
         <integer>0</integer>
     </dict>
     <key>StandardOutPath</key>
-    <string>/Users/danexall/.arca/condenser.log</string>
+    <string>/Users/danexall/biomimetics/.logs/condenser.log</string>
     <key>StandardErrorPath</key>
-    <string>/Users/danexall/.arca/condenser.err</string>
+    <string>/Users/danexall/biomimetics/.logs/condenser.err</string>
     <key>EnvironmentVariables</key>
     <dict>
         <key>PYTHONUNBUFFERED</key>

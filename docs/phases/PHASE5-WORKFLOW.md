@@ -1,5 +1,5 @@
 ---
-tags: [bios/architecture, bios/security, bios/swarm, source/legacy]
+tags: ["#bios/architecture", "#bios/swarm", "#bios/infrastructure"]
 status: active
 ---
 

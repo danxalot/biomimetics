@@ -22,10 +22,10 @@
     <integer>300</integer>
 
     <key>StandardOutPath</key>
-    <string>/Users/danexall/.arca/email-ingest.log</string>
+    <string>/Users/danexall/biomimetics/.logs/email-ingest.log</string>
 
     <key>StandardErrorPath</key>
-    <string>/Users/danexall/.arca/email-ingest.err</string>
+    <string>/Users/danexall/biomimetics/.logs/email-ingest.err</string>
 
     <key>EnvironmentVariables</key>
     <dict>

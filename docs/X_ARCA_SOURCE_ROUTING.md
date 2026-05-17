@@ -1,5 +1,5 @@
 ---
-tags: [bios/architecture, bios/infrastructure, bios/security, bios/swarm, source/legacy]
+tags: ["#bios/architecture", "#bios/swarm", "#bios/infrastructure"]
 status: active
 ---
 
@@ -175,7 +175,7 @@ curl -X GET "https://arca-github-notion-sync.dan-exall.workers.dev?database=life
 - **403 Forbidden**: Requests without recognized headers
 - **401 Unauthorized**: Invalid GitHub webhook signature
 - **400 Bad Request**: Unknown X-Arca-Source value
-- **405 Method Not Allowed**: Non-POST/GET requests
+- **405 Method Not Allowed**: Non-POST/GET requests   
 
 ---
 

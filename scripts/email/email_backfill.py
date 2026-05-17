@@ -419,6 +419,9 @@ def backfill_account(email_addr: str, password: str, mail, state: Dict, notion_a
         # Process emails (no limit in production, limited in test mode)
         processed_count = 0
         for email_id in reversed(email_ids):
+            # Enforce 15 RPM limit (4s heartbeat) for Notion API safety
+            time.sleep(4)
+            
             email_id_str = email_id.decode()
             state_key = f"{email_addr}:{email_id_str}"
 

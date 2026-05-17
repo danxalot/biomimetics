@@ -1,5 +1,5 @@
 ---
-tags: [bios/architecture, bios/security, source/legacy]
+tags: ["#bios/architecture", "#bios/swarm", "#bios/infrastructure"]
 status: active
 ---
 
@@ -90,7 +90,7 @@ tool_guard_id = self.notion.create_tool_guard_db(parent_page_id)
 save_db_state(db_ids)
 ```
 
-**Status**: ✅ **COMPLETE** - Database IDs now persist across runs
+**Status**: ✅ **COMPLETE** - Database IDs now persist across runs `). `
 
 ---
 
@@ -111,7 +111,7 @@ save_db_state(db_ids)
 **Workaround Applied**: Updated `deploy-to-koyeb.sh` to:
 - Check multiple possible installation paths
 - Provide clear installation instructions if CLI is missing
-- Exit gracefully with helpful error message
+- Exit gracefully with helpful error message   
 
 **Status**: ⏸️ **BLOCKED** - Koyeb CLI installation requires manual intervention
 
@@ -133,7 +133,7 @@ save_db_state(db_ids)
 
 1. **Contact Koyeb support** or check their documentation for the correct CLI installation method
 2. **Alternative**: Use Koyeb web dashboard at https://app.koyeb.com/
-3. **Alternative**: Use Koyeb API directly with curl
+3. **Alternative**: Use Koyeb API directly with curl   
 
 ### For Migration Script:
 

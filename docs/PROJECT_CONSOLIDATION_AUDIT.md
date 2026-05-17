@@ -1,5 +1,5 @@
 ---
-tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, bios/voice, source/legacy]
+tags: ["#bios/architecture", "#bios/swarm", "#bios/infrastructure"]
 status: active
 ---
 
@@ -13,7 +13,7 @@ status: active
 
 ## Executive Summary
 
-This document provides a complete audit of all project files scattered across the home directory (`~/`) that should be consolidated into the `~/biomimetics` project folder for proper version control, documentation, and development tracking.
+This document provides a complete audit of all project files scattered across the home directory (`~/`) that should be consolidated into the `~/biomimetics` project folder for proper version control, documentation, and development tracking. .
 
 ---
 
@@ -136,7 +136,7 @@ This document provides a complete audit of all project files scattered across th
 - [ ] Create Voice Interface Tasks database
 - [ ] Create Voice API Configuration database
 - [ ] Document existing database schemas
-- [ ] Create Notion integration guide for new users
+- [ ] Create Notion integration guide for new users      
 
 ---
 

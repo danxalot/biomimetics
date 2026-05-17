@@ -1,5 +1,5 @@
 ---
-tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, source/legacy]
+tags: ["#bios/architecture", "#bios/swarm", "#bios/infrastructure"]
 status: active
 ---
 
@@ -64,17 +64,17 @@ Completed configuration of Zed Editor and Antigravity with full MCP integration 
    - Zed Editor: Configured
    - Antigravity: Configured
    - Claude Desktop: Configured (from previous setup)
-   - Qwen Code: Configured (from previous setup)
+   - Qwen Code: Configured (from previous setup)   
 
 2. **GCP Gateway Integration**
    - Endpoint: `https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator`
    - Projects: Biomimetics + ARCA supported
-   - Features: Memory storage, retrieval, contextual AI
+   - Features: Memory storage, retrieval, contextual AI ` `). : : : `.
 
 3. **Cloudflare Worker**
    - Endpoint: `https://arca-github-notion-sync.dan-exall.workers.dev`
    - Routing: GitHub, Serena, GCP-Memory, CoPaw, PM-Agent
-   - ARCA Support: Code ready, needs database IDs
+   - ARCA Support: Code ready, needs database IDs `? ` ` `    ` `.    `. 
 
 ### Requires Action ⚠️
 
@@ -82,17 +82,17 @@ Completed configuration of Zed Editor and Antigravity with full MCP integration 
    - Status: Azure container not running
    - Resource group `arca-mcp-services` not found
    - Action: Run `azure/deploy_github_mcp_with_keyvault.sh`
-   - Estimated time: 15 minutes
+   - Estimated time: 15 minutes   
 
 2. **ARCA Notion Databases** (Priority: MEDIUM)
    - Status: Not created
    - Action: Create 3 databases in Notion (Projects, Tasks, Memory)
-   - Estimated time: 10 minutes
+   - Estimated time: 10 minutes   
 
 3. **Configuration Updates** (Priority: MEDIUM)
    - Status: Placeholder URLs in configs
    - Action: Update with actual database IDs and GitHub MCP endpoint
-   - Estimated time: 5 minutes
+   - Estimated time: 5 minutes   
 
 ---
 
@@ -190,7 +190,7 @@ Completed configuration of Zed Editor and Antigravity with full MCP integration 
 - [ ] Update `~/.zed/settings.json` with new URL
 - [ ] Update `~/.antigravity/settings.json` with new URL
 - [ ] Update `~/.copaw/config.json` with new URL
-- [ ] Test endpoint: `curl -v http://<ip>:8080/sse`
+- [ ] Test endpoint: `curl -v http://<ip>:8080/sse`   
 
 ### Phase 2: ARCA Notion Databases (10 min)
 
@@ -198,7 +198,7 @@ Completed configuration of Zed Editor and Antigravity with full MCP integration 
 - [ ] Create ARCA Tasks database in Notion
 - [ ] Create ARCA Memory Logs database in Notion
 - [ ] Share all databases with Notion integration
-- [ ] Copy database IDs
+- [ ] Copy database IDs   
 
 ### Phase 3: Configuration Updates (10 min)
 
@@ -206,7 +206,7 @@ Completed configuration of Zed Editor and Antigravity with full MCP integration 
 - [ ] Update `~/.zed/settings.json` with ARCA database IDs
 - [ ] Update `~/.antigravity/settings.json` with ARCA database IDs
 - [ ] Update Cloudflare Worker code (if needed)
-- [ ] Deploy Cloudflare Worker: `npx wrangler deploy`
+- [ ] Deploy Cloudflare Worker: `npx wrangler deploy`   
 
 ### Phase 4: Testing & Verification (10 min)
 
@@ -215,7 +215,7 @@ Completed configuration of Zed Editor and Antigravity with full MCP integration 
 - [ ] Test GitHub MCP in Zed
 - [ ] Test GCP Gateway queries
 - [ ] Test cross-project sync (if configured)
-- [ ] Verify all logs show no errors
+- [ ] Verify all logs show no errors   
 
 ---
 
@@ -268,19 +268,19 @@ cd ~/biomimetics/azure
 
 1. **Deploy GitHub MCP** - Enables GitHub API access for all clients
 2. **Create ARCA Databases** - Enables ARCA project tracking
-3. **Run Full Test Suite** - Verify all integrations working
+3. **Run Full Test Suite** - Verify all integrations working   
 
 ### Short-term (Next Week)
 
 1. **Add SSL to GitHub MCP** - Production-ready security
 2. **Configure Cross-Project Sync** - Biomimetics ↔ ARCA data flow
-3. **Create ARCA Agent** - Dedicated agent for ARCA workflows
+3. **Create ARCA Agent** - Dedicated agent for ARCA workflows  `  
 
 ### Long-term (This Month)
 
 1. **Monitor Usage Patterns** - Track MCP server usage
 2. **Optimize Performance** - Reduce latency, improve reliability
-3. **Expand Integration** - Add more MCP servers as needed
+3. **Expand Integration** - Add more MCP servers as needed   
 
 ---
 
@@ -330,7 +330,7 @@ cd ~/biomimetics/azure
 - [ ] GitHub MCP deployed on Azure
 - [ ] ARCA Notion databases created
 - [ ] All configs updated with real IDs
-- [ ] All tests passing
+- [ ] All tests passing   
 
 ### Phase 3 Complete (Integration) ⏳
 

@@ -1,5 +1,5 @@
 ---
-tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, bios/voice, context/legal, context/life, source/legacy]
+tags: ["#bios/architecture", "#bios/swarm", "#bios/infrastructure"]
 status: active
 ---
 
@@ -8,13 +8,13 @@ status: active
 **Generated:** 2026-03-20T04:15:00Z  
 **Report Type:** Operational Triage - Life OS  
 **Period:** Last 7 Days (2026-03-13 to 2026-03-20)  
-**Status:** ⚠️ PARTIAL - Infrastructure Gaps Detected
+**Status:** ⚠️ PARTIAL - Infrastructure Gaps Detected      
 
 ---
 
 ## Executive Summary
 
-The BiOS infrastructure is now **operational** but requires attention on data ingestion pipelines. The voice interface (Gemini Live) is ready for first contact, but email and document sync pipelines have connectivity gaps.
+The BiOS infrastructure is now **operational** but requires attention on data ingestion pipelines. The voice interface (Gemini Live) is ready for first contact, but email and document sync pipelines have connectivity gaps.      
 
 ---
 
@@ -34,20 +34,20 @@ The BiOS infrastructure is now **operational** but requires attention on data in
 [SSL: WRONG_VERSION_NUMBER] wrong version number (_ssl.c:1028)
 ```
 
-**Root Cause:** Proton Mail Bridge is not running or not accessible on port 1143.
+**Root Cause:** Proton Mail Bridge is not running or not accessible on port 1143.      
 
 **Accounts Affected:**
 - dan.exall@pm.me ❌
 - dan@arca-vsa.tech ❌
 - claws@pm.me ❌
 - arca@pm.me ❌
-- info@pm.me ❌
+- info@pm.me ❌      
 
 **Action Required:**
 1. Open Proton Mail Bridge application
 2. Verify IMAP is enabled on port 1143
 3. Run: `nc -z 127.0.0.1 1143` to verify connectivity
-4. Re-run sync: `launchctl kickstart -k ~/Library/LaunchAgents/com.arca.proton-sync.plist`
+4. Re-run sync: `launchctl kickstart -k ~/Library/LaunchAgents/com.arca.proton-sync.plist`      
 
 ---
 
@@ -72,7 +72,7 @@ The BiOS infrastructure is now **operational** but requires attention on data in
 └── Welcome.md
 ```
 
-**Assessment:** Vault is accessible but appears to be a secondary/test vault. Primary project documentation is in `~/biomimetics/docs/`.
+**Assessment:** Vault is accessible but appears to be a secondary/test vault. Primary project documentation is in `~/biomimetics/docs/`.      
 
 ### Google Drive Mount
 
@@ -85,7 +85,7 @@ The BiOS infrastructure is now **operational** but requires attention on data in
 **Action Required:**
 1. Open Google Drive for Desktop application
 2. Verify streaming is enabled
-3. Check mount at `/Volumes/GoogleDrive/`
+3. Check mount at `/Volumes/GoogleDrive/`      ) 
 
 ---
 
@@ -105,16 +105,16 @@ The BiOS infrastructure is now **operational** but requires attention on data in
 
 ### From Email (PENDING)
 
-**Status:** ⚠️ No email data available - Proton Bridge offline
+**Status:** ⚠️ No email data available - Proton Bridge offline      
 
 **Expected Sources:**
 - dan.exall@pm.me (Personal)
 - dan@arca-vsa.tech (ARCA Projects)
 - claws@pm.me (CLAWS project)
 - arca@pm.me (ARCA Admin)
-- info@pm.me (Public inquiries)
+- info@pm.me (Public inquiries)      
 
-**Backlog Estimate:** Dec 25, 2025 - Mar 20, 2026 (~85 days)
+**Backlog Estimate:** Dec 25, 2025 - Mar 20, 2026 (~85 days)      
 
 ---
 
@@ -166,13 +166,13 @@ The BiOS infrastructure is now **operational** but requires attention on data in
 3. **Test Voice Interface**
    - Open browser to Gemini Live Voice app (Vite dev server)
    - Connect with API key
-   - Test microphone activation
+   - Test microphone activation      ) 
 
 ### This Week
 
 1. **Review Pythia First Contact Proposal**
    - File: `docs/PYTHIA_FIRST_CONTACT_PROPOSAL.md`
-   - Decision: Approve/reject OCI SSH integration
+   - Decision: Approve/reject OCI SSH integration      #pythia 
 
 2. **Create Serena Hub Directory**
    ```bash
@@ -180,7 +180,7 @@ The BiOS infrastructure is now **operational** but requires attention on data in
    ```
 
 3. **Backfill Email (Dec 25 '25 - Present)**
-   - Once Bridge is running, execute:
+   - Once Bridge is running, execute:      
    ```bash
    python3 ~/.copaw/backfill_claws.py --since 2025-12-25
    ```
@@ -222,7 +222,7 @@ The BiOS infrastructure is now **operational** but requires attention on data in
 > 2. **Google Drive** is not mounted - ARCA files inaccessible
 > 3. **Pythia First Contact** proposal is ready for review
 > 
-> All other systems are green: local LLM running on Vulkan, GitHub MCP deployed to Koyeb, approval gating active."
+> All other systems are green: local LLM running on Vulkan, GitHub MCP deployed to Koyeb, approval gating active."      
 
 ---
 

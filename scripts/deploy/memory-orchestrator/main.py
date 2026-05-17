@@ -39,14 +39,15 @@ def truncate_to_token_budget(text: str, budget: int) -> str:
     return text[:max_chars] + "..."
 
 
-def call_endpoint(url: str, payload: dict, timeout: int = 30) -> dict:
-    """Make HTTP POST request to endpoint"""
+def call_endpoint(url: str, payload: dict, timeout: int = 30, method: str = "POST") -> dict:
+    """Make HTTP request to endpoint"""
     try:
-        data = json.dumps(payload).encode('utf-8')
+        data = json.dumps(payload).encode('utf-8') if payload else None
         req = urllib.request.Request(
             url,
             data=data,
-            headers={'Content-Type': 'application/json'}
+            headers={'Content-Type': 'application/json'},
+            method=method
         )
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             return json.loads(resp.read().decode())
@@ -132,6 +133,8 @@ def process_memory_request(request):
         return handle_search(request_json)
     elif operation == "memorize" or "content" in request_json:
         return handle_memorize(request_json)
+    elif operation == "purge" or operation == "delete":
+        return handle_purge(request_json)
     else:
         return (json.dumps({
             "status": "error",
@@ -271,4 +274,46 @@ def handle_memorize(payload: dict) -> tuple:
     if "error" in muninn_result:
         response["errors"].append(f"MuninnDB: {muninn_result['error']}")
     
+    return (json.dumps(response), 200, {'Content-Type': 'application/json'})
+def handle_purge(payload: dict) -> tuple:
+    """
+    Handle memory purge/deletion request.
+    Centrally coordinates deletion across MuninnDB and MemU.
+    """
+    source_filter = payload.get("source_filter")
+    timeframe = payload.get("timeframe", "48h")
+    
+    purge_payload = {
+        "source": source_filter,
+        "timeframe": timeframe
+    }
+    
+    # 1. Purge from MuninnDB (Working Memory)
+    # Assuming Go API accepts POST /api/purge for mass deletion
+    muninn_res = call_endpoint(f"{MUNINN_VM_URL}/api/purge", purge_payload)
+    
+    # 2. Purge from MemU (Archive Memory)
+    memu_res = call_endpoint(f"{MEMU_URL}/purge", purge_payload)
+    
+    deleted_muninn = muninn_res.get("deleted_count", 0)
+    deleted_memu = memu_res.get("deleted_count", 0)
+    
+    response = {
+        "status": "success",
+        "operation": "purge",
+        "source_filter": source_filter,
+        "timeframe": timeframe,
+        "deleted_counts": {
+            "muninndb": deleted_muninn,
+            "memu": deleted_memu,
+            "total": deleted_muninn + deleted_memu
+        },
+        "errors": []
+    }
+    
+    if "error" in muninn_res:
+        response["errors"].append(f"MuninnDB: {muninn_res['error']}")
+    if "error" in memu_res:
+        response["errors"].append(f"MemU: {memu_res['error']}")
+        
     return (json.dumps(response), 200, {'Content-Type': 'application/json'})

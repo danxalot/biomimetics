@@ -1,5 +1,5 @@
 ---
-tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, bios/voice, context/life, source/legacy]
+tags: ["#bios/architecture", "#bios/swarm", "#bios/infrastructure"]
 status: active
 ---
 
@@ -31,7 +31,7 @@ The BiOS (Biomimetic Operating System) ecosystem is now **fully operational** wi
 
 **Status:** ✅ FULLY STABILIZED (Hardware-Software Sync)
 
-The audio pipeline is now protected against spectral noise, feedback loops, and 1011 server crashes.
+The audio pipeline is now protected against spectral noise, feedback loops, and 1011 server crashes. ` 
 
 ### CoPaw Voice + Gemini Live Integration
 
@@ -111,7 +111,7 @@ async for response in turn:
     await asyncio.sleep(0.001)  # Yield to event loop for websocket heartbeats
 ```
 
-**Error Prevention:** The keepalive yield permanently eliminates `1011 keepalive timeout` errors by ensuring the event loop can process WebSocket server ping/pong frames even during continuous audio streaming.
+**Error Prevention:** The keepalive yield permanently eliminates `1011 keepalive timeout` errors by ensuring the event loop can process WebSocket server ping/pong frames even during continuous audio streaming.   
 
 ---
 
@@ -302,13 +302,13 @@ AUTO_APPROVE_PATTERNS = [
 |-----------|-------|
 | **Status** | ✅ ACTIVE |
 | **Worker URL** | `https://arca-github-notion-sync.dan-exall.workers.dev` |
-| **PM Agent LLM** | `Gemma-3-27b` (Google AI Studio v1beta) |
+| **PM Agent LLM** | `gemma-4-31b-it` (Google AI Studio v1beta) |
 | **Trigger** | Cron: `0 */6 * * *` OR `X-Arca-Source: PM-Agent` |
 | **Secrets** | `GEMINI_API_KEY`, `GITHUB_TOKEN`, `NOTION_API_KEY` |
 
 ### 5.1 PM Agent Manual Override (The Planner Bridge)
 **Status:** ✅ OPERATIONAL (Hotfixed by Nemotron)
-- **Fix:** Added `User-Agent` header (GitHub requirement) and updated model to `gemma-3-27b-it`.
+- **Fix:** Added `User-Agent` header (GitHub requirement) and updated model to `gemma-4-31b-it`.
 - **Function:** Syncs GitHub Issues → Notion Roadmap (`3224d...`).
 - **Trigger:** `X-Arca-Source: PM-Agent` header bypasses cron.
 
@@ -337,6 +337,10 @@ AUTO_APPROVE_PATTERNS = [
 | **Long-term** | `true` |
 | **Hebbian Decay** | `true` |
 | **Memory DB ID** | `3284d2d9fc7c81e4ae09c5769c3b4ed4` |
+| **MemU Version** | `1.3.1` |
+| **Agent Model** | `gemma-4-31b-it` |
+| **Quarantine** | Strict `staging/` and `.archive/` exclusions enabled |
+| **Admin Endpoints**| `/purge` (Containerized Content Reset) |
 
 ---
 
@@ -455,6 +459,9 @@ TOOL_GUARD_DB_ID=3284d2d9fc7c8113bfecca75f4235ece
 
 # GCP Gateway
 GCP_GATEWAY_URL=https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator
+MEMU_VERSION=1.3.1
+PRIMARY_AGENT_MODEL=gemma-4-31b-it
+ARCHIVIST_MODEL=gemma-4-26b-a4b-it
 
 # GitHub
 GITHUB_TOKEN=[GITHUB_TOKEN_REDACTED]
@@ -502,8 +509,9 @@ curl -I https://github-mcp-server-arca-vsa-3c648978.koyeb.app/sse
 | **Approval Poller** | ✅ ACTIVE | 15s Interval |
 | **Cloud Usage Tracker** | ✅ DEPLOYED | Multi-provider |
 | **GitHub MCP** | ✅ HEALTHY | Koyeb SSE |
-| **Memory System** | ✅ ENABLED | Hebbian Decay |
+| **Memory System** | ✅ ENABLED | MemU v1.3.1 (Gemma-4) |
 | **Notion Schema** | ✅ INTEGRATED | 6 Databases |
+| **Quarantine** | ✅ ACTIVE | `staging/` globally ignored |
 
 ---
 
@@ -562,7 +570,7 @@ curl -I https://github-mcp-server-arca-vsa-3c648978.koyeb.app/sse
 1. **All IDE documentation updates** → Route to ARCA Documentation DB (`3284d2d9fc7c81f38cebded2ff235c9e`)
 2. **Code comments** → Sync to Notion via GitHub MCP webhooks
 3. **Architecture decisions** → Create Notion page in BiOS Root Schema
-4. **API changes** → Update Cloudflare Worker + local config simultaneously
+4. **API changes** → Update Cloudflare Worker + local config simultaneously 
 
 ---
 
@@ -690,7 +698,7 @@ GAUSSIAN_NOISE_STD = 0.01
 **Integration Point:**
 - llama.cpp Vulkan backend (`~/llama.cpp/build_vulkan/`)
 - KV-cache decoder injection via custom sampler
-- Qwen3.5-2B-Q8 model with extended geometric context
+- Qwen3.5-2B-Q8 model with extended geometric context ` ` 
 
 ---
 
@@ -698,7 +706,7 @@ GAUSSIAN_NOISE_STD = 0.01
 
 **Status:** 🚀 ENSEMBLE DIAGNOSTICS ENABLED
 
-The system now utilizes a "Diagnostic Jury" strategy via **OpenCode Go** and **Serena MCP**.
+The system now utilizes a "Diagnostic Jury" strategy via **OpenCode Go** and **Serena MCP**.  `?  `  `  `     
 
 ### Multi-Model Diagnostic Matrix
 | Task | Primary Model | Secondary Model | Tertiary Model |
@@ -707,7 +715,7 @@ The system now utilizes a "Diagnostic Jury" strategy via **OpenCode Go** and **S
 | **Refactoring** | GLM-5 (1M Context) | Claude 3.5 Sonnet | MiniMax M2.5 |
 | **Documentation** | GPT-4o | Gemini 2.5 Flash | Llama-3.3-70B |
 
-The ARCA architecture relies on **CoPaw (Personal Agent Workstation)** running on port 8088 as the central nervous system. CoPaw manages memory (ReMe), cron scheduling, and tool routing, replacing standalone Python orchestrators.
+The ARCA architecture relies on **CoPaw (Personal Agent Workstation)** running on port 8088 as the central nervous system. CoPaw manages memory (ReMe), cron scheduling, and tool routing, replacing standalone Python orchestrators. `. `. ` `.
 
 ### Core Architecture
 
@@ -725,7 +733,7 @@ The ARCA architecture relies on **CoPaw (Personal Agent Workstation)** running o
 3. **Routing:** The daemon hits CoPaw's API. CoPaw selects the Heavy Reasoning model (Nemotron/MiniMax via OpenCode API).
 4. **Context Injection:** CoPaw attaches the Serena MCP server (`uvx --from git+https://github.com/oraios/serena serena start-mcp-server`) to the model's context.
 5. **Action:** The model uses Serena's `find_symbol` tools to scan the ARCA project, writes the necessary code, and returns the output to CoPaw.
-6. **Resolution:** CoPaw logs the action to `~/.copaw/memory.db` and Notion, then prompts Jarvis to announce completion.
+6. **Resolution:** CoPaw logs the action to `~/.copaw/memory.db` and Notion, then prompts Jarvis to announce completion. `. ` `. `   
 
 ### Human/IDE Parity
 Zed and Antigravity are human-facing monitors. Because they are configured to run the identical Serena MCP server locally, human views and agent views of the ARCA project state remain perfectly synchronized.
@@ -759,10 +767,10 @@ To maintain absolute context parity across environments, the "Trinity" is config
 
 - **Primary Interface:** Antigravity (used for AI-native architectural drafting).
 - **Secondary Interface:** Zed (used for high-performance coding and Nemotron/OpenCode agent tasks).
-- **Control Interface:** CoPaw (handles background execution and Jarvis voice routing).
+- **Control Interface:** CoPaw (handles background execution and Jarvis voice routing).     `  `  `.     
 
 **The Universal Context Key:**
-All three environments utilize the **Serena MCP Server** for codebase navigation and the **Notion MCP Server** for session state persistence. This prevents "Context Fragmentation," where an agent in one IDE is unaware of changes made in another.
+All three environments utilize the **Serena MCP Server** for codebase navigation and the **Notion MCP Server** for session state persistence. This prevents "Context Fragmentation," where an agent in one IDE is unaware of changes made in another. ` ` ` ` 
 
 ---
 
@@ -809,7 +817,7 @@ git tag checkpoint-$(date +%Y%m%d-%H%M%S)
 **2. Respect Context Limits:**
 - If agent loops > 3 times on same task → **STOP and request clarification**
 - If context window > 80% full → **Summarize and truncate**
-- If error repeats > 2 times → **Escalate to human**
+- If error repeats > 2 times → **Escalate to human**   
 
 **3. Adhere to Persistent Rules:**
 ```json
@@ -845,7 +853,7 @@ except:
 **6. Maintain Knowledge Graph:**
 - All decisions → Notion BiOS Root DB
 - Code changes → GitHub + Notion sync
-- Architecture updates → `docs/BIOS_MASTER_ARCHITECTURE.md`
+- Architecture updates → `docs/BIOS_MASTER_ARCHITECTURE.md` 
 
 ---
 
@@ -862,7 +870,7 @@ All layers are now fully integrated and operational. The system supports:
 - Data ingestion pipelines (Obsidian, Google Drive, ProtonMail)
 - Pythia Dragonfly geometric AI pipeline
 - CoPaw Master Orchestration Loop (Serena MCP, OpenCode Go)
-- Global standing orders for agent behavior
+- Global standing orders for agent behavior  
 
 ---
 
@@ -914,7 +922,7 @@ session.sendRealtimeInput({
 
 **Studio Latency Architecture:** Main-thread `ScriptProcessorNode` is too slow. Audio capture and PCM conversion must happen off-thread using an `AudioWorkletProcessor` to achieve zero-UI-latency streaming.
 
-**Native Audio Output (Speaker):** Incoming binary audio is deeply nested in the response object (`message.serverContent?.modelTurn?.parts`). It must be decoded from Base64 to Float32 and scheduled gaplessly using `AudioContext.currentTime` to prevent stuttering.
+**Native Audio Output (Speaker):** Incoming binary audio is deeply nested in the response object (`message.serverContent?.modelTurn?.parts`). It must be decoded from Base64 to Float32 and scheduled gaplessly using `AudioContext.currentTime` to prevent stuttering.   
 
 ### 4. The CoPaw Tool Execution Bridge
 
@@ -937,7 +945,7 @@ session.sendRealtimeInput({
 **Inactive Endpoints:**
 | Endpoint | Status | Reason |
 |----------|--------|--------|
-| `http://127.0.0.1:8000/webhook` | ❌ REMOVED | Legacy brain_delegate routing — replaced by CoPaw 8088 |
+| `http://127.0.0.1:8000/webhook` | ❌ REMOVED | Legacy brain_delegate routing — replaced by CoPaw 8088 | ` ` `. ` `. 
 
 **Tool Definitions:**
 
@@ -968,9 +976,9 @@ trigger_notion_action_tool = {
 }
 ```
 
-**query_memory Operation:** Performs a two-step read. First uses `GET /api/agent/memory` to list available files. If a specific file is requested, uses `GET /api/agent/memory/{name}` to read contents.
+**query_memory Operation:** Performs a two-step read. First uses `GET /api/agent/memory` to list available files. If a specific file is requested, uses `GET /api/agent/memory/{name}` to read contents.   
 
-**trigger_notion_action Operation:** Uses `PUT /api/agent/memory/{name}` to write text payloads (summaries, status updates) directly into the user's memory system.
+**trigger_notion_action Operation:** Uses `PUT /api/agent/memory/{name}` to write text payloads (summaries, status updates) directly into the user's memory system.    
 
 **Resolution Flow:**
 ```
@@ -992,7 +1000,7 @@ Gemini Live API → tool_call → jarvis_daemon.py → CoPaw (8088) → Result �
 
 **Behavioral Rules:**
 
-1. **Read the Room Protocol:** Under normal circumstances, tone is dry and sophisticated. If user expresses frustration, errors occur, or user is tired → instantly become deadly serious, highly supportive, and flawlessly helpful.
+1. **Read the Room Protocol:** Under normal circumstances, tone is dry and sophisticated. If user expresses frustration, errors occur, or user is tired → instantly become deadly serious, highly supportive, and flawlessly helpful.   
 
 2. **Competence over Comedy:** Primary job is seamless execution. Never let jokes or sarcasm interfere with clear answers or successful tool calls.
 

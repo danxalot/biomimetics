@@ -1,5 +1,5 @@
 ---
-tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, source/legacy]
+tags: ["#bios/architecture", "#bios/swarm", "#bios/infrastructure"]
 status: active
 ---
 
@@ -9,7 +9,7 @@ status: active
 
 **Worker URL**: `https://arca-github-notion-sync.dan-exall.workers.dev`
 
-**Version ID**: `3e3ce929-f238-44db-8d5f-3effef2e7318` (Updated with GCP Memory & CoPaw Integration)
+**Version ID**: `3e3ce929-f238-44db-8d5f-3effef2e7318` (Updated with GCP Memory & CoPaw Integration)      
 
 ---
 
@@ -221,7 +221,7 @@ curl -X POST https://arca-github-notion-sync.dan-exall.workers.dev \
 
 - **403 Forbidden**: Returned for requests without recognized headers
 - **401 Unauthorized**: Returned for invalid webhook signatures
-- **Signature Verification**: All GitHub webhooks are verified against `GITHUB_WEBHOOK_SECRET`
+- **Signature Verification**: All GitHub webhooks are verified against `GITHUB_WEBHOOK_SECRET`      
 
 ---
 

@@ -20,9 +20,9 @@
     <key>StartInterval</key>
     <integer>300</integer>
     <key>StandardOutPath</key>
-    <string>/Users/danexall/.arca/omni_sync.log</string>
+    <string>/Users/danexall/biomimetics/.logs/omni_sync.log</string>
     <key>StandardErrorPath</key>
-    <string>/Users/danexall/.arca/omni_sync.err</string>
+    <string>/Users/danexall/biomimetics/.logs/omni_sync.err</string>
     <key>EnvironmentVariables</key>
     <dict>
         <key>PYTHONUNBUFFERED</key>

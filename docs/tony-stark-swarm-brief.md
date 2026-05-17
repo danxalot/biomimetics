@@ -1,5 +1,5 @@
 ---
-tags: [bios/architecture, bios/infrastructure, bios/memory, bios/swarm, bios/voice, source/legacy]
+tags: ["#bios/architecture", "#bios/swarm", "#bios/infrastructure"]
 status: active
 ---
 
@@ -7,7 +7,7 @@ status: active
 
 ## Executive Summary
 
-The Tony Stark Swarm is a meta-cognitive model orchestration system that deploys the right AI model for the right task, maximizing effectiveness while minimizing cost. Named after Tony Stark's JARVIS/FRIDAY system, it coordinates multiple AI models to work together as an intelligent development swarm.
+The Tony Stark Swarm is a meta-cognitive model orchestration system that deploys the right AI model for the right task, maximizing effectiveness while minimizing cost. Named after Tony Stark's JARVIS/FRIDAY system, it coordinates multiple AI models to work together as an intelligent development swarm. `
 
 ## Architecture Overview
 
@@ -57,7 +57,7 @@ The Tony Stark Swarm is a meta-cognitive model orchestration system that deploys
 | MiniMax 2.5 Free | OpenCode Zen | Concise, good code | 500 |
 | Super Nemotron 3 | OpenCode Zen | Thorough, precise | 100 |
 
-**Strategy**: Rotate between models every 4 hours for varied perspectives while maintaining context.
+**Strategy**: Rotate between models every 4 hours for varied perspectives while maintaining context. `).    `
 
 ### TIER 1: Free Code/Reasoning
 | Model | Provider | Strengths | Daily Quota |
@@ -104,9 +104,9 @@ Kilo Code demonstrated that each model finds things others miss. The swarm appro
 1. **Primary Analysis**: One model performs main analysis
 2. **Secondary Scan**: Different model finds missed issues
 3. **Quality Gate**: Third model reviews for errors
-4. **Consensus**: Final model synthesizes findings
+4. **Consensus**: Final model synthesizes findings   
 
-This is why Serena MCP with multiple models outperforms single-model analysis.
+This is why Serena MCP with multiple models outperforms single-model analysis.    `. `
 
 ## Usage Examples
 
@@ -169,7 +169,7 @@ The system tracks:
 - **Daily limits**: Reset at midnight
 - **Monthly limits**: Reset on 1st of month
 - **Usage patterns**: Learn from task outcomes
-- **Fallback routing**: Automatically use next-best when quota exceeded
+- **Fallback routing**: Automatically use next-best when quota exceeded   
 
 ## Cost Optimization
 
@@ -189,14 +189,14 @@ Track:
 2. **Error detection rate** per model
 3. **Quota utilization** efficiency
 4. **Cost per successful task**
-5. **Model switching frequency**
+5. **Model switching frequency**   
 
 ## Next Steps
 
 1. **Run diagnostic**: `python scripts/swarm/model_selector.py`
 2. **Test brief generation**: `python scripts/swarm/task_brief_generator.py "Analyze authentication flow"`
 3. **Full project analysis**: `python scripts/swarm/project_analyzer.py --mode full`
-4. **Integrate with Agent PM**: Add task brief generation to GitHub issue workflow
+4. **Integrate with Agent PM**: Add task brief generation to GitHub issue workflow   
 
 ---
 

@@ -1,5 +1,5 @@
 ---
-tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, source/legacy]
+tags: ["#bios/architecture", "#bios/swarm", "#bios/infrastructure"]
 status: active
 ---
 
@@ -19,22 +19,22 @@ When GitHub events occur, the Worker:
     - Automatically tags issues labeled "Serena" or "AI-Agent"
     - Syncs issue state (open/closed) to Notion status
     - Includes labels, description, and GitHub link
-    - Forwards event data to GCP memory system for contextual AI enrichment
+    - Forwards event data to GCP memory system for contextual AI enrichment   
 
 2. **Pull Requests**: Tracks PR lifecycle
     - Opened → "In Progress"
     - Closed/Merged → "Done"
-    - Forwards event data to GCP memory system for contextual AI enrichment
+    - Forwards event data to GCP memory system for contextual AI enrichment   
 
 3. **Push Events**: Logs commits to main/master branches
     - Summarizes commit messages
     - Tracks pusher information
-    - Forwards event data to GCP memory system for contextual AI enrichment
+    - Forwards event data to GCP memory system for contextual AI enrichment   
 
 Additionally, the Worker handles:
 - **Serena Agent Requests**: Processing SYNC_TASK, UPDATE_STATUS, CREATE_ENTRY, QUERY actions
 - **GCP Memory Insights**: Processing task suggestions and context updates from the memory system
-- **CoPaw Requests**: Handling tool approval requests, skill execution queues, and approval responses
+- **CoPaw Requests**: Handling tool approval requests, skill execution queues, and approval responses   
 
 ---
 
@@ -99,7 +99,7 @@ Click **Add webhook** at the bottom.
 1. After adding, GitHub will show a **Recent Deliveries** section
 2. You should see a ping event with ✓ response
 3. Create a test issue in the repository
-4. Check the delivery shows 200 OK
+4. Check the delivery shows 200 OK   
 
 ### Verify Notion Sync
 
@@ -110,7 +110,7 @@ Click **Add webhook** at the bottom.
    - Title: `[SERENA] Your Issue Title`
    - Status: Not Started / In Progress
    - Source: GitHub: danxalot/biomimetics
-   - Github Link: URL to the issue
+   - Github Link: URL to the issue   
 
 ---
 
@@ -121,7 +121,7 @@ Click **Add webhook** at the bottom.
 **Check the response code:**
 - `401` - Secret mismatch. Verify the secret matches.
 - `400` - Invalid payload. Check content type is `application/json`.
-- `500` - Worker error. Check Cloudflare Worker logs.
+- `500` - Worker error. Check Cloudflare Worker logs.   
 
 ### Notion Entry Not Created
 

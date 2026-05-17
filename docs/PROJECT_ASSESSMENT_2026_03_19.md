@@ -1,5 +1,5 @@
 ---
-tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, bios/voice, context/life, source/legacy]
+tags: ["#bios/architecture", "#bios/swarm", "#bios/infrastructure"]
 status: active
 ---
 
@@ -13,16 +13,16 @@ status: active
 
 ## Executive Summary
 
-### Project Status: **Phase 7 Complete - Consolidation Done** ✅
+### Project Status: **Phase 8 Complete - Memory Stabilization Done** ✅
 
 The Biomimetics project is a **mature infrastructure automation system** for the ARCA ecosystem with:
 - ✅ All code consolidated into `~/biomimetics/`
-- ✅ Comprehensive documentation (15+ files)
-- ✅ Active services running (LaunchAgents, Cloudflare Workers)
-- ✅ Notion integration operational (3 databases)
-- ✅ Email sync active (5 ProtonMail + Gmail)
-- ✅ GCP Memory Gateway deployed
-- ⚠️ GitHub MCP needs redeployment (container stopped)
+- ✅ Comprehensive documentation (25+ files)
+- ✅ Active services running (LaunchAgents, Cloudflare Workers, Koyeb)
+- ✅ Notion integration operational (6 databases)
+- ✅ Email ingestion pipeline stabilized (Multipart cleansing + staging quarantine)
+- ✅ GCP Memory Gateway deployed (MemU v1.3.1)
+- ✅ GitHub MCP active on Koyeb (Git-based)   
 
 ---
 
@@ -111,7 +111,7 @@ The Biomimetics project is a **mature infrastructure automation system** for the
 - `gmail-app-password` - Gmail IMAP
 - `proton-bridge-password` - ProtonMail auth
 - `github-webhook-secret` - Webhook validation
-- ...and 57 more
+- ...and 57 more   
 
 **Action Required**: Redeploy GitHub MCP container
 ```bash
@@ -134,8 +134,10 @@ cd ~/biomimetics/azure
 
 **Purpose**: Unified memory system for contextual AI
 - MuninnDB: Working memory
-- MemU: Archive memory (1536-dim embeddings)
+- MemU: Archive memory (v1.3.1, 1536-dim embeddings)
+- Agents: `gemma-4-31b-it` (Personal), `gemma-4-26b-a4b-it` (Technical)
 - Query interface for all agents
+- Admin: `/purge` endpoint for content management   
 
 ---
 
@@ -171,14 +173,14 @@ cd ~/biomimetics/azure
 - Serena agent tasks → Life OS Triage
 - GCP memory insights → Task suggestions
 - CoPaw requests → Tool approval workflow
-- PM-Agent routing
+- PM-Agent routing  `  `  `  
 
 **Routing** (X-Arca-Source header):
 - `GitHub` → GitHub webhook handler
 - `Serena` → Serena task sync
 - `GCP-Memory` → Memory insight processor
 - `CoPaw` → Tool approval router
-- `PM-Agent` → Project manager actions
+- `PM-Agent` → Project manager actions   
 
 **Secrets** (wrangler.toml):
 ```toml
@@ -227,7 +229,7 @@ GITHUB_TOKEN = "[GITHUB_TOKEN_REDACTED]"
 | Server | Transport | Endpoint | Status |
 |--------|-----------|----------|--------|
 | **Notion MCP** | stdio (npx) | Local | ✅ Ready |
-| **GitHub MCP** | SSE | `http://github-mcp-server.eastus.azurecontainer.io:8080/mcp` | ⚠️ Stopped |
+| **GitHub MCP** | SSE | `https://github-mcp-server-arca-vsa-3c648978.koyeb.app/sse` | ✅ Healthy |
 | **GCP Gateway** | HTTPS | `https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator` | ✅ Active |
 
 ---
@@ -245,7 +247,7 @@ GITHUB_TOKEN = "[GITHUB_TOKEN_REDACTED]"
 - `cloudflare/wrangler.toml` - Add ARCA_DB_ID vars
 - `~/.zed/settings.json` - Add ARCA_PM agent
 - `~/biomimetics/.antigravity/settings.json` - Add ARCA namespaces
-- `cloudflare/index.js` - Add ARCA routing (code ready, needs DB IDs)
+- `cloudflare/index.js` - Add ARCA routing (code ready, needs DB IDs)   
 
 ---
 
@@ -256,13 +258,14 @@ GITHUB_TOKEN = "[GITHUB_TOKEN_REDACTED]"
 | Document | Purpose | Status |
 |----------|---------|--------|
 | `README.md` | Quick start guide | ✅ Updated |
-| `docs/SYSTEM_ARCHITECTURE.md` | Technical architecture | ✅ Complete |
+| `docs/SYSTEM_ARCHITECTURE.md` | Technical architecture | ✅ v1.3.1 Sync |
+| `docs/architecture/001-memory-pipeline.md` | Memory SOP | ✅ Created |
 | `docs/AZURE_SECRETS.md` | Azure Key Vault setup | ✅ Complete |
 | `docs/GITHUB_WEBHOOK_SETUP.md` | GitHub webhook config | ✅ Complete |
 | `docs/MCP_INTEGRATION.md` | MCP server setup | ✅ Complete |
 | `docs/GEMINI_LIVE_VOICE_PROJECT.md` | Voice interface docs | ✅ Complete |
 | `docs/CONSOLIDATION_COMPLETE.md` | Consolidation report | ✅ Complete |
-| `docs/CURRENT_STATUS.md` | Development status | ✅ Current (2026-03-18) |
+| `docs/CURRENT_STATUS.md` | Development status | ✅ Current (2026-05-13) |
 
 ### MCP Integration Docs (5 files - created today)
 
@@ -456,7 +459,7 @@ Total Configuration: 5+ files
 
 ---
 
-**Assessment Date**: 2026-03-19  
-**Overall Status**: ✅ **Healthy - Minor redeployment needed**  
-**Next Action**: Redeploy GitHub MCP (`./azure/deploy_github_mcp_eastus.sh`)  
-**ETA to Full Operation**: 30 minutes
+**Assessment Date**: 2026-05-13
+**Overall Status**: ✅ **Operational - Architecture Secured**
+**Next Action**: Routine monitoring of staging exclusions
+**ETA to Full Operation**: 0 minutes (System Stabilized)

@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ARCA COMMAND DECK: HYPER-DIMENSIONAL VIEW</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body { margin: 0; background: #000408; color: #00f0ff; font-family: 'Courier New', monospace; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Glassmorphism Sidebar */
+        #sidebar { width: 380px; border-right: 1px solid rgba(0, 255, 204, 0.2); padding: 25px; height: 100vh; box-sizing: border-box; background: rgba(0, 10, 15, 0.85); backdrop-filter: blur(10px); flex-shrink: 0; display: flex; flex-direction: column; gap: 20px; z-index: 10; box-shadow: 5px 0 20px rgba(0,0,0,0.5); }
+        h1 { font-size: 20px; margin: 0; letter-spacing: 3px; border-bottom: 1px solid rgba(0,255,204,0.5); padding-bottom: 10px; text-shadow: 0 0 10px #00f0ff; }
+        h2 { font-size: 11px; letter-spacing: 2px; color: #00aaaa; margin: 0 0 5px 0; }
+        
+        /* Metric Bars */
+        .metric { display: flex; flex-direction: column; }
+        .val-display { font-size: 20px; font-weight: bold; text-shadow: 0 0 8px currentColor; }
+        .bar-bg { background: rgba(0, 255, 204, 0.1); height: 6px; width: 100%; margin-top: 8px; border-radius: 3px; overflow: hidden; }
+        .bar-fill { height: 100%; width: 0%; transition: width 0.2s ease-out; }
+        
+        /* Pulse & Tick Indicators */
+        .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 5px; }
+        .status-box { border: 1px solid rgba(0, 255, 204, 0.2); padding: 12px; text-align: center; background: rgba(0,255,204,0.02); border-radius: 4px; }
+        .status-label { font-size: 10px; color: #00aaaa; letter-spacing: 1px; }
+        .status-value { font-size: 18px; font-weight: bold; margin-top: 5px; transition: color 0.3s, text-shadow 0.3s; }
+        
+        /* State Colors */
+        .online { color: #00ff88; text-shadow: 0 0 10px #00ff88; }
+        .offline { color: #ff0055; text-shadow: 0 0 10px #ff0055; }
+        .stagnant { color: #ffaa00; text-shadow: 0 0 10px #ffaa00; }
+
+        /* Canvas & HUD */
+        #canvas-container { flex-grow: 1; position: relative; height: 100vh; background: radial-gradient(circle at center, #00111a 0%, #000000 100%); }
+        #hud-overlay { position: absolute; top: 25px; left: 25px; color: #00ffcc; font-size: 12px; z-index: 100; text-shadow: 0 0 5px #00ffcc; pointer-events: none; background: rgba(0,5,10,0.6); padding: 15px; border: 1px solid rgba(0,255,204,0.3); border-radius: 4px; backdrop-filter: blur(5px); }
+        #hud-overlay p { margin: 6px 0; }
+        
+        /* Terminal Log */
+        #terminal { flex-grow: 1; border: 1px solid rgba(0,255,204,0.2); background: rgba(0,0,0,0.5); border-radius: 4px; padding: 10px; font-size: 10px; color: #008888; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; }
+        .log-entry { margin: 0; animation: fadein 0.3s; }
+        @keyframes fadein { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <h1>ARCA MANIFOLD</h1>
+        
+        <div class="status-grid">
+            <div class="status-box">
+                <div class="status-label">SYS_TICK</div>
+                <div id="tick-val" class="status-value" style="color: #00f0ff;">0</div>
+            </div>
+            <div class="status-box">
+                <div class="status-label">HEARTBEAT PULSE</div>
+                <div id="pulse-status" class="status-value offline">DEAD STATE</div>
+            </div>
+        </div>
+
+        <div class="metric">
+            <h2>MAMBA L2 INJECTION</h2>
+            <div id="mamba-val" class="val-display" style="color: #00f0ff;">0.0000</div>
+            <div class="bar-bg"><div id="mamba-bar" class="bar-fill" style="background: #00f0ff; box-shadow: 0 0 10px #00f0ff;"></div></div>
+        </div>
+        <div class="metric">
+            <h2>KURAMOTO COHERENCE</h2>
+            <div id="coh-val" class="val-display" style="color: #00ff88;">0.0000</div>
+            <div class="bar-bg"><div id="coh-bar" class="bar-fill" style="background: #00ff88; box-shadow: 0 0 10px #00ff88;"></div></div>
+        </div>
+        <div class="metric">
+            <h2>HAMILTONIAN ENERGY</h2>
+            <div id="ham-val" class="val-display" style="color: #ff0055;">0.0000</div>
+            <div class="bar-bg"><div id="ham-bar" class="bar-fill" style="background: #ff0055; box-shadow: 0 0 10px #ff0055;"></div></div>
+        </div>
+
+        <button id="pulse-btn" style="background: rgba(0,255,204,0.1); border: 1px solid #00f0ff; color: #00f0ff; padding: 12px; cursor: pointer; margin-top: 10px; font-family: inherit; font-size: 11px; letter-spacing: 2px; border-radius: 4px; transition: all 0.3s; font-weight: bold;">TRIGGER RESONANCE</button>
+
+        <div id="terminal">
+            <div class="log-entry">> INITIALIZING 4D PROJECTION KERNEL...</div>
+            <div class="log-entry">> AWAITING TELEMETRY LINK...</div>
+        </div>
+    </div>
+
+    <div id="canvas-container">
+        <div id="hud-overlay">
+            <div style="border-bottom: 1px solid rgba(0,255,204,0.5); padding-bottom: 5px; margin-bottom: 10px; font-weight: bold; letter-spacing: 1px;">TOPOLOGICAL STATE</div>
+            <p>> CGA_LIFT: <span style="color: #fff;">ACTIVE</span></p>
+            <p>> 4D_PROJECTION: <span style="color: #fff;">ORTHOGONAL</span></p>
+            <p>> MANIFOLD_XYZ: <span id="coords" style="color: #fff;">0.00, 0.00, 0.00</span></p>
+        </div>
+    </div>
+
+    <script>
+        // --- 4D TESSERACT MATH ---
+        const vertices4D = [];
+        for(let i=0; i<16; i++) {
+            vertices4D.push([
+                (i & 1) ? 1 : -1,
+                (i & 2) ? 1 : -1,
+                (i & 4) ? 1 : -1,
+                (i & 8) ? 1 : -1
+            ]);
+        }
+        const edges4D = [];
+        for(let i=0; i<16; i++) {
+            for(let j=0; j<4; j++) {
+                let neighbor = i ^ (1<<j);
+                if(i < neighbor) edges4D.push([i, neighbor]);
+            }
+        }
+
+        // --- THREE.JS SETUP ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(60, (window.innerWidth-380)/window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth - 380, window.innerHeight);
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        // --- TESSERACT MESH ---
+        const material = new THREE.LineBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.8 });
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(edges4D.length * 2 * 3);
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const tesseract = new THREE.LineSegments(geometry, material);
+        scene.add(tesseract);
+
+        // --- KURAMOTO FIELD PARTICLES ---
+        const particleCount = 1000;
+        const pGeo = new THREE.BufferGeometry();
+        const pPos = new Float32Array(particleCount * 3);
+        const pPhase = new Float32Array(particleCount);
+        for(let i=0; i<particleCount; i++) {
+            // Distribute in a spherical cloud
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos((Math.random() * 2) - 1);
+            const r = 3 + Math.random() * 2;
+            pPos[i*3] = r * Math.sin(phi) * Math.cos(theta);
+            pPos[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+            pPos[i*3+2] = r * Math.cos(phi);
+            pPhase[i] = Math.random() * Math.PI * 2; // Random initial phase
+        }
+        pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        const pMat = new THREE.PointsMaterial({ color: 0x00ff88, size: 0.05, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending });
+        const particleSystem = new THREE.Points(pGeo, pMat);
+        scene.add(particleSystem);
+
+        camera.position.z = 6;
+
+        // --- STATE VARIABLES ---
+        let currentL2 = 0;
+        let previousL2 = 0;
+        let currentCoherence = 0;
+        let angleXW = 0, angleYW = 0;
+        let pulseTimeout;
+
+        function logTerminal(msg) {
+            const term = document.getElementById('terminal');
+            const el = document.createElement('div');
+            el.className = 'log-entry';
+            el.innerText = `[${new Date().toLocaleTimeString().split(' ')[0]}] ${msg}`;
+            term.appendChild(el);
+            if (term.children.length > 20) term.removeChild(term.firstChild);
+            term.scrollTop = term.scrollHeight;
+        }
+
+        async function fetchTelemetry() {
+            try {
+                const host = window.location.hostname || 'localhost';
+                const [vitalsRes, manifoldRes, statusRes] = await Promise.all([
+                    fetch(`/api/vitals`).catch(() => null),
+                    fetch(`/api/manifold`).catch(() => null),
+                    fetch(`/api/status`).catch(() => null)
+                ]);
+
+                if (vitalsRes && vitalsRes.ok) {
+                    const vitals = await vitalsRes.json();
+                    currentL2 = vitals.mamba_pulse_l2;
+                    currentCoherence = vitals.kuramoto_coherence;
+
+                    document.getElementById('mamba-val').innerText = currentL2.toFixed(4);
+                    document.getElementById('mamba-bar').style.width = Math.min((currentL2 / 5) * 100, 100) + "%";
+                    
+                    document.getElementById('coh-val').innerText = currentCoherence.toFixed(4);
+                    document.getElementById('coh-bar').style.width = (currentCoherence * 100) + "%";
+
+                    document.getElementById('ham-val').innerText = vitals.hamiltonian_energy.toFixed(4);
+                    document.getElementById('ham-bar').style.width = Math.min((vitals.hamiltonian_energy / 10) * 100, 100) + "%";
+
+                    // Pulse Detection
+                    const pulseStatus = document.getElementById('pulse-status');
+                    if (currentL2 > 0 && currentL2 !== previousL2) {
+                        pulseStatus.innerText = "PULSING";
+                        pulseStatus.className = "status-value online";
+                        logTerminal(`L2 Spike Detected: ${currentL2.toFixed(2)}`);
+                        
+                        clearTimeout(pulseTimeout);
+                        pulseTimeout = setTimeout(() => {
+                            pulseStatus.innerText = "STAGNANT";
+                            pulseStatus.className = "status-value stagnant";
+                        }, 2000);
+                    } else if (currentL2 === 0) {
+                        pulseStatus.innerText = "DEAD STATE";
+                        pulseStatus.className = "status-value offline";
+                    }
+                    previousL2 = currentL2;
+                }
+
+                if (manifoldRes && manifoldRes.ok) {
+                    const manifold = await manifoldRes.json();
+                    document.getElementById('coords').innerText = `${manifold.x.toFixed(3)}, ${manifold.y.toFixed(3)}, ${manifold.z.toFixed(3)}`;
+                }
+
+                if (statusRes && statusRes.ok) {
+                    const status = await statusRes.json();
+                    document.getElementById('tick-val').innerText = status.tick || 0;
+                }
+
+            } catch (e) {
+                document.getElementById('pulse-status').innerText = "SEVERED";
+                document.getElementById('pulse-status').className = "status-value offline";
+            }
+        }
+
+        // --- ANIMATION LOOP ---
+        function animate() {
+            // 4D Rotation Speeds modulated by L2 Pulse Energy
+            const speed = 0.005 + (currentL2 * 0.01);
+            angleXW += speed;
+            angleYW += speed * 0.7;
+
+            // Project 4D to 3D
+            const projPositions = tesseract.geometry.attributes.position.array;
+            let idx = 0;
+            const wDistance = 2.5; // Perspective distance for 4D
+            
+            // Base scale modulated by coherence
+            const scale = 1.2 + (currentCoherence * 0.5);
+
+            edges4D.forEach(edge => {
+                for(let k=0; k<2; k++) {
+                    const v4 = vertices4D[edge[k]];
+                    let x = v4[0], y = v4[1], z = v4[2], w = v4[3];
+
+                    // XW Rotation
+                    let nx = x * Math.cos(angleXW) - w * Math.sin(angleXW);
+                    let nw = x * Math.sin(angleXW) + w * Math.cos(angleXW);
+                    x = nx; w = nw;
+
+                    // YW Rotation
+                    let ny = y * Math.cos(angleYW) - w * Math.sin(angleYW);
+                    nw = y * Math.sin(angleYW) + w * Math.cos(angleYW);
+                    y = ny; w = nw;
+
+                    // Stereographic Projection to 3D
+                    const wFactor = 1 / (wDistance - w);
+                    projPositions[idx++] = x * wFactor * scale;
+                    projPositions[idx++] = y * wFactor * scale;
+                    projPositions[idx++] = z * wFactor * scale;
+                }
+            });
+            tesseract.geometry.attributes.position.needsUpdate = true;
+            
+            // Rotate the 3D object slightly
+            tesseract.rotation.x += 0.002;
+            tesseract.rotation.y += 0.003;
+
+            // Particle Swarm (Kuramoto Field) Logic
+            const time = Date.now() * 0.001;
+            const positions = particleSystem.geometry.attributes.position.array;
+            for(let i=0; i<particleCount; i++) {
+                // If coherence is high, particles pulse together. If low, they drift chaotically.
+                const phase = pPhase[i];
+                const sync = currentCoherence; 
+                const noise = (1 - sync) * Math.sin(time * 5 + phase) * 0.02;
+                
+                // Slight breathing effect
+                const rFactor = 1 + (Math.sin(time * 2 + (sync * phase)) * 0.01) + noise;
+                positions[i*3] *= rFactor;
+                positions[i*3+1] *= rFactor;
+                positions[i*3+2] *= rFactor;
+                
+                // Gently pull particles back to base radius to prevent exploding
+                const currentR = Math.sqrt(positions[i*3]**2 + positions[i*3+1]**2 + positions[i*3+2]**2);
+                if(currentR > 6) {
+                    positions[i*3] *= 0.99;
+                    positions[i*3+1] *= 0.99;
+                    positions[i*3+2] *= 0.99;
+                }
+            }
+            particleSystem.geometry.attributes.position.needsUpdate = true;
+            particleSystem.rotation.y -= 0.001; // Slow counter-rotation
+
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = (window.innerWidth - 380) / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth - 380, window.innerHeight);
+        });
+
+        setInterval(fetchTelemetry, 1000);
+        document.getElementById('pulse-btn').onclick = async () => {
+            const btn = document.getElementById('pulse-btn');
+            btn.style.background = "rgba(0,255,204,0.4)";
+            logTerminal("Initiating manual resonance injection...");
+            
+            try {
+                // Trigger a tick which usually processes any pending resonance
+                const resp = await fetch(`/api/tick`, { method: 'POST' });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    logTerminal(`Injection successful. Coherence: ${data.coherence.toFixed(4)}`);
+                } else {
+                    logTerminal(`Injection failed: ${resp.status}`);
+                }
+            } catch (e) {
+                logTerminal(`Trigger failure: ${e.message}`);
+            } finally {
+                setTimeout(() => { btn.style.background = "rgba(0,255,204,0.1)"; }, 500);
+            }
+        };
+
+        fetchTelemetry();
+        animate();
+    </script>
+</body>
+</html>

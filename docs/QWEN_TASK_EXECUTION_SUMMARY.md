@@ -1,5 +1,5 @@
 ---
-tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, source/legacy]
+tags: ["#bios/architecture", "#bios/swarm", "#bios/infrastructure"]
 status: active
 ---
 
@@ -24,7 +24,7 @@ status: active
   - `3284d2d9fc7c811188deeeaba9c5f845` (Biomimetic OS)
   - `3284d2d9fc7c81bd9a91e865511e642f` (Life OS Triage / Tool Guard)
   - `3284d2d9fc7c8113bfecca75f4235ece` (CoPaw Approval)
-  - `3244d2d9fc7c808b97c3ce78648d77a1` (Old Biomimetic OS)
+  - `3244d2d9fc7c808b97c3ce78648d77a1` (Old Biomimetic OS)   
 
 - **ARCA Project**: **0 database IDs found** ❌
 
@@ -129,14 +129,14 @@ cd ~/biomimetics
 2. **Secrets Mapped**: Identified GitHub MCP required secrets
 3. **Paths Fixed**: Updated 3 files with environment variable support
 4. **Scripts Created**: Koyeb deployment + Azure teardown ready
-5. **Documentation**: 3 new documents created
+5. **Documentation**: 3 new documents created   
 
 ### ❌ What Could NOT Be Done
 
 1. **ARCA Database IDs**: Not found in codebase - require user input
 2. **Koyeb Deployment**: Cannot execute without CLI authentication
 3. **Azure Teardown**: Cannot execute without Azure login
-4. **Integration Verification**: Blocked by missing database IDs
+4. **Integration Verification**: Blocked by missing database IDs   
 
 ---
 
@@ -224,7 +224,7 @@ ARCA_MEMORY_DB_ID = "your-id-here"
 
 2. **Resolve Git Secret Block** (2 minutes)
    - Visit: https://github.com/danxalot/biomimetics/security/secret-scanning/unblock-secret/3B4PG0GOqurXoHeMQm8L2SAS1Sr
-   - Click "Allow this secret"
+   - Click "Allow this secret" .
 
 ### Migration (Can Do Now)
 

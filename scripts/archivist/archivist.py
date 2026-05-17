@@ -62,7 +62,17 @@ TAG_RULES = {
     "nhs": "context/legal",
     "complaint": "context/legal",
     "medical": "context/life",
-    "disability": "context/life",
+    "disability": "context/health/disability",
+    "loss of capacity": "context/health/incapacity",
+    "incapacity": "context/health/incapacity",
+    "side effects": "context/health/side_effects",
+    "adverse reaction": "context/health/side_effects",
+    "systemic failure": "context/legal/systemic_failure",
+    "systemic harm": "context/legal/systemic_harm",
+    "failure of care": "context/legal/failure_of_care",
+    "negligence": "context/legal/failure_of_care",
+    "duty of candour": "context/legal/duty_of_candour",
+    "consequential loss": "context/legal/consequential_loss",
     "health": "context/life",
 }
 
@@ -114,14 +124,37 @@ def fetch_notion_token():
         return None
 
 
-def derive_tags(filepath, content, default_tags):
-    """Derive Obsidian tags from filepath + content using keyword rules."""
+def derive_tags(filepath, content, default_tags, config_moc):
+    """
+    Derive Obsidian tags and MOCs from filepath + content.
+    Combines legacy TAG_RULES with strict path-based routing.
+    """
     tags = set(default_tags)
+    mocs = {config_moc} if config_moc else set()
+    
+    # 1. Legacy Keyword Logic (Retained)
     check_text = (filepath + "\n" + content[:2000]).lower()
     for keyword, tag in TAG_RULES.items():
         if keyword in check_text:
             tags.add(tag)
-    return sorted(tags)
+            
+    # 2. Path-Based Routing Logic (Integrated)
+    if "ARCA/shared_storage/Awake/" in filepath:
+        tags.update(["source/arca", "arca"])
+        mocs.add("ARCA_MOC")
+        
+    if "biomimetics/docs/" in filepath:
+        tags.update(["source/biomimetics", "bios/architecture"])
+        mocs.add("Biomimetics_MOC")
+        
+    # 3. Pythia Keyword Logic
+    pythia_keywords = ["vsa", "ebm", "jepa", "reasoningbank", "geometric sentience"]
+    if any(kw in check_text for kw in pythia_keywords):
+        tags.add("pythia")
+        mocs.add("Pythia_MOC")
+        
+    return sorted(list(tags)), sorted(list(mocs))
+
 
 
 def derive_title(filepath):
@@ -143,7 +176,7 @@ def sanitize_filename(title):
 # Obsidian Node Synthesis
 # ---------------------------------------------------------------------------
 
-def synthesize_node(title, content, tags, moc_name, source_path=""):
+def synthesize_node(title, content, tags, mocs, source_path=""):
     """Render an artifact into an Obsidian node with YAML frontmatter."""
     date_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     tag_yaml = "\n".join(f"  - {t}" for t in tags)
@@ -151,6 +184,9 @@ def synthesize_node(title, content, tags, moc_name, source_path=""):
     # Extract first meaningful paragraph as summary
     lines = [l.strip() for l in content.split("\n") if l.strip() and not l.startswith("#") and not l.startswith("---")]
     summary = lines[0][:200] if lines else "No summary available."
+
+    # Multi-MOC Relational Metadata
+    up_links = "\n".join(f"Up: [[{m}]]" for m in mocs)
 
     node = f"""---
 aliases: []
@@ -164,7 +200,7 @@ source: "{source_path}"
 # {title}
 
 ## Relational Metadata
-Up: [[{moc_name}]]
+{up_links}
 
 ---
 
@@ -185,6 +221,7 @@ Assimilated: {date_str}
 Compliance: All operations within free tier limits.
 """
     return node
+
 
 
 # ---------------------------------------------------------------------------
@@ -442,11 +479,12 @@ def main():
         default_tags = artifact["default_tags"]
         moc = artifact["moc"]
 
-        # Derive tags
-        tags = derive_tags(source_path, content, default_tags)
+        # Derive tags and MOCs (Legacy + Strict Routing)
+        tags, mocs = derive_tags(source_path, content, default_tags, moc)
 
         # Synthesize node
-        node_content = synthesize_node(title, content, tags, moc, source_path)
+        node_content = synthesize_node(title, content, tags, mocs, source_path)
+
 
         # Write to staging
         safe_name = sanitize_filename(title)
@@ -456,8 +494,10 @@ def main():
         with open(out_path, "w") as f:
             f.write(node_content)
 
-        # Update MOC
-        update_moc(moc, safe_name, moc_dir)
+        # Update MOCs
+        for m in mocs:
+            update_moc(m, safe_name, moc_dir)
+
 
         # Archive Notion task if applicable
         if artifact.get("notion_page_id") and notion_token:

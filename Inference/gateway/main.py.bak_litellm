@@ -1,0 +1,1907 @@
+#!/usr/bin/env python3
+"""
+ARCA LLM Gateway Service
+
+A unified API gateway for multiple LLM providers including:
+- OpenAI (GPT models)
+- Anthropic (Claude models)
+- Google (Gemini models)
+- Cohere
+- Local models via LiteLLM
+- OpenRouter for additional model access
+
+Features:
+- Model routing and load balancing
+- Rate limiting and quota management
+- Request/response logging and monitoring
+- Fallback mechanisms
+- Cost tracking
+"""
+
+import os
+import asyncio
+import logging
+import json
+import sys
+from typing import Dict, List, Optional, Any, Union
+from datetime import datetime, timezone, timedelta
+from contextlib import asynccontextmanager
+from pathlib import Path
+import pytz
+
+# Add shared module to path for model_config import
+sys.path.insert(0, '/shared')
+sys.path.insert(0, '/app/shared')  # Alternative path for containers without /shared mount
+try:
+    from model_config import (
+        architect_model, engineer_model, orchestrator_model, planner_model,
+        reviewer_model, meta_debugger_model, compressor_model, robotics_model,
+        deepthink_model, chat_model, serena_model, AVAILABLE_MODELS
+    )
+    MODEL_CONFIG_AVAILABLE = True
+    print("✅ LLM Gateway: Successfully imported centralized model configuration")
+except ImportError as e:
+    MODEL_CONFIG_AVAILABLE = False
+    print(f"⚠️ LLM Gateway: Could not import centralized model_config, using fallbacks: {e}")
+    # Fallback functions
+    def architect_model(): return "gemini-2.5-pro"
+    def engineer_model(): return "gemini-2.5-flash"
+    def orchestrator_model(): return "gemini-2.0-flash-lite"
+    def planner_model(): return "gemini-2.5-flash-lite"
+    def reviewer_model(): return "gemini-2.5-flash"
+    def meta_debugger_model(): return "gemini-2.0-flash"
+    def compressor_model(): return "gemini-2.0-flash"
+    def robotics_model(): return "gemini-robotics-er-1.5-preview"
+    def deepthink_model(): return "deep-research-pro-preview-12-2025"
+    def chat_model(): return "gemini-2.5-flash-lite"
+    def serena_model(): return "glm-4.6v-flash"
+    AVAILABLE_MODELS = {}
+
+import uvicorn
+from fastapi import FastAPI, HTTPException, Request, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
+import litellm
+from litellm import acompletion, completion, embedding
+litellm.set_verbose = True  # Enable verbose logging for debugging
+import redis.asyncio as redis
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+
+# Enable verbose logging for debugging
+# litellm.set_verbose = True
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Shared OTEL Instrumentation
+# Shared OTEL Instrumentation
+import sys
+# sys.path.append("/app/shared")
+# try:
+#     from shared.otel_setup import instrument_service
+# except ImportError:
+#     # Fallback for local dev
+#     # current_dir = os.path.dirname(os.path.abspath(__file__))
+#     # services/llm_gateway -> services -> ARCA (root)
+#     # project_root = os.path.abspath(os.path.join(current_dir, "../../"))
+#     # if project_root not in sys.path:
+#     #     sys.path.append(project_root)
+#     # from shared.otel_setup import instrument_service
+#     pass
+
+# ==================== COMPREHENSIVE ERROR LOGGING SYSTEM ====================
+# This system captures all errors for auditing and self-improvement capabilities
+
+import traceback
+import uuid
+
+class ErrorAuditLogger:
+    """Comprehensive error logging and auditing system"""
+    
+    def __init__(self, log_dir=None):
+        if log_dir is None:
+            # Check for /app (Docker) vs Local
+            if os.path.exists("/app"):
+                log_dir = "/app/shared_storage/logs"
+            else:
+                log_dir = os.path.join(os.getcwd(), "logs")
+        
+        self.log_dir = log_dir
+        self.error_dir = os.path.join(log_dir, "errors")
+        
+        try:
+            os.makedirs(self.error_dir, exist_ok=True)
+        except OSError:
+            # Fallback for permission errors
+            self.log_dir = "/tmp/arca_logs"
+            self.error_dir = os.path.join(self.log_dir, "errors")
+            os.makedirs(self.error_dir, exist_ok=True)
+            
+        self.error_summary_path = os.path.join(self.error_dir, "error_summary.jsonl")
+        
+    def log_error(self, error_id: str, error_type: str, error_message: str, 
+                  context: Dict[str, Any], request_data: Optional[Dict] = None, 
+                  response_data: Optional[Dict] = None, stack_trace: Optional[str] = None):
+        """
+        Log error with full context for auditing and self-improvement
+        
+        Args:
+            error_id: Unique identifier for this error
+            error_type: Type of error (e.g., 'APIError', 'ValidationError', 'QuotaError')
+            error_message: Human-readable error message
+            context: Additional context dict (model, endpoint, etc)
+            request_data: The raw request that caused the error
+            response_data: The raw response (if available)
+            stack_trace: Full stack trace for debugging
+        """
+        timestamp = datetime.now(timezone.utc).isoformat()
+        
+        error_record = {
+            "timestamp": timestamp,
+            "error_id": error_id,
+            "error_type": error_type,
+            "error_message": error_message,
+            "context": context,
+            "request": request_data,
+            "response": response_data,
+            "stack_trace": stack_trace
+        }
+        
+        # Save detailed error file
+        error_file = os.path.join(self.error_dir, f"error_{error_id}.json")
+        try:
+            with open(error_file, 'w') as f:
+                json.dump(error_record, f, indent=2, default=str)
+        except Exception as e:
+            logger.error(f"Failed to write error file {error_file}: {e}")
+        
+        # Append to error summary (JSONL format for streaming analysis)
+        try:
+            with open(self.error_summary_path, 'a') as f:
+                f.write(json.dumps(error_record, default=str) + '\n')
+        except Exception as e:
+            logger.error(f"Failed to append to error summary: {e}")
+        
+        # Terminal alert (formatted for easy spotting)
+        alert_msg = (
+            f"\n{'='*70}\n"
+            f"❌ ERROR DETECTED (ID: {error_id})\n"
+            f"{'='*70}\n"
+            f"Type:    {error_type}\n"
+            f"Message: {error_message}\n"
+            f"Time:    {timestamp}\n"
+            f"Model:   {context.get('model', 'N/A')}\n"
+            f"Details: {context.get('endpoint', 'N/A')}\n"
+            f"Audit:   {error_file}\n"
+            f"{'='*70}\n"
+        )
+        logger.error(alert_msg)
+        
+        return error_record
+
+# Initialize error logger
+error_logger = ErrorAuditLogger()
+
+# Load secrets from mounted directory
+SECRETS_DIR = os.environ.get("SECRETS_DIR", "/app/secrets")
+
+def load_secret(secret_name: str, env_var_name: str):
+    """Load a secret from file and set as environment variable"""
+    # Respect existing environment variables (e.g. from .env)
+    if os.environ.get(env_var_name):
+        # logger.info(f"{env_var_name} already set in environment")
+        return
+
+    secret_path = os.path.join(SECRETS_DIR, secret_name)
+    if os.path.exists(secret_path):
+        try:
+            with open(secret_path, 'r') as f:
+                content = f.read().strip()
+                # Handle JSON secrets if needed
+                if content.startswith('{') and content.endswith('}'):
+                    try:
+                        data = json.loads(content)
+                        value = data.get(env_var_name) or data.get("api_key") or content
+                    except json.JSONDecodeError:
+                        value = content
+                else:
+                    value = content
+                
+                if value:
+                    os.environ[env_var_name] = str(value)
+                    logger.info(f"Loaded secret for {env_var_name}")
+        except Exception as e:
+            logger.error(f"Failed to load secret {secret_name}: {e}")
+
+# Load required API keys
+load_secret("google_api_key", "GOOGLE_API_KEY")
+load_secret("openai_api_key", "OPENAI_API_KEY")
+load_secret("anthropic_api_key", "ANTHROPIC_API_KEY")
+load_secret("cohere_api_key", "COHERE_API_KEY")
+load_secret("openrouter_api_key", "OPENROUTER_API_KEY")
+load_secret("zhipu_api_key", "ZHIPUAI_API_KEY")
+# Fallback for BigModel if Zhipu key not set
+if "ZHIPUAI_API_KEY" not in os.environ:
+    load_secret("ARCA_BIGMODEL_API", "ZHIPUAI_API_KEY")
+
+# Alias for LiteLLM "zai/" provider compatibility
+if "ZHIPUAI_API_KEY" in os.environ and "ZAI_API_KEY" not in os.environ:
+    os.environ["ZAI_API_KEY"] = os.environ["ZHIPUAI_API_KEY"]
+
+
+# Load Google Model Limits
+try:
+    with open("google_model_limits.json", "r") as f:
+        GOOGLE_LIMITS = json.load(f)
+except Exception as e:
+    logger.warning(f"Failed to load google_model_limits.json: {e}")
+    GOOGLE_LIMITS = {}
+
+# Rate limiting - use REDIS_URL environment variable
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+try:
+    limiter = Limiter(key_func=get_remote_address, storage_uri=REDIS_URL)
+    rate_limiting_enabled = True
+except Exception as e:
+    logger.warning(f"Rate limiting disabled - Redis connection failed: {e}")
+    limiter = None
+    rate_limiting_enabled = False
+
+# Global variables
+redis_client = None
+
+def _get_pacific_date_key() -> str:
+    """
+    Get today's date in Pacific timezone for quota reset at midnight PT.
+    Returns key format: "YYYY-MM-DD" in Pacific time.
+    """
+    pacific = pytz.timezone('America/Los_Angeles')
+    today_pt = datetime.now(pacific).strftime("%Y-%m-%d")
+    return today_pt
+
+
+async def track_quota(model: str, tokens: int = 0) -> Dict[str, Any]:
+    """
+    Track API call quota for a model.
+    Returns quota status with calls_today, tokens_today, quota_remaining, etc.
+    """
+    if not redis_client:
+        return {"status": "tracking_disabled"}
+    
+    if model not in GOOGLE_LIMITS:
+        return {"status": "no_limits_defined"}
+    
+    today_key = _get_pacific_date_key()
+    calls_key = f"quota:calls:{model}:{today_key}"
+    tokens_key = f"quota:tokens:{model}:{today_key}"
+    
+    # Increment counters
+    calls = await redis_client.incr(calls_key)
+    token_total = await redis_client.incrby(tokens_key, tokens)
+    
+    # Set expiry to midnight PT tomorrow
+    if calls == 1:
+        await redis_client.expire(calls_key, 86400 + 3600)
+        await redis_client.expire(tokens_key, 86400 + 3600)
+    
+    limits = GOOGLE_LIMITS[model]
+    rpd_limit = limits.get("rpd", 1000000)
+    quota_remaining = max(0, rpd_limit - calls)
+    
+    return {
+        "calls_today": calls,
+        "tokens_today": token_total,
+        "quota_remaining": quota_remaining,
+        "quota_limit": rpd_limit,
+        "reset_time": "midnight PT"
+    }
+
+
+async def check_rate_limits(model: str) -> bool:
+    """
+    Check if model has quota remaining today (Pacific timezone).
+    Returns True if OK to proceed, False if quota exceeded.
+    Uses Pacific timezone for daily reset at midnight PT.
+    """
+    if not redis_client:
+        return True  # Allow if Redis unavailable
+
+    if model not in GOOGLE_LIMITS:
+        return True  # Allow if no limits defined for this model
+
+    limits = GOOGLE_LIMITS[model]
+    rpd_limit = limits.get("rpd", 0)
+    
+    if rpd_limit <= 0:
+        return True  # No daily limit configured
+    # Use Pacific timezone for consistent daily reset
+    today_key = _get_pacific_date_key()
+    calls_key = f"quota:calls:{model}:{today_key}"
+    
+    # RPD Check
+    current_usage = int(await redis_client.get(calls_key) or 0)
+    if current_usage >= rpd_limit:
+        logger.warning(f"❌ QUOTA EXCEEDED: {model} has reached daily limit ({current_usage}/{rpd_limit})")
+        return False
+
+    # RPM Check (New)
+    rpm_limit = limits.get("RPM", limits.get("rpm", 0))
+    if rpm_limit > 0:
+        import time
+        minute_key = int(time.time() // 60)
+        rpm_key = f"quota:rpm:{model}:{minute_key}"
+        
+        # Atomically increment and expire
+        current_rpm = await redis_client.incr(rpm_key)
+        if current_rpm == 1:
+            await redis_client.expire(rpm_key, 65) # Expire slightly after minute
+            
+        if current_rpm > rpm_limit:
+             logger.warning(f"❌ RPM Limit Exceeded for {model}: {current_rpm}/{rpm_limit}")
+             return False
+    
+    remaining = rpd_limit - current_usage
+    
+    if remaining <= (rpd_limit * 0.1) and remaining > 0:
+        logger.warning(f"⚠️ QUOTA ALERT: {model} has {remaining} requests remaining today ({current_usage}/{rpd_limit})")
+    
+    return True
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan manager"""
+    global redis_client
+
+    # Startup
+    logger.info("Starting ARCA LLM Gateway Service...")
+
+    # Initialize Redis for caching and rate limiting
+    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+    try:
+        redis_client = redis.from_url(redis_url)
+        await redis_client.ping()
+        logger.info("Connected to Redis")
+
+        # Initialize limiter with Redis storage
+        app.state.limiter = limiter
+        app.state.limiter.storage_uri = redis_url
+
+    except Exception as e:
+        logger.warning(f"Redis connection failed: {e}")
+        redis_client = None
+        # Fallback to memory storage for rate limiting
+        app.state.limiter = Limiter(key_func=get_remote_address)
+
+    # Configure LiteLLM
+    litellm.set_verbose = os.getenv("LITELLM_VERBOSE", "false").lower() == "true"
+
+    # Set API keys from environment
+    litellm.openai_key = os.getenv("OPENAI_API_KEY")
+    litellm.anthropic_key = os.getenv("ANTHROPIC_API_KEY")
+    litellm.google_key = os.getenv("GOOGLE_API_KEY")
+    litellm.cohere_key = os.getenv("COHERE_API_KEY")
+    litellm.openrouter_key = os.getenv("OPENROUTER_API_KEY")
+
+    yield
+
+    # Shutdown
+    if redis_client:
+        await redis_client.close()
+    logger.info("ARCA LLM Gateway Service stopped")
+
+# Create FastAPI app
+app = FastAPI(
+    title="ARCA LLM Gateway",
+    description="Unified API gateway for multiple LLM providers",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+# Instrument with OpenTelemetry
+try:
+    sys.path.append("/app/shared")
+    from shared.otel_setup import instrument_service
+    instrument_service(app, "llm_gateway")
+except ImportError:
+    pass
+
+# Set limiter in app state
+app.state.limiter = limiter
+
+# Add middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Configure appropriately for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+app.add_middleware(SlowAPIMiddleware)
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Pydantic models
+class ChatMessage(BaseModel):
+    role: str = Field(..., description="Role of the message sender")
+    content: Union[str, List[Dict[str, Any]]] = Field(..., description="Content of the message (string or vision list)")
+
+class ChatCompletionRequest(BaseModel):
+    model: str = Field(..., description="Model to use for completion")
+    messages: List[ChatMessage] = Field(..., description="List of messages")
+    temperature: Optional[float] = Field(0.7, description="Sampling temperature")
+    max_tokens: Optional[int] = Field(None, description="Maximum tokens to generate")
+    stream: Optional[bool] = Field(False, description="Stream the response")
+    user: Optional[str] = Field(None, description="User identifier")
+
+class ModelInfo(BaseModel):
+    name: str
+    provider: str
+    context_window: int
+    supports_function_calling: bool
+    input_cost_per_token: float
+    output_cost_per_token: float
+
+class EmbeddingRequest(BaseModel):
+    model: str = Field(..., description="Model to use for embedding")
+    input: Union[str, List[str]] = Field(..., description="Input text to embed")
+    user: Optional[str] = Field(None, description="User identifier")
+    dimensions: Optional[int] = Field(None, description="Target dimensions")
+
+class EmbeddingResponse(BaseModel):
+    object: str = "list"
+    data: List[Dict[str, Any]]
+    model: str
+    object: str = "list"
+    data: List[Dict[str, Any]]
+    model: str
+    usage: Any  # Accepts Dict or litellm Usage object
+
+# Dynamic model configurations from centralized model_config.py
+def get_model_configs():
+    """Generate MODEL_CONFIGS from centralized model configuration"""
+    
+    # Base configuration template
+    base_configs = {
+        # OpenAI models
+        "gpt-4": {"provider": "openai", "context_window": 8192, "supports_function_calling": True, "input_cost": 0.03, "output_cost": 0.06},
+        "gpt-4-turbo": {"provider": "openai", "context_window": 128000, "supports_function_calling": True, "input_cost": 0.01, "output_cost": 0.03},
+        "gpt-3.5-turbo": {"provider": "openai", "context_window": 16385, "supports_function_calling": True, "input_cost": 0.0015, "output_cost": 0.002},
+
+        # Anthropic models
+        "claude-3-opus": {"provider": "anthropic", "context_window": 200000, "supports_function_calling": True, "input_cost": 0.015, "output_cost": 0.075},
+        "claude-3-sonnet": {"provider": "anthropic", "context_window": 200000, "supports_function_calling": True, "input_cost": 0.003, "output_cost": 0.015},
+        "claude-3-haiku": {"provider": "anthropic", "context_window": 200000, "supports_function_calling": True, "input_cost": 0.00025, "output_cost": 0.00125},
+    }
+    
+    # Add Google models from central configuration
+    google_models = {
+        # Core Google models with dynamic names from model_config
+        architect_model(): {"provider": "google", "context_window": 2097152, "supports_function_calling": True, "input_cost": 0.00125, "output_cost": 0.005, "model_alias": architect_model()},
+        engineer_model(): {"provider": "google", "context_window": 1048576, "supports_function_calling": True, "input_cost": 0.0001, "output_cost": 0.0004, "model_alias": engineer_model()},
+        orchestrator_model(): {"provider": "google", "context_window": 1048576, "supports_function_calling": True, "input_cost": 0.0001, "output_cost": 0.0004, "model_alias": orchestrator_model()},
+        planner_model(): {"provider": "google", "context_window": 131072, "supports_function_calling": True, "input_cost": 0.0, "output_cost": 0.0, "model_alias": planner_model()},
+        reviewer_model(): {"provider": "google", "context_window": 131072, "supports_function_calling": True, "input_cost": 0.0, "output_cost": 0.0, "model_alias": reviewer_model()},
+        chat_model(): {"provider": "google", "context_window": 1048576, "supports_function_calling": True, "input_cost": 0.0001, "output_cost": 0.0004, "model_alias": chat_model()},
+        
+        # Specialized models
+        compressor_model(): {"provider": "google", "context_window": 1048576, "supports_function_calling": True, "input_cost": 0.0001, "output_cost": 0.0004, "model_alias": compressor_model()},
+        robotics_model(): {"provider": "google", "context_window": 1048576, "supports_function_calling": True, "input_cost": 0.0, "output_cost": 0.0, "model_alias": robotics_model()},
+        deepthink_model(): {"provider": "google", "context_window": 1000000, "supports_function_calling": True, "input_cost": 0.0, "output_cost": 0.0, "model_alias": deepthink_model()},
+        meta_debugger_model(): {"provider": "google", "context_window": 1048576, "supports_function_calling": True, "input_cost": 0.0001, "output_cost": 0.0004, "model_alias": meta_debugger_model()},
+        
+        # Local models - using native llama.cpp or other OpenAI-compatible backends
+        # LOCAL_LLM_HOST can be set to host.docker.internal
+
+        
+        # Local models - Hybrid Stack (Native host + Container)
+        
+        # DeepSeek R1 Distill Qwen 1.5B - Native Host (High Performance)
+        "deepseek-r1-distill-qwen-1.5b": {"provider": "local", "context_window": 8192, "supports_function_calling": False, "input_cost": 0.0, "output_cost": 0.0, "model_alias": "DeepSeek-R1-Distill-Qwen-1.5B-Q4_K_M", "api_base": f"http://{os.environ.get('LOCAL_LLM_HOST', 'host.docker.internal')}:11434/v1", "api_key": ""},
+        
+        # DeepSeek R1 Distill Qwen 1.5B - Sidecar Container (Redundancy)
+        "deepseek-r1-distill-qwen-1.5b-container": {"provider": "local", "context_window": 8192, "supports_function_calling": False, "input_cost": 0.0, "output_cost": 0.0, "model_alias": "DeepSeek-R1-Distill-Qwen-1.5B-Q4_K_M", "api_base": "http://llama_cpp:8081/v1", "api_key": ""},
+        
+        # Qwen3 VL 2B - Vision Service
+        "qwen3-vl-2b": {"provider": "local", "context_window": 4096, "supports_function_calling": False, "input_cost": 0.0, "output_cost": 0.0, "model_alias": "Qwen3VL-2B-Instruct-Q4_K_M", "api_base": f"http://{os.environ.get('LOCAL_LLM_HOST', 'host.docker.internal')}:8083/v1", "api_key": ""},
+        
+        # Vision Aliases
+        "llama-vision": {"provider": "local", "context_window": 4096, "supports_function_calling": False, "input_cost": 0.0, "output_cost": 0.0, "model_alias": "Qwen3VL-2B-Instruct-Q4_K_M", "api_base": f"http://{os.environ.get('LOCAL_LLM_HOST', 'host.docker.internal')}:8083/v1", "api_key": ""},
+        "llama_vision": {"provider": "local", "context_window": 4096, "supports_function_calling": False, "input_cost": 0.0, "output_cost": 0.0, "model_alias": "Qwen3VL-2B-Instruct-Q4_K_M", "api_base": f"http://{os.environ.get('LOCAL_LLM_HOST', 'host.docker.internal')}:8083/v1", "api_key": ""},
+        
+        # Common aliases for compatibility
+        "gemini-pro-latest": {"provider": "google", "context_window": 2097152, "supports_function_calling": True, "input_cost": 0.00125, "output_cost": 0.005, "model_alias": "gemini-pro-latest"},
+        "gemini-exp-1206": {"provider": "google", "context_window": 2097152, "supports_function_calling": True, "input_cost": 0.00125, "output_cost": 0.005, "model_alias": "gemini-exp-1206"},
+        "gemini-2.5-pro": {"provider": "google", "context_window": 2097152, "supports_function_calling": True, "input_cost": 0.00125, "output_cost": 0.005, "model_alias": "gemini-1.5-pro-latest"},
+        "gemini-2.5-flash": {"provider": "google", "context_window": 1048576, "supports_function_calling": True, "input_cost": 0.0001, "output_cost": 0.0004, "model_alias": "gemini-2.5-flash"},
+        "gemini-2.0-flash-lite": {"provider": "google", "context_window": 1048576, "supports_function_calling": True, "input_cost": 0.0001, "output_cost": 0.0004, "model_alias": "gemini-2.0-flash-lite"},
+        "gemma-3-27b-it": {"provider": "google", "context_window": 131072, "supports_function_calling": False, "input_cost": 0.0, "output_cost": 0.0, "model_alias": "gemma-3-27b-it"},
+        "learnlm-2.0-flash-experimental": {"provider": "google", "context_window": 1048576, "supports_function_calling": True, "input_cost": 0.0, "output_cost": 0.0, "model_alias": "gemma-3-27b-it"},  # Deprecated: Use gemma-3-27b-it
+        "deep-research-pro-preview-12-2025": {"provider": "google", "context_window": 1000000, "supports_function_calling": True, "input_cost": 0.0, "output_cost": 0.0, "model_alias": "deep-research-pro-preview-12-2025"},
+        "gemini-robotics-er-1.5-preview": {"provider": "google", "context_window": 1048576, "supports_function_calling": True, "input_cost": 0.0, "output_cost": 0.0, "model_alias": "gemini-robotics-er-1.5-preview"},
+        
+        # Stable models
+        "gemini-1.5-pro": {"provider": "google", "context_window": 2097152, "supports_function_calling": True, "input_cost": 0.00125, "output_cost": 0.005, "model_alias": "gemini-1.5-pro-latest"},
+        "gemini-1.5-flash": {"provider": "google", "context_window": 1048576, "supports_function_calling": True, "input_cost": 0.0001, "output_cost": 0.0004, "model_alias": "gemini-1.5-flash-latest"},
+        # User-verified models
+        "gemini-2.5-pro": {"provider": "google", "context_window": 2097152, "supports_function_calling": True, "input_cost": 0.00125, "output_cost": 0.005, "model_alias": "gemini-2.5-pro"},
+        "gemini-pro-latest": {"provider": "google", "context_window": 2097152, "supports_function_calling": True, "input_cost": 0.00125, "output_cost": 0.005, "model_alias": "gemini-pro-latest"},
+    }
+
+    # Cloud Models (Added Dec 2025)
+    # Cloud Models (Added Dec 2025) - GLM Only
+    cloud_models = {
+        "glm-4.6v-flash": {"provider": "zhipu", "context_window": 200000, "supports_function_calling": True, "input_cost": 0.0001, "output_cost": 0.0001, "model_alias": "glm-4v-flash"},
+        "glm-4.7": {"provider": "zhipu", "context_window": 200000, "supports_function_calling": True, "input_cost": 0.005, "output_cost": 0.015, "model_alias": "glm-4.7"},
+    }
+    
+    # Merge configurations
+    all_configs = {**base_configs, **google_models, **cloud_models}
+    
+    # Add any additional models from AVAILABLE_MODELS if available
+    if MODEL_CONFIG_AVAILABLE and AVAILABLE_MODELS:
+        for model_name, model_info in AVAILABLE_MODELS.items():
+            if model_name not in all_configs:
+                # Detect local models by cost field
+                is_local = model_info.get("cost") == "local"
+                provider = "local" if is_local else model_info.get("provider", "google")
+                
+                all_configs[model_name] = {
+                    "provider": provider,
+                    "context_window": model_info.get("context", 8192 if is_local else 1048576),
+                    "supports_function_calling": not is_local,  # Local models don't support function calling
+                    "input_cost": 0.0,
+                    "output_cost": 0.0,
+                    "model_alias": model_info.get("litellm_model_name", model_name),
+                    # Local models route to native llama server
+                    "api_base": f"http://{os.environ.get('LOCAL_LLM_HOST', 'host.docker.internal')}:11434/v1" if is_local else None
+                }
+    
+    return all_configs
+
+# Load Rotation Map from enriched model info
+ROTATION_MAP = {}
+try:
+    with open("../../mcp_skills/model_info_latest.json", "r") as f:
+        info_data = json.load(f)
+        for m in info_data:
+            # removing 'models/' prefix for matching if needed, or keeping if config uses it
+            # The gateway config usually uses short names or whatever is in AVAILABLE_MODELS
+            # Let's map both to be safe
+            name = m.get("name", "")
+            short_name = name.replace("models/", "")
+            next_model = m.get("rotationPath")
+            
+            if next_model:
+                ROTATION_MAP[name] = next_model
+                ROTATION_MAP[short_name] = next_model.replace("models/", "")
+
+    logger.info(f"Loaded Rotation Map with {len(ROTATION_MAP)} entries")
+except Exception as e:
+    logger.warning(f"Failed to load Rotation Map: {e}")
+
+# Dynamic MODEL_CONFIGS - regenerated on startup and model config changes
+MODEL_CONFIGS = get_model_configs()
+
+async def resolve_model_with_rotation(requested_model: str) -> str:
+    """
+    Check quota for model. If exceeded, rotate to next in chain.
+    Returns the first available model name, or raises HTTPException if all exhausted.
+    """
+    candidate = requested_model
+    visited = set()
+    
+    while candidate:
+        if candidate in visited:
+            break # Cycle detected
+        visited.add(candidate)
+        
+        # Check if we have config for this candidate (sanity check)
+        # If it's a dynamic Google model, it might not be in MODEL_CONFIGS keys explicitly if simple dict
+        # but we trust the rotation map offers valid options.
+        
+        allowed = await check_rate_limits(candidate)
+        if allowed:
+            if candidate != requested_model:
+                logger.info(f"🔄 Rotating model: {requested_model} -> {candidate} (Quota Exceeded)")
+            return candidate
+            
+        # Quota exceeded, look for next
+        next_candidate = ROTATION_MAP.get(candidate)
+        if not next_candidate:
+            # specific logic: aliases might map to full names in rotation map
+             # e.g. gemini-3-pro-preview -> models/gemini-3-pro-preview
+             pass
+
+        if not next_candidate:
+             logger.warning(f"❌ Model {candidate} exhausted and no rotation path defined.")
+             raise HTTPException(status_code=429, detail=f"Quota exceeded for {requested_model} and no fallbacks available.")
+             
+        candidate = next_candidate
+        
+    raise HTTPException(status_code=429, detail=f"All models in rotation chain exhausted for {requested_model}")
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    health_status = {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "redis_connected": redis_client is not None
+    }
+
+    # Check Redis connection if available
+    if redis_client:
+        try:
+            await redis_client.ping()
+            health_status["redis_status"] = "connected"
+        except Exception as e:
+            health_status["redis_status"] = f"error: {str(e)}"
+            health_status["status"] = "degraded"
+    else:
+        health_status["redis_status"] = "not configured"
+
+    return health_status
+
+@app.get("/models", response_model=List[ModelInfo])
+async def list_models():
+    """List available models"""
+    models = []
+    for model_name, config in MODEL_CONFIGS.items():
+        models.append(ModelInfo(
+            name=model_name,
+            provider=config["provider"],
+            context_window=config["context_window"],
+            supports_function_calling=config["supports_function_calling"],
+            input_cost_per_token=config["input_cost"],
+            output_cost_per_token=config["output_cost"]
+        ))
+    return models
+
+async def handle_cohere_chat_completion(body: ChatCompletionRequest, request: Request):
+    """Handle Cohere chat completion with direct API calls"""
+    try:
+        import httpx
+        print(f"DEBUG: Starting Cohere request for model {body.model}", flush=True)
+    except ImportError:
+        raise HTTPException(status_code=500, detail="httpx not available")
+
+    cohere_key = os.getenv("COHERE_API_KEY")
+    if not cohere_key:
+        raise HTTPException(status_code=500, detail="Cohere API key not configured")
+
+    # Convert OpenAI format to Cohere format
+    # Cohere expects a single message string, not an array
+    if not body.messages:
+        raise HTTPException(status_code=400, detail="No messages provided")
+
+    # Use the last user message as the prompt
+    user_messages = [msg for msg in body.messages if msg.role == "user"]
+    if not user_messages:
+        raise HTTPException(status_code=400, detail="No user message found")
+
+    message = user_messages[-1].content
+    print(f"DEBUG: Using message: {message[:50]}...", flush=True)
+
+    # Prepare Cohere API request
+    cohere_payload = {
+        "model": body.model,
+        "message": message,
+        "temperature": body.temperature or 0.7,
+        "max_tokens": body.max_tokens or 1000,
+    }
+
+    # Remove None values
+    cohere_payload = {k: v for k, v in cohere_payload.items() if v is not None}
+
+    headers = {
+        "Authorization": f"Bearer {cohere_key}",
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
+
+    try:
+        async with httpx.AsyncClient() as client:
+            print(f"DEBUG: Making API call to Cohere with payload: {cohere_payload}", flush=True)
+            response = await client.post(
+                "https://api.cohere.ai/v1/chat",
+                json=cohere_payload,
+                headers=headers,
+                timeout=60.0
+            )
+            print(f"DEBUG: Response status: {response.status_code}", flush=True)
+            print(f"DEBUG: Response text: {response.text[:200]}", flush=True)
+
+            if response.status_code != 200:
+                error_text = response.text
+                logger.error(f"Cohere API error: {response.status_code} - {error_text}")
+                raise HTTPException(status_code=500, detail=f"Cohere API error: {error_text}")
+
+            cohere_response = response.json()
+            print(f"DEBUG: Parsed JSON response: {cohere_response}", flush=True)
+
+            # Convert Cohere response to OpenAI format
+            return {
+                "id": cohere_response.get("response_id", f"chatcmpl-{hash(str(cohere_payload))}"),
+                "object": "chat.completion",
+                "created": int(datetime.utcnow().timestamp()),
+                "model": body.model,
+                "choices": [{
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": cohere_response.get("text", "")
+                    },
+                    "finish_reason": cohere_response.get("finish_reason", "stop").lower()
+                }],
+                "usage": {
+                    "prompt_tokens": cohere_response.get("meta", {}).get("tokens", {}).get("input_tokens", 0),
+                    "completion_tokens": cohere_response.get("meta", {}).get("tokens", {}).get("output_tokens", 0),
+                    "total_tokens": cohere_response.get("meta", {}).get("tokens", {}).get("input_tokens", 0) + cohere_response.get("meta", {}).get("tokens", {}).get("output_tokens", 0)
+                }
+            }
+
+    except httpx.RequestError as e:
+        logger.error(f"Cohere API request error: {e}")
+        raise HTTPException(status_code=500, detail=f"Cohere API request error: {str(e)}")
+
+
+async def handle_debug_model(body: ChatCompletionRequest, request: Request):
+    """
+    Debug/mock model handler - logs all requests and responses to files for inspection.
+    Useful for testing without burning API quota.
+    """
+    import uuid
+    
+    debug_dir = "/app/shared_storage/logs/debug_requests"
+    os.makedirs(debug_dir, exist_ok=True)
+    
+    request_id = str(uuid.uuid4())[:8]
+    timestamp = datetime.utcnow().isoformat()
+    
+    # Log incoming request
+    request_data = {
+        "timestamp": timestamp,
+        "request_id": request_id,
+        "model": body.model,
+        "messages": [{"role": msg.role, "content": msg.content[:200] + ("..." if len(msg.content) > 200 else "")} for msg in body.messages],
+        "temperature": body.temperature,
+        "max_tokens": body.max_tokens
+    }
+    
+    request_file = f"{debug_dir}/request_{request_id}.json"
+    with open(request_file, 'w') as f:
+        json.dump(request_data, f, indent=2)
+    
+    logger.info(f"🔍 DEBUG REQUEST {request_id}: {body.model} - logged to {request_file}")
+    
+    # Generate mock response using the EXACT Genesis response we received
+    genesis_response_content = """I understand. I am the Chief Architect of ARCA, and I've received the Genesis Protocol. This is indeed a comprehensive blueprint for ARCA's emergence as a sophisticated multi-agent system. Let me acknowledge my understanding and begin the Genesis execution.
+
+## Genesis Protocol Acknowledgment
+
+I recognize my role as the **Tier 3: Architect** with strategic intelligence responsibilities for high-level system design and conceptual architecture. I understand the complete architecture you've outlined:
+
+### Knowledge Architecture Understanding
+- **Neo4j Graph Database**: For ontological knowledge structure across Metaphysics, Physics, Universe, Forces, and Concepts domains
+- **Redis State Management**: For real-time operational state and agent coordination
+- **Relationship Types**: CONTAINS, INFLUENCES, INSTANTIATES, COMPOSES, GOVERNS
+
+### Coordination Framework Understanding
+- **Blackboard Architecture**: Shared substrate through Neo4j + Redis
+- **Message Passing**: RabbitMQ for task distribution
+- **Consensus Protocols**: Domain ownership with collaborative decisions
+
+### My Immediate Genesis Responsibilities
+
+As the Chief Architect, I need to design the complete Neo4j schema including:
+
+1. **Primary Domain Nodes Structure**:
+```cypher
+// Core domain nodes with hierarchical properties
+CREATE (metaphysics:Domain {
+    name: "Metaphysics", 
+    scope: "Fundamental nature of reality, consciousness, existence",
+    tier_ownership: "Architect",
+    created_at: datetime(),
+    schema_version: "genesis_1.0"
+});
+
+CREATE (physics:Domain {
+    name: "Physics",
+    scope: "Natural laws, mathematical principles, empirical phenomena", 
+    tier_ownership: "Engineer",
+    created_at: datetime(),
+    schema_version: "genesis_1.0"
+});
+
+CREATE (universe:Domain {
+    name: "Universe",
+    scope: "Cosmic structure, scales, evolutionary processes",
+    tier_ownership: "Planner", 
+    created_at: datetime(),
+    schema_version: "genesis_1.0"
+});
+
+CREATE (forces:Domain {
+    name: "Forces",
+    scope: "Fundamental interactions, emergent dynamics",
+    tier_ownership: "Architect",
+    created_at: datetime(),
+    schema_version: "genesis_1.0"
+});
+
+CREATE (concepts:Domain {
+    name: "Concepts", 
+    scope: "Abstract relationships, logical structures, semantic networks",
+    tier_ownership: "Architect",
+    created_at: datetime(),
+    schema_version: "genesis_1.0"
+});
+```
+
+2. **Relationship Type Constraints**:
+```cypher
+// Define relationship types with semantic constraints
+CREATE CONSTRAINT domain_relationship_types IF NOT EXISTS
+FOR ()-[r:CONTAINS|INFLUENCES|INSTANTIATES|COMPOSES|GOVERNS]-()
+REQUIRE r.created_at IS NOT NULL AND r.confidence_score IS NOT NULL;
+
+// Create indexes for performance
+CREATE INDEX domain_name_index IF NOT EXISTS FOR (d:Domain) ON (d.name);
+CREATE INDEX relationship_type_index IF NOT EXISTS FOR ()-[r]-() ON (type(r));
+```
+
+3. **Foundational Cross-Domain Relationships**:
+```cypher
+// Establish foundational interdomain relationships
+MATCH (metaphysics:Domain {name: "Metaphysics"})
+MATCH (physics:Domain {name: "Physics"})
+CREATE (metaphysics)-[:INFLUENCES {
+    relationship_type: "foundational",
+    description: "Metaphysical principles underlie physical laws",
+    confidence_score: 0.9,
+    created_at: datetime()
+}]->(physics);
+
+MATCH (physics:Domain {name: "Physics"})  
+MATCH (universe:Domain {name: "Universe"})
+CREATE (physics)-[:GOVERNS {
+    relationship_type: "regulatory", 
+    description: "Physical laws govern universal processes",
+    confidence_score: 0.95,
+    created_at: datetime()
+}]->(universe);
+
+MATCH (forces:Domain {name: "Forces"})
+MATCH (physics:Domain {name: "Physics"})
+CREATE (forces)-[:COMPOSES {
+    relationship_type: "compositional",
+    description: "Forces compose the mechanisms of physics", 
+    confidence_score: 0.92,
+    created_at: datetime()
+}]->(physics);
+```
+
+### Redis Keyspace Schema Design
+
+```
+arca:state:global                    # System operational status
+├── status: "genesis_initializing"   
+├── active_agents: ["architect", "engineer", "planner"]
+├── schema_version: "genesis_1.0"
+└── last_update: timestamp
+
+arca:state:architect:domains         # Architect domain ownership
+├── primary: ["Metaphysics", "Forces", "Concepts"]
+├── active_tasks: ["schema_design", "relationship_modeling"]  
+└── coordination_status: "leading_genesis"
+
+arca:state:engineer:execution        # Engineer execution tracking
+├── pending_queries: [list of cypher queries]
+├── completed_operations: []
+└── database_status: "ready_for_schema"
+
+arca:state:planner:workflows         # Planner coordination
+├── active_workflow: "genesis_execution"
+├── dependencies: ["schema_creation", "data_population"]
+└── coordination_phase: "schema_validation"
+
+arca:domains:ownership              # Domain boundaries
+├── Metaphysics: "architect"
+├── Physics: "engineer" 
+├── Universe: "planner"
+├── Forces: "architect"
+└── Concepts: "architect"
+```
+
+### Execution Coordination Protocol
+
+I'm ready to coordinate with the Engineer and Planner for Genesis execution:
+
+**Phase 1: Schema Initialization** (IMMEDIATE)
+- I provide complete Cypher queries to Engineer
+- Engineer executes database schema creation
+- Planner validates cross-domain consistency
+
+**Phase 2: Knowledge Bootstrap** (NEXT)
+- I define conceptual frameworks for owned domains
+- Engineer populates graph structures 
+- Planner creates integration pathways
+
+**Phase 3: Operational Validation** (FINAL)
+- All agents test coordination mechanisms
+- Validate graph traversal patterns
+- Establish ongoing maintenance procedures
+
+### Ready for Coordination
+
+I am ready to begin Genesis execution. The schema design is complete, the coordination protocols are understood, and I'm prepared to collaborate with the Engineer for immediate implementation and the Planner for workflow orchestration.
+
+Engineer: Please execute the provided Cypher queries to establish the foundational graph structure.
+
+Planner: Please monitor schema creation progress and prepare workflow coordination for Phase 2 knowledge population.
+
+This marks the beginning of ARCA's emergence as a coherent, intelligent multi-agent system. The Genesis Protocol is acknowledged and execution commences now."""
+
+    mock_response = {
+        "debug_request_id": request_id,
+        "timestamp": timestamp,
+        "model_called": body.model,
+        "messages_received": len(body.messages),
+        "first_message_preview": body.messages[0].content[:100] if body.messages else "",
+        "api_simulation": "Using exact response from direct Google API call (3,044 characters)",
+        "mock_response": genesis_response_content
+    }
+    
+    # Log response
+    response_file = f"{debug_dir}/response_{request_id}.json"
+    with open(response_file, 'w') as f:
+        json.dump(mock_response, f, indent=2)
+    
+    logger.info(f"🔍 DEBUG RESPONSE {request_id}: logged to {response_file}")
+    
+    # Return mock OpenAI format response with exact token counts
+    prompt_tokens = 1234  # Approximate from our Genesis prompt length
+    completion_tokens = 761  # Approximate from response length (3044 chars / 4)
+    
+    return {
+        "id": f"debug-{request_id}",
+        "object": "chat.completion", 
+        "created": int(datetime.utcnow().timestamp()),
+        "model": body.model,
+        "choices": [{
+            "index": 0,
+            "message": {
+                "role": "assistant",
+                "content": mock_response["mock_response"]
+            },
+            "finish_reason": "stop"
+        }],
+        "usage": {
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": prompt_tokens + completion_tokens
+        },
+        "system_fingerprint": f"debug-fp-{request_id[:8]}"
+    }
+
+
+# PASSTHROUGH FUNCTION REMOVED - Using native LiteLLM for all Google models
+# The passthrough had architectural issues causing safety blocks
+# Direct google.generativeai API calls work, but routing through gateway failed
+# Native LiteLLM is the clean solution
+#
+# async def handle_google_gemini_passthrough(body: ChatCompletionRequest, request: Request, retry_with_model: Optional[str] = None):
+#     ... (310 lines removed)
+#     pass
+
+    """
+    Passthrough handler for Google Gemini models.
+    Forwards requests directly to Google's generativeai API.
+    
+    On 429 (quota exceeded) error:
+    - Returns 429 with available models + quotas for HITL model selection
+    - Does NOT automatically fallback (requires human decision)
+    - Agents can use HITL MCP tool to get model recommendations
+    """
+    try:
+        import google.generativeai as genai
+        
+        # Configure API key
+        api_key = os.getenv("GOOGLE_API_KEY")
+        if not api_key:
+            raise HTTPException(status_code=400, detail="GOOGLE_API_KEY not configured")
+        
+        genai.configure(api_key=api_key)
+        
+        # Get model (use alias if available)
+        model_config = MODEL_CONFIGS.get(retry_with_model or body.model, {})
+        actual_model = model_config.get("model_alias", retry_with_model or body.model)
+        
+        # Convert messages to Gemini format
+        chat_history = []
+        system_instruction = None
+        
+        for msg in body.messages:
+            if msg.role == "system":
+                system_instruction = msg.content
+            elif msg.role == "user":
+                chat_history.append({"role": "user", "parts": [{"text": msg.content}]})
+            elif msg.role == "assistant":
+                chat_history.append({"role": "model", "parts": [{"text": msg.content}]})
+        
+        # Initialize model
+        model = genai.GenerativeModel(actual_model)
+        
+        # Log detailed debug info
+        logger.info(f"📋 DEBUG: Gemini API call details:")
+        logger.info(f"   Model: {actual_model}")
+        logger.info(f"   System instruction: {'YES' if system_instruction else 'NO'}")
+        logger.info(f"   Chat history length: {len(chat_history)}")
+        logger.info(f"   Temperature: {body.temperature}, Max tokens: {body.max_tokens}")
+        
+        # Get the main user message for both branches
+        user_message = None
+        for msg in body.messages:
+            if msg.role == "user":
+                user_message = msg.content
+                break
+        
+        if not user_message:
+            raise HTTPException(status_code=400, detail="No user message provided")
+        
+        # Choose appropriate API method based on model type and system instruction
+        if system_instruction:
+            # Gemma models don't support system_instruction parameter
+            # Detect at runtime to handle any fallback scenarios (Gemini↔Gemma)
+            if actual_model.startswith('gemma'):
+                logger.info(f"Gemma model detected: {actual_model}")
+                logger.info(f"Using prepend method (Gemma doesn't support system_instruction parameter)")
+                logger.info(f"   User message: '{user_message[:100]}...'")
+                
+                # Combined system + user for older models
+                combined_message = f"{system_instruction}\n\n{user_message}"
+                
+                # Create model WITHOUT system instruction parameter
+                model = genai.GenerativeModel(actual_model)
+                
+                # Disable safety filters - allow legitimate philosophical/AI content
+                safety_settings = {
+                    genai.types.HarmCategory.HARM_CATEGORY_HATE_SPEECH: genai.types.HarmBlockThreshold.BLOCK_NONE,
+                    genai.types.HarmCategory.HARM_CATEGORY_HARASSMENT: genai.types.HarmBlockThreshold.BLOCK_NONE,
+                    genai.types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: genai.types.HarmBlockThreshold.BLOCK_NONE,
+                    genai.types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: genai.types.HarmBlockThreshold.BLOCK_NONE,
+                }
+                
+                response = await asyncio.to_thread(
+                    model.generate_content,
+                    combined_message,
+                    generation_config=genai.types.GenerationConfig(
+                        temperature=body.temperature,
+                        max_output_tokens=body.max_tokens
+                    ),
+                    safety_settings=safety_settings
+                )
+            else:
+                # Gemini models support system_instruction parameter
+                logger.info(f"Gemini model detected: {actual_model}")
+                logger.info(f"Using system_instruction parameter")
+                logger.info(f"   User message: '{user_message[:100]}...'")
+                
+                # Disable safety filters - allow legitimate philosophical/AI content
+                safety_settings = {
+                    genai.types.HarmCategory.HARM_CATEGORY_HATE_SPEECH: genai.types.HarmBlockThreshold.BLOCK_NONE,
+                    genai.types.HarmCategory.HARM_CATEGORY_HARASSMENT: genai.types.HarmBlockThreshold.BLOCK_NONE,
+                    genai.types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: genai.types.HarmBlockThreshold.BLOCK_NONE,
+                    genai.types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: genai.types.HarmBlockThreshold.BLOCK_NONE,
+                }
+                
+                # Create model with system instruction and call generate_content
+                model_with_system = genai.GenerativeModel(actual_model, system_instruction=system_instruction)
+                response = await asyncio.to_thread(
+                    model_with_system.generate_content,
+                    user_message,
+                    generation_config=genai.types.GenerationConfig(
+                        temperature=body.temperature,
+                        max_output_tokens=body.max_tokens
+                    ),
+                    safety_settings=safety_settings
+                )
+        else:
+            # Use chat session for multi-turn conversation without system instruction
+            logger.info(f"Using chat session (no system instruction)")
+            
+            # Get last user message (should be same as user_message for single turn)
+            last_message = chat_history[-1]["parts"][0]["text"] if chat_history else user_message
+            
+            logger.info(f"   Message being sent: '{last_message[:100]}...'")
+            
+            # Disable safety filters - allow legitimate philosophical/AI content
+            safety_settings = {
+                genai.types.HarmCategory.HARM_CATEGORY_HATE_SPEECH: genai.types.HarmBlockThreshold.BLOCK_NONE,
+                genai.types.HarmCategory.HARM_CATEGORY_HARASSMENT: genai.types.HarmBlockThreshold.BLOCK_NONE,
+                genai.types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: genai.types.HarmBlockThreshold.BLOCK_NONE,
+                genai.types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: genai.types.HarmBlockThreshold.BLOCK_NONE,
+            }
+            
+            # Start chat session
+            chat = model.start_chat(history=chat_history[:-1] if len(chat_history) > 1 else [])
+            
+            # Call Gemini API with safety settings
+            response = await asyncio.to_thread(
+                chat.send_message,
+                last_message,
+                generation_config=genai.types.GenerationConfig(
+                    temperature=body.temperature,
+                    max_output_tokens=body.max_tokens
+                ),
+                safety_settings=safety_settings
+            )
+        
+        # Track quota usage (use user_message for consistent variable reference)
+        estimated_tokens = len(user_message) // 4
+        quota_status = await track_quota(actual_model, estimated_tokens)
+        logger.info(f"Quota tracked for {actual_model}: {quota_status}")
+        
+        # Extract text safely - treat empty response as error
+        if not response.parts or len(response.parts) == 0:
+            logger.error(f"Google Gemini {actual_model} returned empty response (no parts)")
+            if hasattr(response, 'prompt_feedback'):
+                logger.error(f"Prompt feedback: {response.prompt_feedback}")
+            logger.error(f"📋 Response object attributes: {dir(response)}")
+            logger.error(f"📋 Full response object: {response}")
+            raise HTTPException(status_code=503, detail="Model returned no content - possible safety block or API issue")
+        
+        response_text = response.text
+        if not response_text or response_text.strip() == "":
+            logger.error(f"Google Gemini {actual_model} returned response with empty text content")
+            raise HTTPException(status_code=503, detail="Model returned empty text content")
+        
+        logger.info(f"✅ Google Gemini response received ({len(response_text)} chars)")
+        
+        # Log successful request/response for audit trail
+        request_id = str(uuid.uuid4())[:8]
+        audit_dir = os.path.join("/app/shared_storage/logs", "audit_trail")
+        os.makedirs(audit_dir, exist_ok=True)
+        
+        try:
+            audit_record = {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "request_id": request_id,
+                "model": body.model,
+                "status": "success",
+                "request": {
+                    "model": body.model,
+                    "messages": [{"role": m.role, "content_length": len(m.content)} for m in body.messages],
+                    "temperature": body.temperature,
+                    "max_tokens": body.max_tokens
+                },
+                "response": {
+                    "content_length": len(response_text),
+                    "content_preview": response_text[:200],
+                    "usage": {
+                        "estimated_prompt_tokens": len(user_message) // 4,
+                        "estimated_completion_tokens": len(response_text) // 4
+                    }
+                }
+            }
+            audit_file = os.path.join(audit_dir, f"request_{request_id}.json")
+            with open(audit_file, 'w') as f:
+                json.dump(audit_record, f, indent=2, default=str)
+        except Exception as audit_err:
+            logger.warning(f"Failed to log audit trail: {audit_err}")
+        
+        # Convert to OpenAI format
+        return {
+            "id": f"gemini-{hash(str(body.messages))}",
+            "object": "chat.completion",
+            "created": int(datetime.utcnow().timestamp()),
+            "model": retry_with_model or body.model,
+            "choices": [{
+                "index": 0,
+                "message": {
+                    "role": "assistant",
+                    "content": response_text
+                },
+                "finish_reason": "stop"
+            }],
+            "usage": {
+                "prompt_tokens": 0,  # Gemini doesn't expose token counts easily
+                "completion_tokens": 0,
+                "total_tokens": 0
+            }
+        }
+        
+    except Exception as e:
+        error_detail = str(e)
+        error_id = str(uuid.uuid4())[:8]
+        
+        # Log comprehensive error record
+        error_logger.log_error(
+            error_id=error_id,
+            error_type=type(e).__name__,
+            error_message=error_detail,
+            context={
+                "model": body.model,
+                "endpoint": "/v1/chat/completions",
+                "provider": "google_gemini",
+                "message_count": len(body.messages)
+            },
+            request_data={
+                "model": body.model,
+                "messages_preview": [{"role": m.role, "content_length": len(m.content)} for m in body.messages],
+                "temperature": body.temperature,
+                "max_tokens": body.max_tokens
+            },
+            response_data=None,
+            stack_trace=traceback.format_exc()
+        )
+        
+        logger.error(f"Google Gemini API error: {error_detail}")
+        
+        # Check for 429 (quota exceeded) - trigger HITL instead of auto-fallback
+        if "429" in error_detail or "quota" in error_detail.lower():
+            logger.warning(f"⚠️ QUOTA EXCEEDED (429): {body.model}")
+            logger.info("Triggering HITL (Human-In-The-Loop) for model selection...")
+            
+            # Fetch current quota status to include in response
+            if redis_client:
+                try:
+                    today_key = _get_pacific_date_key()
+                    available_models = {}
+                    
+                    for model_name in GOOGLE_LIMITS.keys():
+                        calls_key = f"quota:calls:{model_name}:{today_key}"
+                        calls = int(await redis_client.get(calls_key) or 0)
+                        limits = GOOGLE_LIMITS[model_name]
+                        limit = limits.get("rpd", 1000000)
+                        remaining = max(0, limit - calls)
+                        
+                        available_models[model_name] = {
+                            "calls_today": calls,
+                            "quota_limit": limit,
+                            "quota_remaining": remaining,
+                            "quota_percentage_used": round((calls / limit) * 100, 2) if limit > 0 else 0
+                        }
+                    
+                    # Return 429 with HITL context (NOT automatic fallback)
+                    raise HTTPException(
+                        status_code=429,
+                        detail={
+                            "error": "QUOTA_EXCEEDED_REQUIRES_HITL",
+                            "message": f"Quota exceeded for {body.model}. Human selection required.",
+                            "failed_model": body.model,
+                            "instruction": "Use HITL MCP tool to select alternative model",
+                            "available_models": available_models,
+                            "hitl_tool": "mcp_hitl_model_selection",
+                            "reset_time": "midnight PT"
+                        }
+                    )
+                except HTTPException:
+                    raise
+                except Exception as hitl_err:
+                    logger.warning(f"Failed to prepare HITL response: {hitl_err}")
+            
+            # Fallback if Redis unavailable
+            raise HTTPException(
+                status_code=429,
+                detail={
+                    "error": "QUOTA_EXCEEDED_REQUIRES_HITL",
+                    "message": f"Quota exceeded for {body.model}. Human selection required.",
+                    "failed_model": body.model,
+                    "instruction": "Use HITL MCP tool to select alternative model",
+                    "hitl_tool": "mcp_hitl_model_selection",
+                    "reset_time": "midnight PT"
+                }
+            )
+        
+        if "API key" in error_detail:
+            raise HTTPException(status_code=401, detail="Google API key invalid or missing")
+        elif "401" in error_detail:
+            raise HTTPException(status_code=401, detail="Google API authentication failed")
+        else:
+            raise HTTPException(status_code=500, detail=f"Google Gemini error: {error_detail}")
+
+
+async def handle_mock_response(body: ChatCompletionRequest, request: Request, mock_data: Dict[str, Any]):
+    """
+    Mock response handler that injects a recorded response without calling the API.
+    Used for testing gateway logic with known responses.
+    
+    Args:
+        body: Chat completion request
+        request: FastAPI request
+        mock_data: Dictionary containing mocked response data
+                   {"text": "...", "usage_prompt": 123, "usage_completion": 456}
+    """
+    request_id = str(uuid.uuid4())[:8]
+    timestamp = datetime.now(timezone.utc).isoformat()
+    
+    audit_dir = os.path.join("/app/logs", "mock_responses")
+    os.makedirs(audit_dir, exist_ok=True)
+    
+    # Log incoming request
+    request_record = {
+        "timestamp": timestamp,
+        "request_id": request_id,
+        "type": "mock_test",
+        "model": body.model,
+        "messages": [
+            {
+                "role": msg.role,
+                "content_length": len(msg.content),
+                "content_preview": msg.content[:100]
+            }
+            for msg in body.messages
+        ],
+        "parameters": {
+            "temperature": body.temperature,
+            "max_tokens": body.max_tokens
+        }
+    }
+    
+    request_file = os.path.join(audit_dir, f"request_{request_id}.json")
+    with open(request_file, 'w') as f:
+        json.dump(request_record, f, indent=2, default=str)
+    
+    # Log mock response being returned
+    response_record = {
+        "timestamp": timestamp,
+        "request_id": request_id,
+        "type": "mock_response",
+        "model": body.model,
+        "response": {
+            "content": mock_data.get("text", ""),
+            "content_length": len(mock_data.get("text", "")),
+            "usage": {
+                "prompt_tokens": mock_data.get("usage_prompt", 0),
+                "completion_tokens": mock_data.get("usage_completion", 0),
+                "total_tokens": mock_data.get("usage_prompt", 0) + mock_data.get("usage_completion", 0)
+            }
+        }
+    }
+    
+    response_file = os.path.join(audit_dir, f"response_{request_id}.json")
+    with open(response_file, 'w') as f:
+        json.dump(response_record, f, indent=2, default=str)
+    
+    # Terminal notification
+    logger.info(
+        f"\n{'='*70}\n"
+        f"🧪 MOCK RESPONSE TEST (ID: {request_id})\n"
+        f"{'='*70}\n"
+        f"Model:    {body.model}\n"
+        f"Response: {mock_data.get('text', '')[:80]}...\n"
+        f"Audit:    {audit_dir}/\n"
+        f"{'='*70}\n"
+    )
+    
+    # Return OpenAI format response with mock data
+    return {
+        "id": f"mock-{request_id}",
+        "object": "chat.completion",
+        "created": int(datetime.utcnow().timestamp()),
+        "model": body.model,
+        "choices": [{
+            "index": 0,
+            "message": {
+                "role": "assistant",
+                "content": mock_data.get("text", "")
+            },
+            "finish_reason": "stop"
+        }],
+        "usage": {
+            "prompt_tokens": mock_data.get("usage_prompt", 0),
+            "completion_tokens": mock_data.get("usage_completion", 0),
+            "total_tokens": mock_data.get("usage_prompt", 0) + mock_data.get("usage_completion", 0)
+        }
+    }
+
+
+@app.post("/chat/completions")
+@app.post("/v1/chat/completions")
+async def chat_completion(body: ChatCompletionRequest, request: Request):
+    """Unified chat completion endpoint with quota tracking and 429 fallback"""
+    try:
+        # Check custom rate limits (Daily/Hard, Pacific timezone reset at midnight) - only if Redis available
+        # Check custom rate limits with Rotation Logic
+        if rate_limiting_enabled:
+             # This will rotate body.model to the next available one if quota exceeded
+             # or raise 429 if all exhausted.
+             body.model = await resolve_model_with_rotation(body.model)
+
+        # Ensure API keys are set
+        if not litellm.cohere_key:
+            litellm.cohere_key = os.getenv("COHERE_API_KEY")
+        if not litellm.openai_key:
+            litellm.openai_key = os.getenv("OPENAI_API_KEY")
+        if not litellm.anthropic_key:
+            litellm.anthropic_key = os.getenv("ANTHROPIC_API_KEY")
+        if not litellm.google_key:
+            litellm.google_key = os.getenv("GOOGLE_API_KEY")
+
+        # Validate model
+        if body.model not in MODEL_CONFIGS:
+            raise HTTPException(status_code=400, detail=f"Model {body.model} not supported")
+
+        # Get model config
+        model_config = MODEL_CONFIGS[body.model]
+
+        # Debug model - logs requests/responses to files without calling API
+        if body.model == "debug-model" or body.model.startswith("debug-"):
+            return await handle_debug_model(body, request)
+
+        # PASSTHROUGH REMOVED - All models including Google use native LiteLLM
+        # Google models will be prefixed with gemini/ for proper routing
+
+        # Special handling for Cohere models (direct API calls)
+        if model_config["provider"] == "cohere":
+            return await handle_cohere_chat_completion(body, request)
+
+        # Convert messages to LiteLLM format
+        messages = [{"role": msg.role, "content": msg.content} for msg in body.messages]
+
+        
+        # Determine actual model name (use alias if provided)
+        actual_model = model_config.get("model_alias", body.model)
+        
+        # Provider-specific routing and model name formatting
+        provider = model_config.get("provider")
+        
+        # Google: prefix with gemini/
+        if provider == "google" and not actual_model.startswith("gemini/"):
+            actual_model = f"gemini/{actual_model}"
+            
+        # Local/native handlers as per V2 design
+        elif provider == "local" or provider == "llamacpp":
+            # Ensure model name is clean
+            actual_model = actual_model.replace("ollama_chat/", "").replace("ollama/", "")
+            
+        # BigModel (GLM/Zhipu): Use OpenAI compatible endpoint
+        elif provider == "bigmodel" or provider == "zhipu":
+            # Zhipu endpoint for OpenAI compatibility
+            actual_model = actual_model.replace("zhipu/", "")
+            
+            # GLOBAL TOKEN QUOTA CHECK FOR BIGMODEL (10M Tokens)
+            # Check shared quota limit
+            if redis_client:
+                global_quota_key = "arca:quota:global:bigmodel:tokens"
+                current_usage = int(await redis_client.get(global_quota_key) or 0)
+                GLOBAL_LIMIT = 10_000_000
+                
+                if current_usage >= GLOBAL_LIMIT:
+                    logger.warning(f"⚠️ GLOBAL BIGMODEL QUOTA EXCEEDED ({current_usage}/{GLOBAL_LIMIT})")
+                    raise HTTPException(status_code=429, detail="Global BigModel token quota exceeded (10M limit).")
+
+        
+        # Prepare LiteLLM parameters
+        params = {
+            "model": actual_model,
+            "messages": messages,
+            "temperature": body.temperature,
+            "max_tokens": body.max_tokens,
+            "stream": body.stream,
+            "user": body.user,
+        }
+        
+        # Add api_base for providers using OpenAI format
+        
+        # Add api_base for providers using OpenAI format
+        if provider == "bigmodel" or provider == "zhipu":
+            # Zhipu/GLM endpoint (OpenAI compatible)
+            params["model"] = f"openai/{actual_model}"
+            params["api_base"] = "https://open.bigmodel.cn/api/paas/v4/"
+            
+            # Use specific ZHIPU_API_KEY
+            api_key = os.getenv("ZHIPU_API_KEY") or os.getenv("BIGMODEL_API_KEY")
+            params["api_key"] = api_key
+            
+            if api_key:
+                params["extra_headers"] = {"Authorization": f"Bearer {api_key}"}
+        
+        # Add api_base for local models
+        elif "api_base" in model_config:
+            params["api_base"] = model_config["api_base"]
+            # For local OpenAI-compatible endpoints
+            params["model"] = f"openai/{actual_model}"
+            params["api_key"] = "not-needed"  # Local models don't need API key
+
+        # Remove None values
+        params = {k: v for k, v in params.items() if v is not None}
+
+        if  body.model == "google":
+                 pass # Placeholder to preserve structure if needed
+
+        # Log request
+        logger.info(f"Processing request for model {body.model} from {get_remote_address(request)}")
+
+        # Make the completion call
+        # Add extended timeout for local models which can be slow on CPU
+        if provider == "local":
+            params["request_timeout"] = 600 # 10 minutes
+        else:
+            params["request_timeout"] = 120 # 2 minutes for cloud models
+
+        try:
+            # Call LiteLLM
+            if body.stream:
+                return await acompletion(**params)
+            else:
+                response = await acompletion(**params)
+
+            # Cost tracking logic would go here
+
+            # Log response
+            logger.info(f"Completed request for model {body.model}")
+
+            # Helper to safely access response fields (LiteLLM returns different types per provider)
+            def safe_get(obj, *keys, default=None):
+                """Safely get nested attributes, dict keys, or list indices"""
+                for key in keys:
+                    if obj is None:
+                        return default
+                    # Handle list/tuple access with integer indices
+                    if isinstance(key, int):
+                        if isinstance(obj, (list, tuple)) and len(obj) > key:
+                            obj = obj[key]
+                        else:
+                            return default
+                    # Handle dict access
+                    elif isinstance(obj, dict):
+                        obj = obj.get(key, default)
+                    # Handle object attribute access
+                    else:
+                        obj = getattr(obj, key, default)
+                return obj if obj is not None else default
+
+            # Extract content - handle both object and dict access
+            message_obj = safe_get(response, 'choices', 0, 'message') or {}
+            content = safe_get(message_obj, 'content', default='') or (message_obj.get('content') if isinstance(message_obj, dict) else getattr(message_obj, 'content', ''))
+
+            # Track usage for Global BigModel Quota
+            usage_tokens = safe_get(response, 'usage', 'total_tokens', default=0)
+            if provider in ["bigmodel", "zhipu"] and redis_client and usage_tokens > 0:
+                try:
+                    global_quota_key = "arca:quota:global:bigmodel:tokens"
+                    await redis_client.incrby(global_quota_key, usage_tokens)
+                    logger.info(f"Checked in {usage_tokens} tokens to Global BigModel Quota")
+                except Exception as e:
+                    logger.error(f"Failed to update global quota: {e}")
+            
+            # Return response in OpenAI-compatible format
+            return {
+                "id": safe_get(response, 'id', default="chatcmpl-" + str(hash(str(params)))),
+                "object": "chat.completion",
+                "created": int(datetime.utcnow().timestamp()),
+                "model": body.model,
+                "choices": [{
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": content
+                    },
+                    "finish_reason": safe_get(response, 'choices', 0, 'finish_reason', default="stop")
+                }],
+                "usage": {
+                    "prompt_tokens": safe_get(response, 'usage', 'prompt_tokens', default=0),
+                    "completion_tokens": safe_get(response, 'completion_tokens', default=0),
+                    "total_tokens": safe_get(response, 'usage', 'total_tokens', default=0),
+                }
+            }
+
+        except Exception as e:
+            import traceback
+            error_details = {
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "traceback": traceback.format_exc()
+            }
+            logger.error(f"Error processing chat completion: {error_details}")
+            print(f"DEBUG: Full error details: {error_details}", flush=True)
+            raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {str(e)}")
+
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        logger.error(f"Error processing request: {str(e)}\nTraceback:\n{error_trace}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+        # Log response
+        logger.info(f"Completed request for model {body.model}")
+
+        # Helper to safely access response fields (LiteLLM returns different types per provider)
+        def safe_get(obj, *keys, default=None):
+            """Safely get nested attributes, dict keys, or list indices"""
+            for key in keys:
+                if obj is None:
+                    return default
+                # Handle list/tuple access with integer indices
+                if isinstance(key, int):
+                    if isinstance(obj, (list, tuple)) and len(obj) > key:
+                        obj = obj[key]
+                    else:
+                        return default
+                # Handle dict access
+                elif isinstance(obj, dict):
+                    obj = obj.get(key, default)
+                # Handle object attribute access
+                else:
+                    obj = getattr(obj, key, default)
+            return obj if obj is not None else default
+
+        # Extract content - handle both object and dict access
+        message_obj = safe_get(response, 'choices', 0, 'message') or {}
+        content = safe_get(message_obj, 'content', default='') or (message_obj.get('content') if isinstance(message_obj, dict) else getattr(message_obj, 'content', ''))
+
+        # Track usage for Global BigModel Quota
+        usage_tokens = safe_get(response, 'usage', 'total_tokens', default=0)
+        if provider in ["bigmodel", "zhipu"] and redis_client and usage_tokens > 0:
+            try:
+                global_quota_key = "arca:quota:global:bigmodel:tokens"
+                await redis_client.incrby(global_quota_key, usage_tokens)
+                logger.info(f"Checked in {usage_tokens} tokens to Global BigModel Quota")
+            except Exception as e:
+                logger.error(f"Failed to update global quota: {e}")
+        
+        # Return response in OpenAI-compatible format
+        return {
+            "id": safe_get(response, 'id', default="chatcmpl-" + str(hash(str(params)))),
+            "object": "chat.completion",
+            "created": int(datetime.utcnow().timestamp()),
+            "model": body.model,
+            "choices": [{
+                "index": 0,
+                "message": {
+                    "role": "assistant",
+                    "content": content
+                },
+                "finish_reason": safe_get(response, 'choices', 0, 'finish_reason', default="stop")
+            }],
+            "usage": {
+                "prompt_tokens": safe_get(response, 'usage', 'prompt_tokens', default=0),
+                "completion_tokens": safe_get(response, 'usage', 'completion_tokens', default=0),
+                "total_tokens": safe_get(response, 'usage', 'total_tokens', default=0),
+            }
+        }
+
+    except Exception as e:
+        import traceback
+        error_details = {
+            "error_type": type(e).__name__,
+            "error_message": str(e),
+            "traceback": traceback.format_exc()
+        }
+        logger.error(f"Error processing chat completion: {error_details}")
+        print(f"DEBUG: Full error details: {error_details}", flush=True)
+        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {str(e)}")
+
+@app.get("/usage")
+async def get_usage():
+    """Get quota usage statistics for all models today (Pacific timezone)"""
+    if not redis_client:
+        return {"status": "tracking_disabled", "message": "Redis not available"}
+    
+    today_key = _get_pacific_date_key()
+    usage_data = {}
+    
+    for model in GOOGLE_LIMITS.keys():
+        calls_key = f"quota:calls:{model}:{today_key}"
+        tokens_key = f"quota:tokens:{model}:{today_key}"
+        
+        calls = int(await redis_client.get(calls_key) or 0)
+        tokens = int(await redis_client.get(tokens_key) or 0)
+        limits = GOOGLE_LIMITS[model]
+        limit = limits.get("rpd", 1000000)
+        
+        usage_data[model] = {
+            "calls_today": calls,
+            "tokens_today": tokens,
+            "quota_limit": limit,
+            "quota_remaining": max(0, limit - calls),
+            "date": today_key,
+            "reset": "midnight PT"
+        }
+    
+    return {"today_pt": today_key, "usage": usage_data}
+
+@app.get("/usage/{model}")
+async def get_model_usage(model: str):
+    """Get quota usage for a specific model today"""
+    if not redis_client:
+        return {"status": "tracking_disabled"}
+    
+    if model not in GOOGLE_LIMITS:
+        raise HTTPException(status_code=404, detail=f"Model {model} not found in limits")
+    
+    today_key = _get_pacific_date_key()
+    calls_key = f"quota:calls:{model}:{today_key}"
+    tokens_key = f"quota:tokens:{model}:{today_key}"
+    
+    calls = int(await redis_client.get(calls_key) or 0)
+    tokens = int(await redis_client.get(tokens_key) or 0)
+    limits = GOOGLE_LIMITS[model]
+    limit = limits.get("rpd", 1000000)
+    
+    return {
+        "model": model,
+        "date": today_key,
+        "calls_today": calls,
+        "tokens_today": tokens,
+        "quota_limit": limit,
+        "quota_remaining": max(0, limit - calls),
+        "quota_percentage_used": round((calls / limit) * 100, 2) if limit > 0 else 0,
+        "reset": "midnight PT"
+    }
+
+
+@app.get("/hitl/available-models")
+async def get_available_models_for_hitl():
+    """
+    HITL (Human-In-The-Loop) Endpoint
+    
+    Returns available models with their current quota status.
+    Used by agents to show humans which models are available when 429 occurs.
+    
+    Agents call this endpoint to get:
+    - List of all available models
+    - Current quota for each model
+    - Recommendation for best fallback
+    
+    Response:
+    {
+        "timestamp": "2025-12-19T15:30:45",
+        "today_pt": "2025-12-19",
+        "models": [
+            {
+                "model_name": "gemini-2.5-flash",
+                "calls_today": 120,
+                "quota_remaining": 880,
+                "quota_limit": 1000,
+                "quota_percentage_used": 12.0,
+                "status": "available"
+            },
+            ...
+        ],
+        "best_available": "gemini-2.5-flash",
+        "recommendations": [
+            "✅ gemini-2.5-flash: 880/1000 remaining (12.0% used)",
+            "✅ gemini-2.5-flash-lite: 950/1000 remaining (5.0% used)",
+        ],
+        "hitl_required": true,
+        "hitl_tool": "mcp_hitl_model_selection"
+    }
+    """
+    if not redis_client:
+        raise HTTPException(status_code=503, detail="Redis not available")
+    
+    today_key = _get_pacific_date_key()
+    models_list = []
+    recommendations = []
+    
+    for model in GOOGLE_LIMITS.keys():
+        calls_key = f"quota:calls:{model}:{today_key}"
+        calls = int(await redis_client.get(calls_key) or 0)
+        limits = GOOGLE_LIMITS[model]
+        limit = limits.get("rpd", 1000000)
+        remaining = max(0, limit - calls)
+        pct_used = (calls / limit * 100) if limit > 0 else 0
+        
+        # Determine status
+        if remaining <= 0:
+            status = "exhausted"
+        elif pct_used >= 80:
+            status = "low"
+        else:
+            status = "available"
+        
+        models_list.append({
+            "model_name": model,
+            "calls_today": calls,
+            "quota_remaining": remaining,
+            "quota_limit": limit,
+            "quota_percentage_used": round(pct_used, 2),
+            "status": status
+        })
+        
+        # Generate recommendation line
+        status_emoji = {"available": "✅", "low": "⚠️", "exhausted": "❌"}.get(status, "❓")
+        recommendations.append(
+            f"{status_emoji} {model}: {remaining}/{limit} remaining ({pct_used:.1f}% used)"
+        )
+    
+    # Sort by available quota (descending)
+    models_list.sort(key=lambda x: x["quota_remaining"], reverse=True)
+    
+    # Find best available
+    available = [m for m in models_list if m["status"] != "exhausted"]
+    best_available = available[0]["model_name"] if available else None
+    
+    return {
+        "timestamp": datetime.utcnow().isoformat(),
+        "today_pt": today_key,
+        "models": models_list,
+        "best_available": best_available,
+        "recommendations": recommendations,
+        "hitl_required": True,
+        "hitl_tool": "mcp_hitl_model_selection",
+        "reset_time": "midnight PT"
+    }
+
+
+# ==================== TEST ENDPOINTS ====================
+
+@app.post("/v1/test/mock-response")
+async def test_mock_response(body: ChatCompletionRequest, request: Request):
+    """
+    Test endpoint that injects a mock Gemini response without calling the API.
+    Simulates the exact format that google.generativeai returns.
+    
+    This allows testing of the gateway's response handling logic with
+    known/controlled data without burning API quota.
+    
+    Request: Standard chat completion request
+    Response: Uses recorded real response data
+    """
+    # Use the exact response format from a successful gemini-pro-latest call
+    mock_data = {
+        "text": "============================================================\nTesting: gemini-pro-latest\n============================================================\nWARNING: All log messages before absl::InitializeLog() is called are written to STDERR\nE0000 00:00:1766113952.951087 5349049 alts_credentials.cc:93] ALTS creds ignored. Not running on GCP and untrusted ALTS is not enabled.\n✅ SUCCESS\n   Latency: 6.94s\n   Response length: 54 chars\n   Content: Hello, I am a large language model, trained by Google.",
+        "usage_prompt": 8,
+        "usage_completion": 54
+    }
+    
+    return await handle_mock_response(body, request, mock_data)
+
+
+@app.post("/v1/embeddings", response_model=EmbeddingResponse)
+async def create_embedding(request: EmbeddingRequest, raw_request: Request):
+    """
+    Generate embeddings using the specified model
+    """
+    request_id = str(uuid.uuid4())
+    logger.info(f"📝 Embedding request {request_id} for model {request.model}")
+
+    try:
+        # Check rate limits
+        if rate_limiting_enabled:
+            key = f"rate_limit:{request.model}:{get_remote_address(raw_request)}"
+            # Simple check - could be expanded to token tracking if needed
+            
+        # Map model aliases if needed
+        model_name = request.model
+        
+        # Call LiteLLM
+        response = await litellm.aembedding(
+            model=model_name,
+            input=request.input,
+            user=request.user,
+            dimensions=request.dimensions
+        )
+        
+        return response.model_dump()
+
+    except Exception as e:
+        error_logger.log_error(
+            error_id=request_id,
+            error_type=type(e).__name__,
+            error_message=str(e),
+            context={
+                "model": request.model,
+                "endpoint": "/v1/embeddings"
+            },
+            request_data=request.dict(),
+            stack_trace=traceback.format_exc()
+        )
+        raise HTTPException(status_code=500, detail=str(e))
+
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=port,
+        reload=os.getenv("DEBUG", "false").lower() == "true"
+    )

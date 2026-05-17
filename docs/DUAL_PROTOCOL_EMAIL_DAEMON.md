@@ -1,5 +1,5 @@
 ---
-tags: [bios/infrastructure, bios/memory, bios/security, source/legacy]
+tags: ["#context/life", "#context/life/finance", "#context/personal/disability/complaint", "#context/personal/incapacity/legal"]
 status: active
 ---
 
@@ -13,8 +13,8 @@ status: active
 ## Executive Summary
 
 Successfully implemented dual-protocol IMAP support in the email ingestion daemon, enabling simultaneous polling of:
-- **ProtonMail** (5 accounts) via STARTTLS on port 1143
-- **Gmail** (1 account) via IMAP4_SSL on port 993
+- **ProtonMail** (5 accounts) via STARTTLS on port 1143 (SMTP on port 1025)
+- **Gmail** (1 account) via IMAP4_SSL on port 993 (SMTP STARTTLS on port 587)   
 
 Both pipelines route fetched emails through the existing processing flow to the GCP Gateway.
 
@@ -29,9 +29,9 @@ ProtonMail Accounts (5) → STARTTLS:1143 → Process → GCP Gateway
 
 ### After (Dual Protocol)
 ```
-ProtonMail Accounts (5) → STARTTLS:1143 ─┐
-                                          ├→ Process → GCP Gateway
-Gmail Account (1) → IMAP4_SSL:993 ───────┘
+ProtonMail Accounts (5) → STARTTLS:1143 (IMAP) / 1025 (SMTP) ─┐
+                                                               ├→ Process → GCP Gateway
+Gmail Account (1) → IMAP4_SSL:993 (IMAP) / 587 (SMTP) ────────┘
 ```
 
 ---
@@ -171,12 +171,26 @@ Accounts:
 
 ---
 
-## SSL/TLS Protocol Matrix
-
 | Provider | Connection Type | Port | SSL Context |
 |----------|----------------|------|-------------|
 | ProtonMail Bridge | IMAP4 → STARTTLS | 1143 | Self-signed (verify=False) |
+| ProtonMail Bridge | SMTP → STARTTLS | 1025 | Self-signed (verify=False) |
 | Gmail | IMAP4_SSL (implicit) | 993 | Standard CA validation |
+| Gmail | SMTP → STARTTLS | 587 | Standard CA validation |
+
+---
+
+## Data Extraction & Ingestion Format
+
+### Ingestion Daemon (`email-ingestion-daemon.py`)
+*   **Format**: Plain Text (UTF-8).
+*   **Logic**: Prefers `text/plain` parts of multipart messages. If unavailable, falls back to `text/html` and strips tags via `re.sub(r"<[^>]+>", "", body)`.
+*   **Routing**: Sends full body as JSON to the GCP Gateway (`memory-orchestrator`).
+
+### MCP Server (`mcp_email_server.py`)
+*   **Format**: Formatted String.
+*   **Logic**: Same extraction logic as daemon.
+*   **Limit**: Returns a **200-character snippet** of the body for tool-use efficiency, while preserving full Subject, From, and Date headers.
 
 ---
 
@@ -214,7 +228,7 @@ python3 scripts/sync/obsidian-sync-skill.py --json
 2. **Generate App Password:**
    - Google Account → Security → 2-Step Verification → App passwords
    - Select "Mail" and your device
-   - Copy 16-character password
+   - Copy 16-character password   
 
 3. **Update Config:**
    ```json
@@ -231,7 +245,7 @@ python3 scripts/sync/obsidian-sync-skill.py --json
 **Solution:** Gmail's SSL certificate should validate automatically. If issues persist:
 - Check system time/date
 - Update CA certificates: `pip install --upgrade certifi`
-- Firewall/proxy may be intercepting SSL
+- Firewall/proxy may be intercepting SSL   
 
 ---
 

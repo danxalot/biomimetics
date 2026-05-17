@@ -1,5 +1,5 @@
 ---
-tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, source/legacy]
+tags: ["#bios/architecture", "#bios/swarm", "#bios/infrastructure"]
 status: active
 ---
 
@@ -13,7 +13,7 @@ status: active
 
 ## Overview
 
-This guide covers the integration of the **ARCA project** with the existing MCP infrastructure established in Biomimetics, including:
+This guide covers the integration of the **ARCA project** with the existing MCP infrastructure established in Biomimetics, including: `
 
 - **GitHub MCP Server** (Azure SSE)
 - **Notion MCP Server** (GCP)
@@ -109,7 +109,7 @@ Create the following databases in Notion:
 - `Github Link` (URL)
 - `Team` (Multi-select)
 - `Start Date` (Date)
-- `Due Date` (Date)
+- `Due Date` (Date)   
 
 #### 2. ARCA Tasks Database
 
@@ -121,7 +121,7 @@ Create the following databases in Notion:
 - `Priority` (Select: Critical, High, Medium, Low)
 - `Description` (Text)
 - `Github Issue` (URL)
-- `Due Date` (Date)
+- `Due Date` (Date)   
 
 #### 3. ARCA Memory Logs Database
 
@@ -131,7 +131,7 @@ Create the following databases in Notion:
 - `Type` (Select: Query, Update, Insight, Event)
 - `Source` (Select: ARCA, Biomimetics, GitHub, Serena)
 - `Content` (Text)
-- `Memory UUID` (Text)
+- `Memory UUID` (Text)   
 
 ### Share Databases with Integration
 
@@ -581,7 +581,7 @@ Both projects share the GCP Memory Gateway with project-specific namespaces:
 4. ✅ Configure Zed Editor
 5. ✅ Configure Antigravity
 6. ✅ Test all integrations
-7. ✅ Document cross-project workflows
+7. ✅ Document cross-project workflows   
 
 ---
 

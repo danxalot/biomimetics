@@ -643,7 +643,7 @@ class RateLimiter:
 
 
 class AgentClient:
-    """Agent integration for Gemma 3 via Google's v1beta endpoint with inline tool calls"""
+    """Agent integration for Gemma 4 via Google's v1beta endpoint with inline tool calls"""
 
     def __init__(
         self,
@@ -651,17 +651,18 @@ class AgentClient:
         provider: str = "gemini",
         model: Optional[str] = None,
         base_url: Optional[str] = None,
-        rpm: int = 30,           # 1 request every 2 seconds = 30 rpm
-        tpm: int = 15000,        # 15k tokens per minute
+        rpm: int = 15,           # 15 requests per minute
+        tpm: int = 250000,       # 250k tokens per minute
+
         context_limit: int = 131072,  # 130k context window
     ):
         self.api_key = api_key
         self.provider = provider.lower()
-        self.model = model or "gemma-3-12b-it"
+        self.model = model or "gemma-4-26b-a4b-it"
         self.base_url = base_url or "https://generativelanguage.googleapis.com/v1beta"
         self._session: Optional[aiohttp.ClientSession] = None
         
-        # Rate limiter for Gemma 3
+        # Rate limiter for Gemma 4
         self._rate_limiter = RateLimiter(
             rpm=rpm,
             tpm=tpm,
@@ -675,14 +676,14 @@ class AgentClient:
 
     def _build_gemini_tools(self, tools: Optional[List[Dict]] = None) -> Optional[Dict]:
         """
-        Build inline tool definitions for Gemma 3.
-        Gemma 3 uses function_calling_config with inline tool definitions,
+        Build inline tool definitions for Gemma 4.
+        Gemma 4 uses function_calling_config with inline tool definitions,
         not the separate function_calling_messages format.
         """
         if not tools:
             return None
         
-        # Gemma 3 / Gemini format for tools
+        # Gemma 4 / Gemini format for tools
         return {
             "function_declarations": [
                 {
@@ -701,7 +702,7 @@ class AgentClient:
     ) -> List[Dict]:
         """
         Convert OpenAI-style messages to Gemini v1beta format.
-        Gemma 3 expects user/model role alternation with inline tool definitions.
+        Gemma 4 expects user/model role alternation with inline tool definitions.
         """
         contents = []
         
@@ -781,7 +782,7 @@ class AgentClient:
             "generationConfig": generation_config,
         }
         
-        # Add inline tools if provided (Gemma 3 function calling)
+        # Add inline tools if provided (Gemma 4 function calling)
         if tools:
             gemini_tools = self._build_gemini_tools(tools)
             payload["tools"] = [{"function_declarations": gemini_tools["function_declarations"]}]

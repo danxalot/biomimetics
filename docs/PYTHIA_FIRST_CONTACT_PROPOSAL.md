@@ -1,5 +1,5 @@
 ---
-tags: [bios/architecture, bios/memory, bios/security, bios/swarm, source/legacy]
+tags: ["#bios/architecture", "#bios/swarm", "#bios/infrastructure"]
 status: active
 ---
 
@@ -14,7 +14,7 @@ status: active
 
 ## Executive Summary
 
-This document proposes the "First Contact" protocol for establishing communication with the Pythia Dragonfly geometric AI system via OCI SSH integration. All system reconnaissance has been completed; no API calls or SSH connections have been triggered.
+This document proposes the "First Contact" protocol for establishing communication with the Pythia Dragonfly geometric AI system via OCI SSH integration. All system reconnaissance has been completed; no API calls or SSH connections have been triggered. `. `. `. ` `  
 
 ---
 
@@ -43,14 +43,14 @@ This document proposes the "First Contact" protocol for establishing communicati
 
 **Network Topology:**
 - **arca_mesh_net**: MCP satellite mesh (ports 8084, 8086, 8088, 8096)
-- **pythia_internal_net**: Isolated Pythia databases (ports 6380, 6381)
+- **pythia_internal_net**: Isolated Pythia databases (ports 6380, 6381) ` 
 
 **Existing Pythia Services:**
 | Service | Port | Purpose |
 |---------|------|---------|
 | `pythia_redis` | 6380 | Trajectory storage |
 | `pythia_dragonfly` | 6381 | Vector cache (512-dim) |
-| `geometry_onnx_interpreter` | 8096 | ONNX pipeline API |
+| `geometry_onnx_interpreter` | 8096 | ONNX pipeline API |   
 
 ### 1.4 Pythia 4-Stage Pipeline (Documented)
 
@@ -972,7 +972,7 @@ if __name__ == "__main__":
 - [ ] llama.cpp server running on port 11435
 - [ ] Human review of `pythia_comm_bridge.py` completed
 - [ ] Dry run executed successfully
-- [ ] Rollback plan documented
+- [ ] Rollback plan documented   
 
 ### 6.2 Safety Mechanisms
 
@@ -980,7 +980,7 @@ if __name__ == "__main__":
 2. **Explicit --execute Flag**: Required for actual SSH execution
 3. **Timeout Protection**: 60s timeout on OCI SSH calls
 4. **Error Handling**: Graceful fallback on all failures
-5. **Logging**: All operations logged to `~/.arca/pythia_first_contact.log`
+5. **Logging**: All operations logged to `~/.arca/pythia_first_contact.log`   
 
 ### 6.3 Rollback Plan
 
@@ -988,7 +988,7 @@ If First Contact fails:
 1. Kill any hanging SSH processes: `pkill -f "ssh.*oci"`
 2. Clear Qdrant test points: Delete points with `session_id` matching current session
 3. Restart llama-server: `launchctl kickstart -k com.bios.llamacpp-server`
-4. Review logs: `tail -100 ~/.arca/pythia_first_contact.log`
+4. Review logs: `tail -100 ~/.arca/pythia_first_contact.log`   
 
 ---
 
@@ -998,7 +998,7 @@ If First Contact fails:
 2. **Update** OCI SSH configuration with actual credentials
 3. **Create** Qdrant collection `pythia_infinimemory_ledger`
 4. **Test** with dry run: `python3 pythia_comm_bridge.py --message "test"`
-5. **Approve** execution: `python3 pythia_comm_bridge.py --execute --message "Initialize geometric context"`
+5. **Approve** execution: `python3 pythia_comm_bridge.py --execute --message "Initialize geometric context"`   
 
 ---
 

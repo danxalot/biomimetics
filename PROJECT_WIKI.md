@@ -1527,7 +1527,7 @@ The system utilizes a central `credentials_server.py` daemon running as a macOS 
 ### 1. LLM Engine: Gemini / Gemma Stack
 
 **Standard LLM**: `gemini-flash-lite-latest` (via Google AI Studio)
-**Refinement LLM (Archive)**: `gemma-3-12b-it` (running on MemU Cloud Run)
+**Refinement LLM (Archive)**: `gemma-4-26b-a4b-it` (running on MemU Cloud Run)
 
 **API Key Configuration**:
 ```python
@@ -1643,7 +1643,7 @@ python3 scripts/memory/gdrive_obsidian_ingest.py --live
 **Registered Providers**:
 | Provider | Base URL | Auth Type | Secret Name | Models |
 |----------|----------|-----------|-------------|--------|
-| **google_ai_studio** | generativelanguage.googleapis.com/v1beta | api_key | `google_api_key` | gemini_flash_lite_latest, gemma-3-12b |
+| **google_ai_studio** | generativelanguage.googleapis.com/v1beta | api_key | `google_api_key` | gemini_flash_lite_latest, gemma-4-26b-a4b-it |
 | **opencode_go** | api.opencode.go/v1 | api_key | `opencode_go_api` | minimax_m2.5_free, minimax_2.7, super_nemotron_3_free, kimi_k2.5_thinking, glm-5-opencode |
 | **alibaba_studio** | dashscope.aliyuncs.com/compatible-mode/v1 | oauth_bearer | `qwen_oauth_token` | qwen-max, qwen-coder |
 | **zhipu_native** | open.bigmodel.cn/api/paas/v4 | api_key | `zhipu_api_key` | glm-5, glm-5-turbo |
@@ -1711,7 +1711,7 @@ Return ONLY the model name, nothing else.
 ```python
 # Gemma-3 Router Configuration (Dynamic Model Selection)
 GEMMA_ROUTER_ENABLED = os.getenv("GEMMA_ROUTER_ENABLED", "true").lower() == "true"
-GEMMA_MODEL = "gemma-3-12b"
+GEMMA_MODEL = "gemma-4-26b-a4b-it"
 GEMMA_BASE_URL = "https://generativelanguage.googleapis.com/v1beta"
 GEMMA_API_KEY = fetch_secret_from_credentials_server("google_api_key")
 ```

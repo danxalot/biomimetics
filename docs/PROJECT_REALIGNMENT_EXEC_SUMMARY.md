@@ -1,5 +1,5 @@
 ---
-tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, source/legacy]
+tags: ["#bios/architecture", "#bios/swarm", "#bios/infrastructure"]
 status: active
 ---
 
@@ -25,7 +25,7 @@ status: active
 - ✅ Key secrets found:
   - `notion_api_key` → `[NOTION_TOKEN_REDACTED]`
   - `github_token` → `[GITHUB_TOKEN_REDACTED]`
-  - `google_api_studio` → ``
+  - `google_api_studio` → ``   
 
 **3. Directory Bridging**
 - ✅ 3 files with hardcoded paths identified:
@@ -47,7 +47,7 @@ status: active
   - `arca-consolidated` RG: ACR + stopped container
   - `arca-rg` RG: 2 Key Vaults (still used by Biomimetics)
 - ✅ Teardown steps documented
-- ✅ Savings: $5/month ($60/year)
+- ✅ Savings: $5/month ($60/year)   
 
 ---
 
@@ -58,13 +58,13 @@ status: active
 - ✅ Base: Node 20 Alpine
 - ✅ Packages: `@modelcontextprotocol/server-github` + `supergateway`
 - ✅ Resource usage: ~50-100MB RAM, <0.1 CPU (idle)
-- ✅ Koyeb Compatibility: **FULLY COMPATIBLE** ✅
+- ✅ Koyeb Compatibility: **FULLY COMPATIBLE** ✅   
 
 **7. Free Tier Deployment Plan**
 - ✅ Koyeb: 0.1 vCPU / 512MB / Always-on / FREE
 - ✅ Deployment script created: `scripts/migrate/deploy-to-koyeb.sh`
 - ✅ Environment variables: `GITHUB_PERSONAL_ACCESS_TOKEN` only
-- ✅ Alternative: Vultr ($2.50/month)
+- ✅ Alternative: Vultr ($2.50/month)   
 
 ---
 

@@ -1,6 +1,7 @@
 ---
-tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, source/legacy]
+
 status: active
+tags: ["#bios/architecture", "#bios/infrastructure", "#pythia/ebm", "#pythia/reasoningbank", "#pythia/vsa"]
 ---
 
 # GitHub MCP SSE Deployment - Complete
@@ -12,7 +13,8 @@ status: active
 
 ## Summary
 
-The GitHub MCP server is now deployed on Azure Container Instances with Supergateway, exposing the MCP server over SSE (Server-Sent Events) for 24/7 remote access.
+The GitHub MCP server is now deployed on Azure Container Instances with Supergateway, exposing the MCP server over SSE (Server-Sent Events) for 24/7 remote access. ` ` `
+#bios/architecture #bios/infrastructure #pythia/vsa #pythia/reasoningbank
 
 ---
 
@@ -25,6 +27,7 @@ The GitHub MCP server is now deployed on Azure Container Instances with Supergat
 - **Status:** Running
 - **CPU:** 2 cores
 - **Memory:** 2 GB
+#bios/infrastructure #bios/architecture #pythia/vsa #pythia/reasoningbank
 
 ### Endpoints
 - **SSE Endpoint:** `http://github-mcp-sse.westus2.azurecontainer.io:8080/sse`
@@ -35,6 +38,7 @@ The GitHub MCP server is now deployed on Azure Container Instances with Supergat
 - **Image:** `github-mcp-sse:latest`
 - **Based on:** Node.js 20 Alpine
 - **Supergateway:** Wraps stdio MCP server with SSE transport
+#bios/architecture #bios/infrastructure #pythia/vsa #pythia/reasoningbank
 
 ---
 
@@ -68,6 +72,7 @@ Updated `~/.copaw/config.json`:
   }
 }
 ```
+#bios/architecture #pythia/vsa #pythia/ebm #pythia/reasoningbank
 
 ---
 
@@ -86,6 +91,7 @@ Updated `~/.copaw/config.json`:
                        - Public endpoint
                        - GitHub PAT configured
 ```
+#bios/architecture #bios/infrastructure #pythia/vsa #pythia/reasoningbank
 
 ---
 
@@ -99,6 +105,7 @@ Updated `~/.copaw/config.json`:
 | **Life OS Fit** | Fragments the "Brain" | ✅ Unified: Serena can use it too |
 | **Access** | Local only | ✅ Any device, anywhere |
 | **Cost** | Free | ~$30/month (2 core ACI) |
+#bios/infrastructure #pythia/vsa #pythia/ebm #pythia/reasoningbank
 
 ---
 
@@ -128,6 +135,7 @@ Expected output:
 [supergateway] SSE endpoint: http://localhost:8080/sse
 [supergateway] Child stderr: GitHub MCP Server running on stdio
 ```
+#bios/architecture #pythia/vsa #pythia/reasoningbank #pythia/ebm
 
 ---
 
@@ -170,13 +178,15 @@ az container delete \
 1. **GitHub PAT** stored as environment variable in ACI
 2. **No SSL/TLS** - traffic is unencrypted (HTTP only)
 3. **Public endpoint** - anyone with URL can connect
-4. **Recommendation:** Add custom domain with SSL certificate for production
+4. **Recommendation:** Add custom domain with SSL certificate for production :   : : :  : : #pythia/
+#bios/infrastructure #pythia/vsa #pythia/ebm #pythia/reasoningbank
 
 ### To Add SSL (Optional)
 1. Purchase domain (e.g., `mcp.arca.tech`)
 2. Point DNS to ACI IP
 3. Deploy nginx/traefik reverse proxy with Let's Encrypt
 4. Update Copaw config with HTTPS URL
+#bios/infrastructure #bios/architecture #pythia/vsa #pythia/reasoningbank
 
 ---
 
@@ -187,6 +197,7 @@ az container delete \
 | ACI (2 core, 2GB) | ~$30 USD |
 | ACR (Basic) | ~$5 USD |
 | **Total** | **~$35 USD/month** |
+#bios/infrastructure #pythia/vsa #pythia/ebm #pythia/reasoningbank
 
 ---
 
@@ -195,7 +206,8 @@ az container delete \
 1. **Test Copaw Integration** - Verify Copaw can connect via SSE
 2. **Monitor Usage** - Check ACI metrics for usage patterns
 3. **Consider SSL** - Add custom domain with HTTPS if needed
-4. **Document for Team** - Share endpoint URL with team members
+4. **Document for Team** - Share endpoint URL with team members       #pythia/
+#bios/infrastructure #pythia/vsa #pythia/ebm #pythia/reasoningbank
 
 ---
 
@@ -221,6 +233,7 @@ az container exec \
   --name github-mcp-sse \
   --exec-command "/bin/sh -c 'echo \$GITHUB_PERSONAL_ACCESS_TOKEN'"
 ```
+#bios/infrastructure #pythia/vsa #pythia/reasoningbank #pythia/ebm
 
 ### Supergateway Crashes
 ```bash
@@ -240,6 +253,7 @@ az container restart \
 | `/Users/danexall/deploy-github-mcp-sse.sh` | Deployment script |
 | `/Users/danexall/.copaw/config.json` | Updated Copaw config |
 | `GITHUB_MCP_SSE_DEPLOYMENT.md` | This documentation |
+#bios/infrastructure #bios/architecture #pythia/vsa #pythia/reasoningbank
 
 ---
 

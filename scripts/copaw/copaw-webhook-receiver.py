@@ -566,7 +566,8 @@ async def handle_whatsapp_request(action: str, params: dict) -> dict:
 async def forward_to_gateway(payload: dict) -> dict:
     """Forward payload to GCP Cloud Function Gateway"""
     try:
-        async with aiohttp.ClientSession() as session:
+        # Task: Resolve [SSL: CERTIFICATE_VERIFY_FAILED] for local dev
+        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
             async with session.post(
                 GCP_GATEWAY_URL,
                 json=payload,
@@ -576,6 +577,7 @@ async def forward_to_gateway(payload: dict) -> dict:
                 return await resp.json()
     except Exception as e:
         return {"error": str(e), "status": "gateway_error"}
+
 
 
 async def handle_webhook(request: web.Request) -> web.Response:
@@ -685,47 +687,29 @@ async def handle_email(request: web.Request) -> web.Response:
     
     # Extract email content
     subject = data.get("subject", "No Subject")
-    body = data.get("body", "")
     sender = data.get("from", "unknown")
-    
-    # Format for memory storage
-    email_content = f"Email from {sender}\nSubject: {subject}\n\n{body}"
-    
-    # Forward to gateway
-    result = await forward_to_gateway({
-        "operation": "memorize",
-        "content": email_content,
-        "metadata": {
-            "source": "email",
-            "from": sender,
-            "subject": subject,
-            "received_at": datetime.now().isoformat()
-        }
-    })
     
     # Also send to Notion tracking (if configured)
     notion_result = None
     if os.environ.get("NOTION_API_KEY"):
-        notion_result = await send_to_notion({
-            "type": "email",
-            "from": sender,
-            "subject": subject,
-            "received_at": datetime.now().isoformat()
-        })
+        # Pass the full data to preserve local_file, status, etc.
+        notion_result = await send_to_notion(data)
     
     request_log.append({
         "type": "email",
         "time": datetime.now().isoformat(),
         "sender": sender,
         "subject": subject,
-        "result": result
+        "result": None,
+        "notion_result": notion_result
     })
     
     return web.json_response({
         "status": "received",
-        "gateway_result": result,
+        "gateway_result": None,
         "notion_result": notion_result
     })
+
 
 
 async def handle_obsidian(request: web.Request) -> web.Response:
@@ -962,12 +946,27 @@ async def send_to_notion(payload: dict) -> dict:
     """Send tracking entry to Notion database"""
     try:
         notion_api_key = os.environ.get("NOTION_API_KEY")
-        notion_db_id = os.environ.get("NOTION_EMAIL_DB_ID")
+        # Fallback to BiOS Authorisation DB ID if not in environment
+        notion_db_id = os.environ.get("NOTION_EMAIL_DB_ID", "3284d2d9fc7c81bd9a91e865511e642f")
         
         if not notion_api_key or not notion_db_id:
             return {"error": "Notion not configured"}
         
-        async with aiohttp.ClientSession() as session:
+        # Format payload for BiOS Authorisation schema
+        # Properties: Name (title), Source (select), Status (select), Local File (rich_text), Payload (rich_text)
+        notion_data = {
+            "parent": {"database_id": notion_db_id},
+            "properties": {
+                "Name": {"title": [{"text": {"content": f"[{payload.get('type', 'email').upper()}] {payload.get('subject', 'No Subject')}"}}]},
+                "Source": {"select": {"name": "Email"}},
+                "Status": {"select": {"name": payload.get("status", "Triage")}},
+                "Local File": {"rich_text": [{"text": {"content": payload.get("local_file", "")}}]},
+                "Payload": {"rich_text": [{"text": {"content": json.dumps(payload, indent=2)[:2000]}}]}
+            }
+        }
+
+        # Task: Resolve [SSL: CERTIFICATE_VERIFY_FAILED] for local dev
+        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
             async with session.post(
                 f"https://api.notion.com/v1/pages",
                 headers={
@@ -975,20 +974,18 @@ async def send_to_notion(payload: dict) -> dict:
                     "Content-Type": "application/json",
                     "Notion-Version": "2022-06-28"
                 },
-                json={
-                    "parent": {"database_id": notion_db_id},
-                    "properties": {
-                        "Type": {"title": [{"text": {"content": payload.get("type", "email")}}]},
-                        "From": {"rich_text": [{"text": {"content": payload.get("from", "")}}]},
-                        "Subject": {"rich_text": [{"text": {"content": payload.get("subject", "")}}]},
-                        "Received": {"date": {"start": payload.get("received_at", "")}}
-                    }
-                },
+                json=notion_data,
                 timeout=aiohttp.ClientTimeout(total=10)
             ) as resp:
-                return await resp.json()
+                result = await resp.json()
+                if resp.status != 200:
+                    print(f"  ❌ Notion API Error: {result}")
+                return result
+
     except Exception as e:
+        print(f"  ❌ Failed to send to Notion: {e}")
         return {"error": str(e)}
+
 
 
 def create_app() -> web.Application:

@@ -5,7 +5,7 @@ Provides HTTP API for memory operations.
 Embedding: Gemini Embeddings API (gemini-embedding-2-preview, 1536 dims)
 Vector store: remote Qdrant (cloud)
 Structured store: Firebase Firestore (via Application Default Credentials)
-Model calls: Gemma 3 12b-it via Google v1beta
+Model calls: Gemma 4 26b-a4b-it via Google v1beta
 """
 
 import os
@@ -36,9 +36,9 @@ USE_GEMINI_EMBEDDINGS = os.getenv("USE_GEMINI_EMBEDDINGS", "true").lower() == "t
 
 QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "memu_archive_1536")
 
-# Agent Config (Gemma 3 12b-it via Google v1beta)
+# Agent Config (Gemma 4 26b-a4b-it via Google v1beta)
 AGENT_PROVIDER = os.getenv("AGENT_PROVIDER", "gemini")
-AGENT_MODEL = os.getenv("AGENT_MODEL", "gemma-3-12b-it")
+AGENT_MODEL = os.getenv("AGENT_MODEL", "gemma-4-26b-a4b-it")
 AGENT_KEY_FILE = os.getenv("AGENT_API_KEY_FILE", "/secrets/google_ai_studio")
 
 # Firebase / GCP project
@@ -46,8 +46,9 @@ FIREBASE_PROJECT = os.getenv("FIREBASE_PROJECT", "arca-471022")
 FIREBASE_COLLECTION = os.getenv("FIREBASE_COLLECTION", "memu_memories")
 
 # Rate Limits
-AGENT_RPM = int(os.getenv("AGENT_RPM", "30"))
-AGENT_TPM = int(os.getenv("AGENT_TPM", "15000"))
+AGENT_RPM = int(os.getenv("AGENT_RPM", "15"))
+AGENT_TPM = int(os.getenv("AGENT_TPM", "250000"))
+
 AGENT_CONTEXT_LIMIT = int(os.getenv("AGENT_CONTEXT_LIMIT", "131072"))
 
 EMBEDDING_RPM = int(os.getenv("EMBEDDING_RPM", "100"))
@@ -343,7 +344,7 @@ async def recall_memory(req: RecallRequest):
 
 @app.post("/complete")
 async def model_complete(req: ChatRequest):
-    """Completion endpoint for agent calls (Gemma 3 12b-it)"""
+    """Completion endpoint for agent calls (Gemma 4 26b-a4b-it)"""
     if not memory or not memory.agent:
         raise HTTPException(status_code=503, detail="Agent not configured")
     try:

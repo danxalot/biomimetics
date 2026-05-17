@@ -1,5 +1,5 @@
 ---
-tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, bios/voice, context/life, source/legacy]
+tags: ["#bios/architecture", "#bios/swarm", "#bios/infrastructure"]
 status: active
 ---
 
@@ -13,7 +13,7 @@ status: active
 
 ## Executive Summary
 
-This audit reveals a **partially integrated system** with functional local execution but **critical disconnections** in the voice→approval→execution pipeline. The Computer Use agent runs unrestricted, CoPaw voice is disabled, and approval decisions are logged but never actioned.
+This audit reveals a **partially integrated system** with functional local execution but **critical disconnections** in the voice→approval→execution pipeline. The Computer Use agent runs unrestricted, CoPaw voice is disabled, and approval decisions are logged but never actioned.   
 
 ---
 
@@ -121,7 +121,7 @@ Return summary
 1. **CoPaw voice channel is DISABLED** - No Gemini Live API integration
 2. **CoPaw LLM routing is OFF** - `agents.llm_routing.enabled: false`
 3. **Gemini API key not shared** - CoPaw config has no reference to Gemini credentials
-4. **Twilio voice config empty** - No phone integration configured
+4. **Twilio voice config empty** - No phone integration configured   
 
 ---
 
@@ -149,7 +149,7 @@ pyautogui.PAUSE = 0.5       # 500ms pause between actions
 - `move_mouse` - Move cursor to (x, y)
 - `click` - Mouse click
 - `type_text` - Keyboard input
-- `get_screen_info` - Screen metadata
+- `get_screen_info` - Screen metadata   
 
 ### Serena Memory Sync
 
@@ -214,7 +214,7 @@ Execute Approved Action
 - ✅ Approvals are **logged** to Notion
 - ❌ Approvals are **never actioned** (no listener)
 - ❌ Computer Use runs **unrestricted** (no guard intercept)
-- ⚠️ Gemini Live can **create tasks** but cannot **trigger execution**
+- ⚠️ Gemini Live can **create tasks** but cannot **trigger execution**   
 
 ---
 
@@ -231,7 +231,7 @@ Execute Approved Action
 **Notes:**
 - PID 0 = Agent loaded but not currently executing
 - `proton-sync` idle may indicate email ingestion is broken
-- `mycloud-watchdog` idle suggests mount is stable
+- `mycloud-watchdog` idle suggests mount is stable   
 
 ---
 

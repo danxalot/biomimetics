@@ -1,5 +1,5 @@
 ---
-tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, bios/voice, source/legacy]
+tags: ["#bios/architecture", "#bios/swarm", "#bios/infrastructure"]
 status: active
 ---
 
@@ -16,7 +16,7 @@ All four critical gaps identified in the System Configuration Audit have been ad
 - ✅ Voice-enabled CoPaw with LLM routing
 - ✅ Secured Computer Use agent with Tool Guard approval workflow
 - ✅ Approval polling bridge between Notion and local execution
-- ✅ Cloud usage tracking for cost visibility
+- ✅ Cloud usage tracking for cost visibility 
 
 ---
 
@@ -70,7 +70,7 @@ print('LLM routing enabled:', config['agents']['llm_routing']['enabled'])
 **Result:**
 - Voice enabled: `True`
 - LLM routing enabled: `True`
-- Gemini API key: `Injected`
+- Gemini API key: `Injected` .
 
 ---
 
@@ -86,7 +86,7 @@ The Computer Use MCP server now includes:
 
 1. **Risk Assessment** - All tool calls are evaluated against patterns:
    - **Auto-approve:** `take_screenshot`, `get_screen_info`, slow mouse moves, simple typing
-   - **High-risk:** Instant mouse moves, sensitive text input, right-clicks, keyboard shortcuts
+   - **High-risk:** Instant mouse moves, sensitive text input, right-clicks, keyboard shortcuts   
 
 2. **Approval Workflow:**
    ```
@@ -96,11 +96,11 @@ The Computer Use MCP server now includes:
 3. **Safety Features:**
    - Minimum mouse move duration: 0.3s (prevents instant jumps)
    - Dangerous key combinations blocked: `command+q`, `alt+f4`, `ctrl+alt+del`
-   - Sensitive content detection: passwords, tokens, secrets
+   - Sensitive content detection: passwords, tokens, secrets   
 
 4. **Pending Approvals Storage:**
    - File: `~/.arca/pending_approvals.json`
-   - Survives restarts
+   - Survives restarts ` `    `.
 
 ### High-Risk Patterns
 
@@ -202,7 +202,7 @@ python3 ~/biomimetics/scripts/copaw/approval_poller.py
 
 1. **Notion** - Tool Guard Database (`3284d2d9fc7c8113bfecca75f4235ece`)
 2. **GCP Gateway** - Memory archival via `memory-orchestrator`
-3. **Local Log** - `~/.arca/cloud_usage.log`
+3. **Local Log** - `~/.arca/cloud_usage.log` `). `
 
 ### Configuration
 
@@ -388,7 +388,7 @@ launchctl kickstart -k ~/Library/LaunchAgents/com.arca.computer-use-mcp.plist
 1. **Webhook Listener** - Replace polling with instant webhook callbacks from Notion
 2. **Cloudflare Tunnel** - Enable direct Cloudflare→localhost routing
 3. **Usage Alerts** - Add spending threshold alerts via Telegram/SMS
-4. **PM Agent Repo Config** - Update to use `biomimetics` repo instead of hardcoded `ARCA`
+4. **PM Agent Repo Config** - Update to use `biomimetics` repo instead of hardcoded `ARCA` ` 
 
 ---
 

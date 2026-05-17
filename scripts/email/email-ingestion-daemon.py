@@ -22,6 +22,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 import httpx
+import certifi
+from bs4 import BeautifulSoup
 
 # Configuration paths
 CONFIG_FILE = Path.home() / "biomimetics" / "config" / "omni_sync_config.json"
@@ -57,15 +59,152 @@ POLL_INTERVAL = int(os.environ.get("POLL_INTERVAL", str(CONFIG.get("EMAIL_POLL_I
 
 # State file for tracking processed emails
 STATE_FILE = Path.home() / ".arca" / "email_state.json"
+JUNK_CACHE_FILE = Path.home() / ".arca" / "junk_cache.json"
 
 # SSL context for Proton Bridge (self-signed cert)
 SSL_CONTEXT = ssl.create_default_context()
 SSL_CONTEXT.check_hostname = False
 SSL_CONTEXT.verify_mode = ssl.CERT_NONE
 
-# Gmail SSL context
-GMAIL_SSL_CONTEXT = ssl.create_default_context()
+# Gmail SSL context - Use certifi for macOS compatibility
+GMAIL_SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
 
+
+# --- Legacy Filter & Triage Logic ---
+KEEP_KEYWORDS = [
+    "invoice", "receipt", "you sent", "payment", "octopus", "vultr", "azure", "ticket",
+    "order", "document", "citizens advice", "cab", "debt", "arrears", "collection",
+    "bailiff", "stepchange", "credit", "complaint", "appeal", "ombudsman", "watchdog",
+    "legal", "solicitor", "police", "council", "security alert", "breach", "pwned",
+    "unauthorized", "login",
+]
+PATTERN = re.compile(r"\b(?:" + "|".join(map(re.escape, KEEP_KEYWORDS)) + r")\b", re.IGNORECASE)
+
+INSTITUTIONAL_DOMAINS = ["nhs.net", "nhs.uk", "gov.uk", "police.uk", "lgo.org.uk"]
+INSTITUTIONAL_KEYWORDS = ["citizens advice", "solicitor", "lawyer", "legal", "constabulary", "police"]
+HARD_REFUSE_PHRASES = ["that you follow published a new idea"]
+
+WHITELIST_FILE = Path.home() / "biomimetics" / "config" / "email_whitelist.json"
+
+def load_whitelist() -> set:
+    if WHITELIST_FILE.exists():
+        with open(WHITELIST_FILE, "r") as f:
+            return set(json.load(f))
+    return set()
+
+def save_whitelist(whitelist: set):
+    with open(WHITELIST_FILE, "w") as f:
+        json.dump(list(whitelist), f)
+
+def add_to_junk_cache(email_data: dict, reason: str):
+    """Save rejected email metadata to a local JSON cache for later review"""
+    try:
+        cache_data = []
+        if JUNK_CACHE_FILE.exists():
+            with open(JUNK_CACHE_FILE, "r") as f:
+                try:
+                    cache_data = json.load(f)
+                except:
+                    cache_data = []
+        
+        # Create snippet (first 200 chars)
+        snippet = email_data.get("body", "")[:200].replace("\n", " ")
+        
+        entry = {
+            "date": email_data.get("received_at", datetime.now().isoformat()),
+            "sender": email_data.get("from", "Unknown"),
+            "subject": email_data.get("subject", "No Subject"),
+            "reason": reason,
+            "snippet": snippet
+        }
+        
+        cache_data.append(entry)
+        
+        # Keep only last 1000 rejected emails
+        cache_data = cache_data[-1000:]
+        
+        with open(JUNK_CACHE_FILE, "w") as f:
+            json.dump(cache_data, f, indent=2)
+            
+    except Exception as e:
+        print(f"  ⚠️  Failed to update junk cache: {e}")
+
+def update_sent_whitelist(mail_client, account_email, state):
+    """Scan Sent folder and add recipients to whitelist"""
+    try:
+        # Task 1: Dynamic IMAP Sent Folder Discovery
+        sent_folder = None
+        
+        # Method A: Use mail.list() to find folder with \Sent flag
+        status, folder_list = mail_client.list()
+        if status == 'OK':
+            for line in folder_list:
+                line_str = line.decode('utf-8')
+                # Check for \Sent flag (case-insensitive)
+                if '\\sent' in line_str.lower():
+                    # Extract folder name (usually the last part after the delimiter)
+                    import re
+                    match = re.search(r'\(.*\) "/" "(.*)"', line_str)
+                    if not match:
+                        match = re.search(r'\(.*\) "." "(.*)"', line_str)
+                    
+                    if match:
+                        sent_folder = f'"{match.group(1)}"'
+                        break
+        
+        # Method B: Robust Fallback Loop
+        if not sent_folder:
+            fallbacks = ['"[Gmail]/Sent Mail"', '"[Google Mail]/Sent Mail"', '"Sent"', '"Sent Mail"']
+            for fb in fallbacks:
+                status, _ = mail_client.select(fb, readonly=True)
+                if status == 'OK':
+                    sent_folder = fb
+                    break
+        
+        if not sent_folder:
+            print(f"  ⚠️  Could not discover Sent folder for {account_email}")
+            return
+
+        # EXPLICIT SELECT & VERIFY
+        status, data = mail_client.select(sent_folder, readonly=True)
+        if status != 'OK':
+            print(f"  ⚠️  Failed to select {sent_folder}: {data}")
+            return
+
+
+        
+        last_check = state.get(f"last_sent_check_{account_email}")
+        if last_check:
+            since_date = datetime.strptime(last_check, "%Y-%m-%d").strftime("%d-%b-%Y")
+        else:
+            since_date = (datetime.now() - timedelta(days=30)).strftime("%d-%b-%Y")
+        
+        status, messages = mail_client.search(None, f'(SINCE {since_date})')
+        if status != "OK": return
+        
+        whitelist = load_whitelist()
+        new_entries = 0
+        
+        for e_id in messages[0].split():
+            status, msg_data = mail_client.fetch(e_id, "(RFC822.HEADER)")
+            if status != "OK": continue
+            msg = email.message_from_bytes(msg_data[0][1])
+            to_addr = msg.get("To", "")
+            # Extract email addresses using regex
+            addrs = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', to_addr)
+            for addr in addrs:
+                if addr.lower() not in whitelist:
+                    whitelist.add(addr.lower())
+                    new_entries += 1
+        
+        if new_entries > 0:
+            save_whitelist(whitelist)
+            print(f"  📝 Whitelist updated: +{new_entries} new recipients")
+            
+        state[f"last_sent_check_{account_email}"] = datetime.now().strftime("%Y-%m-%d")
+        
+    except Exception as e:
+        print(f"  ⚠️  Failed to update sent whitelist: {e}")
 
 def load_proton_password() -> str:
     """Load Proton Bridge password from secrets file."""
@@ -112,22 +251,32 @@ class EmailState:
     def __init__(self, state_file: Path):
         self.state_file = state_file
         self.state_file.parent.mkdir(parents=True, exist_ok=True)
+        self.data = {}
         self.processed_ids = set()
         self.load()
 
     def load(self):
         try:
             with open(self.state_file) as f:
-                data = json.load(f)
-                self.processed_ids = set(data.get("processed_ids", []))
+                self.data = json.load(f)
+                self.processed_ids = set(self.data.get("processed_ids", []))
         except:
+            self.data = {}
             self.processed_ids = set()
 
     def save(self):
         # Keep only last 10000 IDs to prevent unbounded growth
         ids_list = list(self.processed_ids)[-10000:]
+        self.data["processed_ids"] = ids_list
         with open(self.state_file, "w") as f:
-            json.dump({"processed_ids": ids_list}, f)
+            json.dump(self.data, f)
+
+    def get(self, key, default=None):
+        return self.data.get(key, default)
+
+    def set(self, key, value):
+        self.data[key] = value
+        self.save()
 
     def is_processed(self, email_id: str) -> bool:
         return email_id in self.processed_ids
@@ -138,11 +287,16 @@ class EmailState:
 
 
 def extract_email_body(msg: email.message.Message) -> str:
-    """Extract plain text body from email message, stripping HTML"""
-    body = ""
+    """Extract plain text body from email message.
+    
+    Priority: text/html (with style/script stripping) > text/plain.
+    Traverses multipart trees to find the best HTML part first.
+    Falls back gracefully to text/plain if no HTML exists.
+    """
+    html_body = ""
+    plain_body = ""
 
     if msg.is_multipart():
-        # Prefer plain text over HTML
         for part in msg.walk():
             content_type = part.get_content_type()
             content_disposition = str(part.get("Content-Disposition") or "")
@@ -151,27 +305,42 @@ def extract_email_body(msg: email.message.Message) -> str:
             if "attachment" in content_disposition:
                 continue
 
-            if content_type == "text/plain":
+            if content_type == "text/html" and not html_body:
                 try:
                     charset = part.get_content_charset() or "utf-8"
-                    body = part.get_payload(decode=True).decode(charset, errors="replace")
-                    break
-                except:
+                    raw_html = part.get_payload(decode=True).decode(charset, errors="replace")
+                    soup = BeautifulSoup(raw_html, "html.parser")
+                    # Deep cleanse: remove style and script tags to prevent code-clumping
+                    for tag in soup.find_all(["style", "script"]):
+                        tag.decompose()
+                    html_body = soup.get_text(separator="\n", strip=True)
+                except Exception:
                     pass
-            elif content_type == "text/html" and not body:
+
+            elif content_type == "text/plain" and not plain_body:
                 try:
                     charset = part.get_content_charset() or "utf-8"
-                    body = part.get_payload(decode=True).decode(charset, errors="replace")
-                    # Strip HTML tags
-                    body = re.sub(r"<[^>]+>", "", body)
-                except:
+                    plain_body = part.get_payload(decode=True).decode(charset, errors="replace")
+                except Exception:
                     pass
+
+        # Prefer HTML result; fall back to plain text
+        body = html_body if html_body else plain_body
+
     else:
-        # Single part message
+        # Single-part message — attempt decode directly
+        content_type = msg.get_content_type()
         try:
             charset = msg.get_content_charset() or "utf-8"
-            body = msg.get_payload(decode=True).decode(charset, errors="replace")
-        except:
+            raw = msg.get_payload(decode=True).decode(charset, errors="replace")
+            if content_type == "text/html":
+                soup = BeautifulSoup(raw, "html.parser")
+                for tag in soup.find_all(["style", "script"]):
+                    tag.decompose()
+                body = soup.get_text(separator="\n", strip=True)
+            else:
+                body = raw
+        except Exception:
             body = str(msg.get_payload())
 
     return body.strip()
@@ -193,29 +362,13 @@ def send_to_webhook_receiver(email_data: dict) -> dict:
 
 
 def send_to_notion(email_data: dict) -> dict:
-    """Send email tracking to Notion database"""
-    if not NOTION_API_KEY or not NOTION_EMAIL_DB_ID:
-        return {"skipped": "Notion not configured"}
-
+    """Rerouted: Send email metadata to local webhook translator for Notion dashboard"""
     try:
         response = httpx.post(
-            "https://api.notion.com/v1/pages",
-            headers={
-                "Authorization": f"Bearer {NOTION_API_KEY}",
-                "Content-Type": "application/json",
-                "Notion-Version": "2022-06-28"
-            },
-            json={
-                "parent": {"database_id": NOTION_EMAIL_DB_ID},
-                "properties": {
-                    "Type": {"title": [{"text": {"content": "Email"}}]},
-                    "From": {"rich_text": [{"text": {"content": email_data.get("from", "")}}]},
-                    "Subject": {"rich_text": [{"text": {"content": email_data.get("subject", "")}}]},
-                    "Received": {"date": {"start": email_data.get("received_at", "")}},
-                    "Message-ID": {"rich_text": [{"text": {"content": email_data.get("message_id", "")}}]}
-                }
-            },
-            timeout=10.0
+            WEBHOOK_RECEIVER_URL,
+            json=email_data,
+            headers={"Content-Type": "application/json"},
+            timeout=15.0
         )
         response.raise_for_status()
         return response.json()
@@ -241,20 +394,32 @@ def connect_imap(account: Dict) -> Optional[imaplib.IMAP4]:
             # Gmail: Implicit SSL via IMAP4_SSL
             host = account.get("host", "imap.gmail.com")
             port = account.get("port", 993)
-            
             mail = imaplib.IMAP4_SSL(host, port, ssl_context=GMAIL_SSL_CONTEXT)
-            mail.login(email_addr, password)
-            
-        else:  # proton or default
-            # ProtonMail: STARTTLS upgrade
+        else:
+            # ProtonMail: Attempt STARTTLS upgrade on 1143
             host = CONFIG.get("PROTONMAIL_IMAP_HOST", "127.0.0.1")
             port = CONFIG.get("PROTONMAIL_IMAP_PORT", 1143)
-            
-            mail = imaplib.IMAP4(host, port)
-            mail.starttls(ssl_context=SSL_CONTEXT)
-            mail.login(email_addr, password)
+            try:
+                mail = imaplib.IMAP4(host, port)
+                mail.starttls(ssl_context=SSL_CONTEXT)
+            except Exception as e:
+                print(f"  ⚠️  STARTTLS on {port} failed, trying IMAP4_SSL on 993: {e}")
+                # Fallback to IMAP4_SSL on port 993
+                mail = imaplib.IMAP4_SSL(host, 993, ssl_context=SSL_CONTEXT)
+
+        # IMAP Login Backoff / Retry Block
+        for attempt in range(3):
+            try:
+                mail.login(email_addr, password)
+                return mail
+            except imaplib.IMAP4.error as e:
+                if b"too many login attempts" in str(e).lower().encode():
+                    print(f"  ⏳ Too many login attempts for {email_addr}. Backing off 15s (Attempt {attempt+1}/3)...")
+                    time.sleep(15)
+                else:
+                    raise e
         
-        return mail
+        return None
         
     except imaplib.IMAP4.error as e:
         print(f"❌ [{protocol.upper()}] IMAP error for {email_addr}: {e}")
@@ -264,7 +429,7 @@ def connect_imap(account: Dict) -> Optional[imaplib.IMAP4]:
         return None
 
 
-def poll_account(account: Dict, state: EmailState, lookback_minutes: int = 5) -> List[dict]:
+def poll_account(account: Dict, state: EmailState, lookback_minutes: int = 5, start_date: str = None, end_date: str = None) -> List[dict]:
     """
     Poll a single email account (ProtonMail or Gmail) for new emails.
     Uses dual-protocol connection factory.
@@ -279,12 +444,25 @@ def poll_account(account: Dict, state: EmailState, lookback_minutes: int = 5) ->
     if not mail:
         return []
 
+    # Update Sent Whitelist before polling Inbox
+    update_sent_whitelist(mail, email_addr, state.data)
+    state.save()
+
     try:
         mail.select("INBOX")
 
-        # Search for unread emails from last poll
-        since_date = (datetime.now() - timedelta(minutes=lookback_minutes * 2)).strftime("%d-%b-%Y")
-        status, messages = mail.search(None, f'(UNSEEN SINCE {since_date})')
+        # Determine Search Query
+        if start_date and end_date:
+            # Batch mode: YYYY-MM-DD -> DD-Mon-YYYY
+            sd = datetime.strptime(start_date, "%Y-%m-%d").strftime("%d-%b-%Y")
+            ed = datetime.strptime(end_date, "%Y-%m-%d").strftime("%d-%b-%Y")
+            search_query = f'(SINCE {sd} BEFORE {ed})'
+        else:
+            # Default: incremental poll
+            since_date = (datetime.now() - timedelta(minutes=lookback_minutes * 2)).strftime("%d-%b-%Y")
+            search_query = f'(UNSEEN SINCE {since_date})'
+
+        status, messages = mail.search(None, search_query)
 
         if status != "OK":
             mail.close()
@@ -294,6 +472,9 @@ def poll_account(account: Dict, state: EmailState, lookback_minutes: int = 5) ->
         email_ids = messages[0].split()
 
         for email_id in email_ids:
+            # Enforce 15 RPM limit (4s heartbeat) for Notion API safety
+            time.sleep(4)
+            
             email_id_str = email_id.decode()
 
             # Skip if already processed
@@ -309,11 +490,58 @@ def poll_account(account: Dict, state: EmailState, lookback_minutes: int = 5) ->
             raw_email = msg_data[0][1]
             msg = email.message_from_bytes(raw_email)
 
-            # Extract data
-            subject = msg.get("Subject", "No Subject")
-            sender = msg.get("From", "Unknown")
-            message_id = msg.get("Message-ID", "")
-            date_str = msg.get("Date", "")
+            # Extract headers for triage
+            subject = str(msg.get("Subject", "No Subject"))
+            sender = str(msg.get("From", "Unknown"))
+            message_id = str(msg.get("Message-ID", ""))
+            date_str = str(msg.get("Date", ""))
+            list_unsubscribe = str(msg.get("List-Unsubscribe", ""))
+
+            # --- TRIAGE HIERARCHY ---
+            pass_reason = None
+            
+            # 0. Hard Refusal (Silent Drop)
+            if any(phrase.lower() in subject.lower() for phrase in HARD_REFUSE_PHRASES):
+                print(f"  🛑 [HARD REFUSE] {subject[:50]}...")
+                state.mark_processed(f"{email_addr}:{email_id_str}")
+                continue
+
+            # 1. Institutional Check
+            sender_domain = sender.split("@")[-1].strip(">").lower()
+            if any(dom in sender_domain for dom in INSTITUTIONAL_DOMAINS) or \
+               any(kw.lower() in sender.lower() for kw in INSTITUTIONAL_KEYWORDS):
+                pass_reason = "Institutional"
+            
+            # 2. Whitelist Check
+            if not pass_reason:
+                whitelist = load_whitelist()
+                sender_addr = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', sender)
+                if sender_addr and sender_addr[0].lower() in whitelist:
+                    pass_reason = "Whitelisted"
+            
+            # 3. Newsletter Check (REJECT)
+            if not pass_reason and list_unsubscribe:
+                print(f"  🔴 [REJECT] Newsletter: {subject[:50]}...")
+                add_to_junk_cache({
+                    "from": sender, "subject": subject, "received_at": date_str, "body": extract_email_body(msg)
+                }, "Newsletter")
+                state.mark_processed(f"{email_addr}:{email_id_str}")
+                continue
+            
+            # 4. Legacy Keyword Filter
+            if not pass_reason:
+                if PATTERN.search(f"{subject} {sender}"):
+                    pass_reason = "Legacy Filter"
+            
+            if not pass_reason:
+                print(f"  🔴 [REJECT] Failed Triage: {subject[:50]}...")
+                add_to_junk_cache({
+                    "from": sender, "subject": subject, "received_at": date_str, "body": extract_email_body(msg)
+                }, "Triage Failure")
+                state.mark_processed(f"{email_addr}:{email_id_str}")
+                continue
+
+            print(f"  🟢 [PASS - {pass_reason}] {subject[:50]}...")
 
             # Extract body (strips HTML for both Proton and Gmail)
             body = extract_email_body(msg)
@@ -321,6 +549,18 @@ def poll_account(account: Dict, state: EmailState, lookback_minutes: int = 5) ->
             if not body:
                 state.mark_processed(f"{email_addr}:{email_id_str}")
                 continue
+
+            # --- AUTO-READ ROUTING LOGIC ---
+            subject_lower = subject.lower()
+            is_auto_read = (
+                "recycling collection" in subject_lower
+                or "security alert" in subject_lower
+                or "login from a new device" in subject_lower
+                or ("new" in subject_lower and "login" in subject_lower)
+                or ("verify" in subject_lower and "login" in subject_lower)
+                or ("delivered" in subject_lower and "items" in subject_lower)
+            )
+            notion_status = "Read" if is_auto_read else "New"
 
             # Create email data
             email_data = {
@@ -330,15 +570,62 @@ def poll_account(account: Dict, state: EmailState, lookback_minutes: int = 5) ->
                 "received_at": date_str,
                 "body": body,
                 "source": protocol,
-                "account": email_addr
+                "account": email_addr,
+                "recipient": email_addr
             }
 
-            # Send to webhook receiver
-            result = send_to_webhook_receiver(email_data)
+            # Local-First Markdown Drop (Enforce Local-First / Context-Lock)
+            # Directed to STAGING for triage
+            output_dir = Path.home() / "biomimetics" / "docs" / "personal" / "emails" / "staging"
+            output_dir.mkdir(parents=True, exist_ok=True)
 
-            # Also send to Notion if configured
-            if NOTION_API_KEY:
-                notion_result = send_to_notion(email_data)
+            # Sanitize filename: YYYY-MM-DD_Sanitized_Subject.md
+            # Extract date for filename (try to parse email date, fallback to now)
+            try:
+                dt = email.utils.parsedate_to_datetime(date_str)
+                date_prefix = dt.strftime("%Y-%m-%d")
+            except:
+                date_prefix = datetime.now().strftime("%Y-%m-%d")
+
+            safe_subject = re.sub(r'[^\w\s-]', '', subject).strip().replace(" ", "_")[:50]
+            filename = f"{date_prefix}_{safe_subject}.md"
+            filepath = output_dir / filename
+
+            # Construct Markdown with Strict Frontmatter (Task 2: recipient injected)
+            md_content = f"""---
+privacy: strict
+type: personal
+source: email
+date: {date_str}
+sender: {sender}
+recipient: {email_addr}
+subject: {subject}
+status: {notion_status}
+---
+
+# {subject}
+
+{body}
+"""
+
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write(md_content)
+
+            print(f"💾 Saved to Staging: {filename}")
+
+            # Notify Notion via local webhook receiver (Task 4: schema matches handle_email + send_to_notion)
+            notion_metadata = {
+                "type": "email",
+                "subject": subject,
+                "from": sender,
+                "recipient": email_addr,
+                "received_at": date_str,
+                "body": body,
+                "local_file": filename,
+                "status": notion_status
+            }
+            send_to_notion(notion_metadata)
+            print(f"🔔 Triage notification sent ({'Read (auto-routed)' if is_auto_read else 'New'})")
 
             # Mark as processed
             state.mark_processed(f"{email_addr}:{email_id_str}")
@@ -348,8 +635,7 @@ def poll_account(account: Dict, state: EmailState, lookback_minutes: int = 5) ->
                 "account": email_addr,
                 "protocol": protocol,
                 "subject": subject,
-                "from": sender,
-                "result": result
+                "from": sender
             })
 
             print(f"✅ [{protocol.upper()}] {email_addr}: {subject[:50]}...")
@@ -367,7 +653,7 @@ def poll_account(account: Dict, state: EmailState, lookback_minutes: int = 5) ->
     return emails_processed
 
 
-def poll_all_accounts(state: EmailState, lookback_minutes: int = 5) -> List[dict]:
+def poll_all_accounts(state: EmailState, lookback_minutes: int = 5, start_date: str = None, end_date: str = None) -> List[dict]:
     """Poll all ProtonMail and Gmail accounts"""
     all_results = []
     
@@ -375,14 +661,16 @@ def poll_all_accounts(state: EmailState, lookback_minutes: int = 5) -> List[dict
     
     print(f"\n📧 Polling {len(proton_accounts)} ProtonMail account(s)...")
     for account in proton_accounts:
-        results = poll_account(account, state, lookback_minutes)
+        results = poll_account(account, state, lookback_minutes, start_date, end_date)
         all_results.extend(results)
+        time.sleep(5)  # Stagger login requests
     
     if gmail_accounts:
         print(f"\n📧 Polling {len(gmail_accounts)} Gmail account(s)...")
         for account in gmail_accounts:
-            results = poll_account(account, state, lookback_minutes)
+            results = poll_account(account, state, lookback_minutes, start_date, end_date)
             all_results.extend(results)
+            time.sleep(5)  # Stagger login requests
     
     return all_results
 
@@ -392,6 +680,8 @@ def main():
     parser = argparse.ArgumentParser(description="Email Ingestion Daemon - Dual Protocol")
     parser.add_argument("--once", action="store_true", help="Run single poll then exit")
     parser.add_argument("--lookback", type=int, default=5, help="Look back minutes for unread emails")
+    parser.add_argument("--start-date", type=str, help="Batch start date (YYYY-MM-DD)")
+    parser.add_argument("--end-date", type=str, help="Batch end date (YYYY-MM-DD)")
     args = parser.parse_args()
 
     # Load accounts
@@ -400,8 +690,6 @@ def main():
     print("=" * 60)
     print("📧 Email Ingestion Daemon - Dual Protocol")
     print("=" * 60)
-    print(f"Gateway: {GCP_GATEWAY_URL}")
-    print(f"Webhook Receiver: {WEBHOOK_RECEIVER_URL}")
     print(f"Poll Interval: {POLL_INTERVAL}s")
     print(f"ProtonMail: {CONFIG.get('PROTONMAIL_IMAP_HOST', '127.0.0.1')}:{CONFIG.get('PROTONMAIL_IMAP_PORT', 1143)} (STARTTLS)")
     print(f"Gmail: {CONFIG.get('GMAIL_IMAP_HOST', 'imap.gmail.com')}:{CONFIG.get('GMAIL_IMAP_PORT', 993)} (SSL)")
@@ -427,7 +715,12 @@ def main():
         print(f"\n--- Poll iteration {iteration} at {datetime.now().isoformat()} ---")
 
         # Poll all accounts
-        all_results = poll_all_accounts(state, lookback_minutes=args.lookback)
+        all_results = poll_all_accounts(
+            state, 
+            lookback_minutes=args.lookback,
+            start_date=args.start_date,
+            end_date=args.end_date
+        )
         
         # Summary by protocol
         proton_count = len([r for r in all_results if r.get('protocol') == 'proton'])

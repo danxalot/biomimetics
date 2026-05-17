@@ -1,5 +1,5 @@
 ---
-tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, source/legacy]
+tags: ["#bios/architecture", "#bios/swarm", "#bios/infrastructure"]
 status: active
 ---
 
@@ -293,3 +293,11 @@ curl -X POST https://us-central1-arca-471022.cloudfunctions.net/memory-orchestra
   -H "Content-Type: application/json" \
   -d '{"query": "serena code spec"}'
 ```
+
+---
+
+## Phase 8 Update (2026-05-13): Memory Stabilization
+Phase 4 logic has been formally stabilized in Phase 8 to ensure reliable, pollution-free data handling.
+- **Staging Quarantine:** Recursive scan exclusions implemented in `vault_memory_sync.py` and `semantic_llm_tagger.py`.
+- **Model Upgrade:** Primary reasoning and tagging shifted to `gemma-4-31b-it`.
+- **SOP 001:** Formalized the end-to-end ingestion pipeline in `docs/architecture/001-memory-pipeline.md`.

@@ -1,5 +1,5 @@
 ---
-tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, source/legacy]
+tags: ["#bios/architecture", "#bios/swarm", "#bios/infrastructure"]
 status: active
 ---
 
@@ -32,14 +32,14 @@ Biomimetics provides:
 - **System Monitoring**: LaunchAgents for continuous operation
 - **AI Integration**: Local model inference for summarization and analysis
 - **Intelligent Memory**: GCP Cloud Function integration for contextual AI
-- **Approval Workflows**: CoPaw tool guard for safe AI agent operations
+- **Approval Workflows**: CoPaw tool guard for safe AI agent operations `. `.
 
 ### Core Principles
 
 1. **Passive Collection**: Gather data without user intervention
 2. **Intelligent Filtering**: Circuit breakers prevent overload
 3. **Stateful Processing**: Track processed items to avoid duplicates
-4. **Modular Design**: Each component operates independently
+4. **Modular Design**: Each component operates independently   
 
 ---
 
@@ -67,7 +67,8 @@ Biomimetics provides:
 │                           ▼                                             │
 │  ┌─────────────────────────────────────────────────────────┐           │
 │  │              GCP Gateway (Cloud Functions)              │           │
-│  │         memory-orchestrator endpoint                    │           │
+│  │         memory-orchestrator endpoint (v1.3.1)           │           │
+│  │         Agent Model: gemma-4-31b-it                     │           │
 │  └────────────────────────┬────────────────────────────────┘           │
 │                           │                                             │
 │         ┌─────────────────┼─────────────────┐                          │
@@ -111,7 +112,7 @@ Biomimetics provides:
 - Injects into `omni_sync_config.json`
 - Updates Cloudflare Worker secrets via `wrangler`
 - Configures Notion MCP Server for Claude Desktop
-- Creates local encrypted backup
+- Creates local encrypted backup   
 
 **Secrets Managed**:
 | Secret Name | Used By |
@@ -121,7 +122,7 @@ Biomimetics provides:
 | `proton-bridge-password` | ProtonMail 5-account sync |
 | `gcp-service-account` | Google Drive API |
 | `mycloud-password` | SMB NAS mount |
-| `gcp-gateway-url` | GCP Cloud Functions endpoint |
+| `gcp-gateway-url` | GCP Cloud Functions endpoint |   
 
 **Usage**:
 ```bash
@@ -169,7 +170,7 @@ MAX_CONTENT_LENGTH = 100000  # Max chars to extract
 | dan@arca-vsa.tech | ARCA business |
 | claws@arca-vsa.tech | AI identity |
 | arca@pm.me | ARCA projects |
-| info@pm.me | General info |
+| info@pm.me | General info |   
 
 **Process**:
 1. Connect via Proton Bridge (localhost:1143)
@@ -177,7 +178,7 @@ MAX_CONTENT_LENGTH = 100000  # Max chars to extract
 3. Filter by date (90-day window)
 4. Skip already-processed (Message-ID tracking)
 5. Summarize with Ollama (deepseek-r1-1.5b)
-6. Send to GCP Gateway
+6. Send to GCP Gateway   
 
 **State File**: `~/.arca/proton_sync_state.json`
 
@@ -201,13 +202,13 @@ else:
 
 ### 4. Cloudflare Worker (`cloudflare/index.js`)
 
-**Purpose**: Multi-system integration hub for GitHub webhooks, Serena agents, GCP memory, and CoPaw integration
+**Purpose**: Multi-system integration hub for GitHub webhooks, Serena agents, GCP memory, and CoPaw integration ` `. ` `. 
 
 **Triggers**:
 - GitHub Webhooks (Issues, PRs, Pushes) → Biomimetic OS database
 - Serena Agent Tasks → Life OS Triage & Biomimetic OS databases  
 - GCP Memory Insights → Biomimetic OS (task suggestions, context updates)
-- CoPaw Requests → Tool approval workflow, skill queuing
+- CoPaw Requests → Tool approval workflow, skill queuing `. ` ` ` 
 
 **Flow**:
 ```
@@ -223,7 +224,7 @@ GitHub Event → Cloudflare Worker → Notion Database
 - **Serena → Notion**: Agent tasks create/update Notion entries
 - **Notion → GCP Memory**: Updates forwarded for contextual AI enrichment  
 - **GCP Memory → Biomimetic OS**: Insights generate task suggestions/context updates
-- **CoPaw Integration**: Tool approval workflow and skill execution queuing
+- **CoPaw Integration**: Tool approval workflow and skill execution queuing `
 
 **Deployment**:
 ```bash
@@ -237,7 +238,7 @@ npx wrangler deploy
 - NOTION_API_KEY / NOTION_TOKEN: Notion integration
 - GITHUB_WEBHOOK_SECRET: Webhook validation  
 - GCP_SERVICE_ACCOUNT: GCP memory gateway auth
-- COPAW_APPROVAL_DB_ID: CoPaw approvals database ID
+- COPAW_APPROVAL_DB_ID: CoPaw approvals database ID   
 
 ---
 
@@ -276,7 +277,7 @@ npx wrangler deploy
 - Read/write Notion pages and databases
 - Create and update database entries
 - Search and query Notion content
-- Bi-directional sync with ARCA project tracking
+- Bi-directional sync with ARCA project tracking   
 
 ---
 
@@ -294,26 +295,32 @@ npx wrangler deploy
 
 ## Data Flow
 
-### Email Processing Pipeline
+### Email Processing Pipeline (SOP 001)
 
 ```
 ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│ Proton Bridge│     │ backfill_    │     │   Ollama     │
-│ localhost:   │────►│ claws.py     │────►│  (local)     │
-│    1143      │     │              │     │              │
-└──────────────┘     └──────┬───────┘     └──────────────┘
-                            │
-                            ▼
-                     ┌──────────────┐
-                     │   GCP        │
-                     │   Gateway    │
-                     └──────┬───────┘
-                            │
-                            ▼
-                     ┌──────────────┐
-                     │   Notion     │
-                     │   Database   │
-                     └──────────────┘
+│ Proton Bridge│     │ email-       │     │ Notion       │
+│ localhost:   │────►│ ingestion-   │────►│ Triage       │
+│    1143      │     │ daemon.py    │     │ (Auth Req)   │
+└──────────────┘     └──────┬───────┘     └──────┬───────┘
+                            │                    │
+                            ▼                    ▼
+                     ┌──────────────┐     ┌──────────────┐
+                     │ Staging Area │◄────│ Human Review │
+                     │ (Quarantine) │     │ (Approved)   │
+                     └──────┬───────┘     └──────┬───────┘
+                            │                    │
+                            ▼                    ▼
+                     ┌──────────────┐     ┌──────────────┐
+                     │ Nightly      │     │ Permanent    │
+                     │ Sweeper      │────►│ Vault        │
+                     └──────────────┘     └──────┬───────┘
+                                                 │
+                                                 ▼
+                                          ┌──────────────┐
+                                          │ memory-sync/ │
+                                          │ orchestrator │
+                                          └──────────────┘
 ```
 
 ### File Processing Pipeline
@@ -357,9 +364,14 @@ npx wrangler deploy
   "GMAIL_USER": "dan.exall@gmail.com",
   "GMAIL_APP_PASSWORD": "...",
   "GOOGLE_SERVICE_ACCOUNT_PATH": "/path/to/gcp_credentials.json",
-  "GCP_GATEWAY_URL": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator"
+  "GCP_GATEWAY_URL": "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator",
+  "MEMU_VERSION": "1.3.1",
+  "AGENT_MODEL": "gemma-4-31b-it"
 }
 ```
+
+### Administrative Endpoints
+- **POST /purge**: Coordinates memory deletion across the swarm. Requires `source_filter` (e.g., "staging") or `content_filter`.
 
 ### Environment Secrets
 
@@ -495,6 +507,7 @@ curl http://localhost:11434/api/tags
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0.0 | 2026-03-17 | Initial consolidation |
+| 1.3.1 | 2026-05-13 | Upgraded MemU to gemma-4-31b-it, restored /purge, and formalized SOP 001 pipeline. |
 
 ---
 

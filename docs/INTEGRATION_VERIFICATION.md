@@ -1,6 +1,7 @@
 ---
-tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, context/life, source/legacy]
+
 status: active
+tags: ["#bios/architecture", "#bios/infrastructure"]
 ---
 
 # Integration Endpoint Verification Report
@@ -21,11 +22,13 @@ status: active
 | **Transport** | `sse` |
 | **Health Check** | HTTP 200 (SSE endpoint active) |
 | **Previous (dead)** | `http://github-mcp-server.eastus.azurecontainer.io:8080/mcp` |
+#bios/infrastructure
 
 **Configured In:**
 - ✅ `~/.zed/settings.json` (global)
 - ✅ `~/biomimetics/.zed/settings.json` (project)
 - ❌ `~/.antigravity/` - **No MCP config found** (Antigravity uses VS Code extensions)
+#bios/infrastructure
 
 ---
 
@@ -38,6 +41,7 @@ status: active
 | **Health Check** | HTTP 403 (expected - requires webhook POST) |
 | **Purpose** | GitHub webhook → Notion database sync |
 | **Schedule** | Every 6 hours (cron trigger) |
+#bios/infrastructure
 
 **Configuration File:**
 - `~/biomimetics/cloudflare/wrangler.toml`
@@ -53,6 +57,7 @@ COPAW_APPROVAL_DB_ID = "3284d2d9fc7c8113bfecca75f4235ece"
 GEMINI_API_KEY = ""
 GITHUB_TOKEN = "[GITHUB_TOKEN_REDACTED]"
 ```
+#bios/infrastructure
 
 ---
 
@@ -65,6 +70,7 @@ GITHUB_TOKEN = "[GITHUB_TOKEN_REDACTED]"
 | **Health Check** | HTTP 400 (expected - requires POST with payload) |
 | **Purpose** | Central memory orchestration for all data ingestion |
 | **Used By** | Email sync, Obsidian sync, Serena sync, WhatsApp bridge |
+#bios/infrastructure
 
 ---
 
@@ -77,6 +83,7 @@ GITHUB_TOKEN = "[GITHUB_TOKEN_REDACTED]"
 | **Transport** | `stdio` |
 | **Token** | `[NOTION_TOKEN_REDACTED]` |
 | **Configured In** | Zed settings (global + project) |
+#bios/infrastructure
 
 ---
 
@@ -102,6 +109,7 @@ GITHUB_TOKEN = "[GITHUB_TOKEN_REDACTED]"
   }
 }
 ```
+#bios/infrastructure
 
 **Project Config:** `~/biomimetics/.zed/settings.json`
 ```json
@@ -121,6 +129,7 @@ GITHUB_TOKEN = "[GITHUB_TOKEN_REDACTED]"
   }
 }
 ```
+#bios/infrastructure
 
 ---
 
@@ -130,7 +139,8 @@ GITHUB_TOKEN = "[GITHUB_TOKEN_REDACTED]"
 
 Antigravity appears to use VS Code extension architecture rather than MCP servers. MCP configuration is handled through:
 - `~/.antigravity/argv.json` - Command line args only
-- `~/.antigravity/extensions/` - Extension packages
+- `~/.antigravity/extensions/` - Extension packages ` ` `.
+#bios/architecture
 
 **Recommendation:** Antigravity likely uses GitHub Copilot extension directly rather than GitHub MCP server.
 
@@ -142,11 +152,12 @@ Antigravity appears to use VS Code extension architecture rather than MCP server
 
 **Config:** `~/.copaw/config.json`
 - Communication channels configured (iMessage, Discord, etc.)
-- MCP servers not in main config (handled via Zed/IDE)
+- MCP servers not in main config (handled via Zed/IDE)       #pythia/
+#bios/infrastructure
 
 **Providers:** `~/.copaw/providers.json`
 - Opencode Zen integration configured
-- Models: GPT-5.4 series, Nemotron, etc.
+- Models: GPT-5.4 series, Nemotron, etc.       #pythia/
 
 ---
 
@@ -158,6 +169,7 @@ Antigravity appears to use VS Code extension architecture rather than MCP server
 | Cloudflare Worker | `https://arca-github-notion-sync.dan-exall.workers.dev` | ✅ 403 | Expected (requires POST) |
 | GCP Gateway | `https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator` | ✅ 400 | Expected (requires POST) |
 | Notion API | `https://api.notion.com/v1` | ✅ Active | Token validated |
+#bios/infrastructure
 
 ---
 
@@ -169,14 +181,17 @@ Antigravity appears to use VS Code extension architecture rather than MCP server
 3. **GCP Gateway** - Memory orchestrator responding
 4. **Notion MCP** - Running locally via npx
 5. **Zed Configuration** - Both global and project configs updated
+#bios/infrastructure
 
 ### ⚠️ What Needs Attention:
 1. **Antigravity** - No MCP config found (uses VS Code extensions instead)
    - GitHub Copilot extension likely provides GitHub integration
    - No action needed unless MCP servers are specifically required
+#bios/architecture #bios/infrastructure
 
 ### 📝 Summary:
 **All critical integrations are correctly configured and pointing to active endpoints.** The GitHub MCP ghost local instance has been eliminated by removing the `command`/`args` configuration and using the remote Koyeb SSE endpoint.
+#bios/infrastructure
 
 ---
 
@@ -187,6 +202,7 @@ Antigravity appears to use VS Code extension architecture rather than MCP server
 # Check Zed config
 cat ~/.config/zed/settings.json | grep -A3 '"github"'
 cat ~/biomimetics/.zed/settings.json | grep -A3 '"github"'
+#bios/infrastructure
 
 # Expected output:
 # "github": {

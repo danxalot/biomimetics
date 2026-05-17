@@ -1,5 +1,5 @@
 ---
-tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, source/legacy]
+tags: ["#bios/architecture", "#bios/swarm", "#bios/infrastructure"]
 status: active
 ---
 
@@ -12,7 +12,7 @@ status: active
 
 ## Executive Summary
 
-Zed Editor and Antigravity have been configured with full MCP integration. **GitHub MCP was previously deployed** but the container is no longer running. All Azure resources (ACR, Key Vault) are still available for redeployment.
+Zed Editor and Antigravity have been configured with full MCP integration. **GitHub MCP was previously deployed** but the container is no longer running. All Azure resources (ACR, Key Vault) are still available for redeployment.   
 
 ---
 
@@ -126,7 +126,7 @@ This will:
 - Retrieve `github-token` from Key Vault `arca-mcp-kv-dae`
 - Get ACR credentials from `arcamcpconsolidated`
 - Redeploy container to `arca-consolidated` RG (eastus)
-- Provide new endpoint URL
+- Provide new endpoint URL   
 
 **Expected Output**:
 ```

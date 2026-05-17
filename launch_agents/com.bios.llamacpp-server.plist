@@ -40,10 +40,10 @@
     <true/>
     
     <key>StandardOutPath</key>
-    <string>/Users/danexall/.arca/llamacpp.log</string>
+    <string>/Users/danexall/biomimetics/.logs/llamacpp.log</string>
     
     <key>StandardErrorPath</key>
-    <string>/Users/danexall/.arca/llamacpp.err</string>
+    <string>/Users/danexall/biomimetics/.logs/llamacpp.err</string>
     
     <key>EnvironmentVariables</key>
     <dict>

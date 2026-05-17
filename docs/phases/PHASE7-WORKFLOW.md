@@ -1,5 +1,5 @@
 ---
-tags: [bios/architecture, bios/infrastructure, bios/memory, bios/voice, source/legacy]
+tags: ["#bios/architecture", "#bios/swarm", "#bios/infrastructure"]
 status: active
 ---
 
@@ -36,7 +36,7 @@ status: active
 
 ### Tool 1: `query_memory`
 
-Queries the unified memory system (MuninnDB + MemU) via GCP Cloud Function Gateway.
+Queries the unified memory system (MuninnDB + MemU) via GCP Cloud Function Gateway. `. ` ` 
 
 **Parameters:**
 ```typescript
@@ -352,3 +352,11 @@ With local voice processing via Live API:
 - Streaming responses (lower latency)
 
 **Estimated savings: 40-60% vs traditional request/response**
+
+---
+
+## Phase 8 Update (2026-05-13): Memory Stabilization
+Phase 7 voice interface components now leverage the stabilized Phase 8 memory infrastructure.
+- **Enhanced Context:** `query_memory` now utilizes `gemma-4-31b-it` for deeper semantic retrieval.
+- **Secure Retrieval:** Memory queries are strictly bound to the permanent vault, respecting the staging quarantine.
+- **Idempotency:** Integration with state-tracked memory ensures voice-triggered actions do not create duplicate entries.

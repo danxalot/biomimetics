@@ -1,5 +1,5 @@
 ---
-tags: [bios/architecture, bios/security, bios/swarm, context/life, source/legacy]
+tags: ["#bios/architecture", "#bios/swarm", "#bios/infrastructure"]
 status: active
 ---
 
@@ -31,7 +31,7 @@ brew install koyeb/tap/koyeb
 - ✅ Automatic app create or update
 - ✅ Endpoint URL retrieval
 - ✅ Health check test
-- ✅ Configuration update instructions
+- ✅ Configuration update instructions   
 
 ### 3. Dockerfile Verified ✅
 
@@ -83,7 +83,7 @@ cd ~/biomimetics
 4. Deploys with free tier instance (512MB/0.1vCPU)
 5. Retrieves endpoint URL
 6. Tests endpoint health
-7. Provides configuration update instructions
+7. Provides configuration update instructions   
 
 ---
 

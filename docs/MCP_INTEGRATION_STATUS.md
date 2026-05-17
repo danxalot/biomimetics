@@ -1,5 +1,5 @@
 ---
-tags: [bios/architecture, bios/infrastructure, bios/memory, bios/security, bios/swarm, source/legacy]
+tags: ["#bios/architecture", "#bios/swarm", "#bios/infrastructure"]
 status: active
 ---
 
@@ -7,7 +7,7 @@ status: active
 
 **Date**: 2026-03-19  
 **Project**: Biomimetics (ARCA Ecosystem)  
-**Scope**: Zed & Antigravity integration with GitHub MCP (Azure) and Notion MCP (GCP)
+**Scope**: Zed & Antigravity integration with GitHub MCP (Azure) and Notion MCP (GCP) ` 
 
 ---
 
@@ -31,13 +31,13 @@ status: active
 - Notion MCP server configured and operational (token: `ntn_2071...`)
 - GCP Memory Gateway active and routing
 - Cloudflare Worker multi-system integration hub deployed
-- Notion databases exist: `3284d2d9fc7c811188deeeaba9c5f845` (Biomimetic OS)
+- Notion databases exist: `3284d2d9fc7c811188deeeaba9c5f845` (Biomimetic OS)   
 
 **⚠️ What Needs Attention**:
 - **GitHub MCP container not running** - Previously deployed to `arca-consolidated` RG, but container was deleted/stopped
 - **Azure resources still exist**: Container Registry (`arcamcpconsolidated`), Key Vault (`arca-mcp-kv-dae`)
 - **ARCA project Notion databases** - Need to be created or identified
-- **Configuration needs endpoint update** - Once GitHub MCP is redeployed
+- **Configuration needs endpoint update** - Once GitHub MCP is redeployed   
 
 **📋 Azure Resource Status**:
 ```
@@ -53,7 +53,7 @@ Resource Group: arca-rg (eastus)
 **🔧 Previous Deployment Info** (from docs):
 - **Old SSE Endpoint**: `http://github-mcp-sse.westus2.azurecontainer.io:8080/sse` (not found)
 - **Old MCP Endpoint**: `http://github-mcp-server.eastus.azurecontainer.io:8080/mcp` (not found)
-- **Deployment Script**: `azure/deploy_github_mcp_eastus.sh` or `azure/deploy_github_mcp_with_keyvault.sh`
+- **Deployment Script**: `azure/deploy_github_mcp_eastus.sh` or `azure/deploy_github_mcp_with_keyvault.sh`   
 
 ---
 
@@ -232,7 +232,7 @@ Resource Group: arca-rg (eastus)
 1. Add GitHub MCP to Zed config (see section 1)
 2. Add GitHub MCP to Antigravity config (see section 2)
 3. Configure ARCA project to use same GitHub MCP endpoint
-4. Update CoPaw config if endpoint changed
+4. Update CoPaw config if endpoint changed   
 
 ---
 
@@ -280,7 +280,7 @@ Resource Group: arca-rg (eastus)
 1. Add Notion MCP to Antigravity config
 2. Create ARCA project Notion databases (if not existing)
 3. Configure ARCA project to use Notion MCP
-4. Share databases with Notion integration
+4. Share databases with Notion integration   
 
 ---
 
@@ -290,11 +290,11 @@ Resource Group: arca-rg (eastus)
 
 **Endpoint**: `https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator`
 
-**Purpose**: Unified memory system (MuninnDB + MemU) for contextual AI
+**Purpose**: Unified memory system (MuninnDB + MemU) for contextual AI `
 
 **Projects Using**:
 - ✅ **Biomimetics**: Full integration via Cloudflare Worker
-- ⚠️ **ARCA Project**: Shared access, needs dedicated config
+- ⚠️ **ARCA Project**: Shared access, needs dedicated config `. ` ` ` 
 
 #### Architecture
 
@@ -370,7 +370,7 @@ case 'ARCA':
 1. Update `~/.zed/settings.json` with GitHub MCP
 2. Test GitHub MCP connection from Zed
 3. Test Notion MCP from Zed
-4. Verify GCP Gateway access
+4. Verify GCP Gateway access   
 
 **Estimated Time**: 30 minutes
 
@@ -385,7 +385,7 @@ case 'ARCA':
 2. Configure Notion MCP server
 3. Configure GitHub MCP server (Azure SSE)
 4. Configure GCP Gateway access
-5. Test all integrations
+5. Test all integrations   
 
 **Estimated Time**: 45 minutes
 
@@ -401,7 +401,7 @@ case 'ARCA':
 3. Update Cloudflare Worker for ARCA routing
 4. Create ARCA project Zed config
 5. Create ARCA project Antigravity config
-6. Test end-to-end integration
+6. Test end-to-end integration   
 
 **Estimated Time**: 2-3 hours
 
@@ -439,7 +439,7 @@ case 'ARCA':
 - [ ] GitHub MCP: List issues
 - [ ] GitHub MCP: Create issue
 - [ ] GCP Gateway: Query memory
-- [ ] BiOS_PM Agent: Execute task
+- [ ] BiOS_PM Agent: Execute task   
 
 ---
 
@@ -451,7 +451,7 @@ case 'ARCA':
 - [ ] GitHub MCP: List repositories
 - [ ] GitHub MCP: Create issue
 - [ ] GCP Gateway: Query memory
-- [ ] Cross-project sync: Biomimetics ↔ ARCA
+- [ ] Cross-project sync: Biomimetics ↔ ARCA   
 
 ---
 
@@ -461,7 +461,7 @@ case 'ARCA':
 - [ ] GCP memory namespace working
 - [ ] Cloudflare Worker routing correct
 - [ ] GitHub MCP access working
-- [ ] Cross-project memory sharing
+- [ ] Cross-project memory sharing `
 
 ---
 
@@ -483,7 +483,7 @@ az container logs -g arca-mcp-services -n github-mcp-sse
 **Common Issues**:
 - Container stopped: `az container restart -g arca-mcp-services -n github-mcp-sse`
 - Wrong URL: Verify endpoint in config matches Azure deployment
-- Network issues: Check Azure firewall rules
+- Network issues: Check Azure firewall rules   
 
 ---
 
@@ -503,7 +503,7 @@ az keyvault secret show --vault-name arca-mcp-kv-dae --name notion-api-key
 **Common Issues**:
 - Token expired: Run `python3 azure/azure_secrets_init.py --refresh`
 - Database not shared: Share database with integration in Notion
-- Wrong database ID: Verify IDs in config match Notion
+- Wrong database ID: Verify IDs in config match Notion   
 
 ---
 
@@ -525,7 +525,7 @@ grep GCP_GATEWAY cloudflare/wrangler.toml
 **Common Issues**:
 - Wrong URL: Check `wrangler.toml` and update
 - Auth failure: Refresh GCP service account credentials
-- Function not deployed: Redeploy GCP Cloud Function
+- Function not deployed: Redeploy GCP Cloud Function   
 
 ---
 
@@ -614,21 +614,21 @@ grep GCP_GATEWAY cloudflare/wrangler.toml
 - **GitHub MCP**: Deployed on Azure ACI (SSE endpoint)
 - **GCP Gateway**: Active and routing memory requests
 - **Cloudflare Worker**: Multi-system integration hub
-- **CoPaw**: Full integration with all MCP servers
+- **CoPaw**: Full integration with all MCP servers `
 
 ### What Needs Work ⚠️
 
 - **Zed Editor**: Missing GitHub MCP config
 - **Antigravity**: No configuration exists
 - **ARCA Project**: Not integrated with any MCP servers
-- **Cross-project sync**: Not configured
+- **Cross-project sync**: Not configured   
 
 ### Next Steps 🎯
 
 1. **Immediate** (30 min): Update Zed config with GitHub MCP
 2. **Today** (45 min): Create Antigravity config
 3. **This Week** (2-3 hrs): Integrate ARCA project
-4. **Documentation** (1-2 hrs): Update all docs
+4. **Documentation** (1-2 hrs): Update all docs   
 
 ---
 
