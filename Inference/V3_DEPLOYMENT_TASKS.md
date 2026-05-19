@@ -1,4 +1,4 @@
-# V3 Student (65k) — NumPy Deployment Task
+# V3 Student (45k) — NumPy Deployment Task
 
 Full, self-contained task spec. No GPU, no PyTorch, no external reference run.
 Hand this to Gemini Flash; verification is built in via internal consistency.
@@ -7,7 +7,7 @@ Hand this to Gemini Flash; verification is built in via internal consistency.
 
 ## 0. Objective
 
-Make the C2.6 65k Mamba-3 student (`pythia_c3_v3_65k.npz`) run inside the OCI
+Make the C2.5 45k Mamba-3 student (`/Users/danexall/biomimetics/pythia/Gold_Standard_Archive/checkpoints/c2.5_Akasha_Mamba_v3_45k.npz`) run inside the OCI
 `neural_system` service as a pure-NumPy module, so the engine stops being
 `None` and `/engine/state`, `/system/vitals`, `/energy`, `/resonance` work.
 
@@ -25,8 +25,8 @@ Make the C2.6 65k Mamba-3 student (`pythia_c3_v3_65k.npz`) run inside the OCI
 
 Source of truth: `pythia/training/c2.2/50x0_train/mamba_v3.py`.
 
-The deployed `pythia_c3_v3_65k.npz` is the `v3_student_state` of
-`c2.6_mc_jepa_65k.pth`. It is a `VersorMemMambaStack_v3`: **32 layers**.
+The deployed `/Users/danexall/biomimetics/pythia/Gold_Standard_Archive/checkpoints/c2.5_Akasha_Mamba_v3_45k.npz` is the `v3_student_state` of
+`C2.5_Akasha_Experts_&_Mamba_Checkpoints_permanent_step_45000.pt`. It is a `VersorMemMambaStack_v3`: **32 layers**.
 
 ### Per-layer forward (exact)
 ```
@@ -101,7 +101,7 @@ RoPE in its own function `apply_rope(...)` (verified separately, T5).
 
 ### T3 — `Inference/v3_student/numpy_stack.py`
 `VersorMemMambaStackNP`:
-- Loads `pythia_c3_v3_65k.npz`. **Assert all 384 keys are consumed** — hard
+- Loads `/Users/danexall/biomimetics/pythia/Gold_Standard_Archive/checkpoints/c2.5_Akasha_Mamba_v3_45k.npz`. **Assert all 384 keys are consumed** — hard
   fail (raise) on any missing or leftover key. No silent skips.
 - 32 layers, each: LayerNorm → `numpy_mamba3` → `residual + 0.125*h`.
 - Vestigial `A_log`/`dt_bias` (the `(12,)` ones): loaded, unused.
