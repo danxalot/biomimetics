@@ -44,11 +44,11 @@ def get_json(url):
 def get_coupling_strength(energy: float) -> float:
     """Modulate injection strength based on metabolic energy (Allostasis)."""
     if energy < 1.0:
-        return 0.20  # Hypometabolic: Push harder to wake up
+        return 0.40  # Hypometabolic: Push harder to wake up (damping reduced by 50%)
     elif energy > 4.0:
-        return 0.02  # Hypermetabolic: Back off to let system cool
+        return 0.04  # Hypermetabolic: Back off to let system cool (damping reduced by 50%)
     else:
-        return 0.10  # Stable Target Range
+        return 0.20  # Stable Target Range (damping reduced by 50%)
 
 def start_watchdog():
     logger.info(f"[*] Awakening Autonomic Watchdog (urllib variant)...")
@@ -86,29 +86,10 @@ def start_watchdog():
             # 2. Calculate Dynamic Coupling
             coupling = get_coupling_strength(energy)
             
-            # 3. Retrieve Hamiltonian from Redis
-            vec_256 = None
-            if r_store:
-                try:
-                    keys = r_store.keys("attractor:*")
-                    if keys:
-                        key = np.random.choice(keys)
-                        raw = r_store.get(key)
-                        if raw:
-                            vec_256 = np.frombuffer(raw, dtype=np.float32)
-                            logger.debug(f"Loaded Hamiltonian from Redis: {key.decode('utf-8')}")
-                    else:
-                        logger.warning("Redis Hamiltonian buffer is empty!")
-                except Exception as e:
-                    logger.error(f"Redis retrieval error: {e}")
-            
-            # 4. Fallback: Generate random vector to prevent brain death
-            if vec_256 is None:
-                logger.info("[!] Redis Fallback: Generating random 256D Hamiltonian pulse.")
-                vec_256 = np.random.randn(256).astype(np.float32)
-                # Normalize fallback to unit sphere
-                norm = np.linalg.norm(vec_256) + 1e-12
-                vec_256 = vec_256 / norm
+            # 3. Generate fresh random 256D Hamiltonian pulse each cycle for a net random shape imprint
+            vec_256 = np.random.randn(256).astype(np.float32)
+            norm = np.linalg.norm(vec_256) + 1e-12
+            vec_256 = vec_256 / norm
 
             # 5. Inject Pulse
             try:
