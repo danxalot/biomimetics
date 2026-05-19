@@ -116,3 +116,11 @@ pythia/conversations/
 pythia/export/
 actions_logs/
 
+# Large Model weights, Archives, and Datasets
+*.pth
+*.tar.gz
+*.tar
+*.mp4
+**/clevrer_raw/
+**/clevrer_extracted/
+
