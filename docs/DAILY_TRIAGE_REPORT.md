@@ -8,13 +8,13 @@ status: active
 **Generated:** 2026-03-20T04:15:00Z  
 **Report Type:** Operational Triage - Life OS  
 **Period:** Last 7 Days (2026-03-13 to 2026-03-20)  
-**Status:** ⚠️ PARTIAL - Infrastructure Gaps Detected      
+**Status:** ⚠️ PARTIAL - Infrastructure Gaps Detected       #bios/architecture #bios/infrastructure #pythia/meta/uncategorized #bios/architecture #bios/infrastructure #pythia/meta #pythia/meta/uncategorized #bios/architecture #bios/infrastructure #pythia/meta #pythia/meta/uncategorized
 
 ---
 
 ## Executive Summary
 
-The BiOS infrastructure is now **operational** but requires attention on data ingestion pipelines. The voice interface (Gemini Live) is ready for first contact, but email and document sync pipelines have connectivity gaps.      
+The BiOS infrastructure is now **operational** but requires attention on data ingestion pipelines. The voice interface (Gemini Live) is ready for first contact, but email and document sync pipelines have connectivity gaps.       #bios/infrastructure #pythia/meta/uncategorized #bios/infrastructure #pythia/meta #pythia/meta/uncategorized #bios/infrastructure #pythia/meta #pythia/meta/uncategorized
 
 ---
 
@@ -27,7 +27,7 @@ The BiOS infrastructure is now **operational** but requires attention on data in
 | **Last Sync** | 2026-03-20T04:00:32Z |
 | **Emails Processed** | 0 |
 | **Backlog Period** | Dec 25, 2025 - Present (PENDING) |
-| **Status** | ⚠️ **BLOCKED** |
+| **Status** | ⚠️ **BLOCKED** | #bios/infrastructure #pythia/training/dataset #bios/infrastructure #pythia/training #pythia/training/dataset #bios/infrastructure #pythia/training #pythia/training/dataset
 
 **Issue Detected:**
 ```
@@ -47,7 +47,7 @@ The BiOS infrastructure is now **operational** but requires attention on data in
 1. Open Proton Mail Bridge application
 2. Verify IMAP is enabled on port 1143
 3. Run: `nc -z 127.0.0.1 1143` to verify connectivity
-4. Re-run sync: `launchctl kickstart -k ~/Library/LaunchAgents/com.arca.proton-sync.plist`      
+4. Re-run sync: `launchctl kickstart -k ~/Library/LaunchAgents/com.arca.proton-sync.plist`       #bios/infrastructure #pythia/training/model_training #bios/infrastructure #pythia/training #pythia/training/model_training #bios/infrastructure #pythia/training #pythia/training/model_training
 
 ---
 
@@ -60,7 +60,7 @@ The BiOS infrastructure is now **operational** but requires attention on data in
 | **Vault Path** | `/Users/danexall/Documents/Obsidian Vault/` |
 | **Status** | ✅ ACCESSIBLE |
 | **Recent Files (7 days)** | 0 new files |
-| **Total Files Found** | 4 files |
+| **Total Files Found** | 4 files | #bios/infrastructure #pythia/inference/retrieval #bios/infrastructure #pythia/inference #pythia/inference/retrieval #bios/infrastructure #pythia/inference #pythia/inference/retrieval
 
 **Vault Contents:**
 ```
@@ -80,12 +80,12 @@ The BiOS infrastructure is now **operational** but requires attention on data in
 |-----------|-------|
 | **Expected Path** | `~/Google Drive/My Drive/ARCA/` |
 | **Status** | ❌ **NOT MOUNTED** |
-| **Mount Point** | Not found in `mount` output |
+| **Mount Point** | Not found in `mount` output | #bios/infrastructure #pythia/meta/uncategorized #bios/infrastructure #pythia/meta #pythia/meta/uncategorized #bios/infrastructure #pythia/meta #pythia/meta/uncategorized
 
 **Action Required:**
 1. Open Google Drive for Desktop application
 2. Verify streaming is enabled
-3. Check mount at `/Volumes/GoogleDrive/`      ) 
+3. Check mount at `/Volumes/GoogleDrive/`      )  #bios/infrastructure #pythia/meta/uncategorized #bios/infrastructure #pythia/meta #pythia/meta/uncategorized #bios/infrastructure #pythia/meta #pythia/meta/uncategorized
 
 ---
 
@@ -101,7 +101,7 @@ The BiOS infrastructure is now **operational** but requires attention on data in
 | 2026-03-20 | CoPaw voice enabled | ✅ DONE | `~/.copaw/config.json` updated |
 | 2026-03-20 | Pythia First Contact proposal | 📋 DRAFT | `docs/PYTHIA_FIRST_CONTACT_PROPOSAL.md` |
 | 2026-03-19 | Notion cleanup (100 duplicates) | ✅ DONE | `scripts/maintenance/cleanup_notion_duplicates.py` |
-| 2026-03-19 | Azure teardown | ✅ DONE | Container already deleted |
+| 2026-03-19 | Azure teardown | ✅ DONE | Container already deleted | #bios/architecture #bios/swarm #pythia/training/model_training #bios/architecture #bios/swarm #pythia/training #pythia/training/model_training #bios/architecture #bios/swarm #pythia/training #pythia/training/model_training
 
 ### From Email (PENDING)
 
@@ -112,7 +112,7 @@ The BiOS infrastructure is now **operational** but requires attention on data in
 - dan@arca-vsa.tech (ARCA Projects)
 - claws@pm.me (CLAWS project)
 - arca@pm.me (ARCA Admin)
-- info@pm.me (Public inquiries)      
+- info@pm.me (Public inquiries)       #bios/infrastructure #pythia/meta/uncategorized #bios/infrastructure #pythia/meta #pythia/meta/uncategorized #bios/infrastructure #pythia/meta #pythia/meta/uncategorized
 
 **Backlog Estimate:** Dec 25, 2025 - Mar 20, 2026 (~85 days)      
 
@@ -129,7 +129,7 @@ The BiOS infrastructure is now **operational** but requires attention on data in
 | **GitHub MCP** | ✅ HEALTHY | Koyeb SSE endpoint |
 | **Computer Use MCP** | ✅ GATED | Tool Guard active |
 | **Approval Poller** | ✅ DEPLOYED | 15s interval |
-| **Cloud Usage Tracker** | ✅ DEPLOYED | Multi-provider |
+| **Cloud Usage Tracker** | ✅ DEPLOYED | Multi-provider | #bios/architecture #pythia/inference/dynamics #pythia/training/gpu #bios/architecture #pythia/inference #pythia/inference/dynamics #pythia/training #pythia/training/gpu #bios/architecture #pythia/inference #pythia/inference/dynamics #pythia/training #pythia/training/gpu
 
 ### Pending Integration
 
@@ -138,7 +138,7 @@ The BiOS infrastructure is now **operational** but requires attention on data in
 | **Pythia Dragonfly** | 📋 PROPOSAL | Awaiting OCI SSH review |
 | **Serena Hub** | 📋 PLANNED | Directory not created |
 | **Email Ingestion** | ⚠️ BLOCKED | Proton Bridge offline |
-| **GDrive Sync** | ⚠️ BLOCKED | Mount not active |
+| **GDrive Sync** | ⚠️ BLOCKED | Mount not active | #bios/infrastructure #pythia/meta/uncategorized #bios/infrastructure #pythia/meta/uncategorized #bios/infrastructure #pythia/meta/uncategorized
 
 ---
 
@@ -166,7 +166,7 @@ The BiOS infrastructure is now **operational** but requires attention on data in
 3. **Test Voice Interface**
    - Open browser to Gemini Live Voice app (Vite dev server)
    - Connect with API key
-   - Test microphone activation      ) 
+   - Test microphone activation      )  #bios/architecture #pythia/inference/dynamics #bios/architecture #pythia/inference/dynamics #bios/architecture #pythia/inference/dynamics
 
 ### This Week
 
@@ -197,7 +197,7 @@ The BiOS infrastructure is now **operational** but requires attention on data in
 | Proton Bridge | 1143 | ❌ OFFLINE | Connection refused |
 | Google Drive | N/A | ❌ NOT MOUNTED | N/A |
 | Cloudflare Worker | 443 | ✅ ACTIVE | `arca-github-notion-sync.dan-exall.workers.dev` |
-| GCP Gateway | 443 | ✅ ACTIVE | `memory-orchestrator` function |
+| GCP Gateway | 443 | ✅ ACTIVE | `memory-orchestrator` function | #bios/infrastructure #pythia/training/gpu #bios/infrastructure #pythia/training/gpu #bios/infrastructure #pythia/training/gpu
 
 ---
 
@@ -210,7 +210,7 @@ The BiOS infrastructure is now **operational** but requires attention on data in
 | **Life OS Triage** | `3284d2d9fc7c81bd9a91e865511e642f` | ✅ Active (awaiting email) |
 | **Tool Guard** | `3284d2d9fc7c8113bfecca75f4235ece` | ✅ Active |
 | **CoPaw Approval** | `3284d2d9fc7c8113bfecca75f4235ece` | ✅ Active |
-| **Memory Archive** | `3284d2d9fc7c81e4ae09c5769c3b4ed4` | ✅ Active |
+| **Memory Archive** | `3284d2d9fc7c81e4ae09c5769c3b4ed4` | ✅ Active | #bios/swarm #pythia/inference/retrieval #bios/swarm #pythia/inference/retrieval #bios/swarm #pythia/inference/retrieval
 
 ---
 
@@ -222,10 +222,12 @@ The BiOS infrastructure is now **operational** but requires attention on data in
 > 2. **Google Drive** is not mounted - ARCA files inaccessible
 > 3. **Pythia First Contact** proposal is ready for review
 > 
-> All other systems are green: local LLM running on Vulkan, GitHub MCP deployed to Koyeb, approval gating active."      
+> All other systems are green: local LLM running on Vulkan, GitHub MCP deployed to Koyeb, approval gating active."       #bios/infrastructure #pythia/meta/uncategorized #bios/infrastructure #pythia/meta/uncategorized #bios/infrastructure #pythia/meta/uncategorized
 
 ---
 
 **Next Report:** 2026-03-21T04:00:00Z (automated via cron)  
 **Report Generated By:** BiOS Triage System  
 **Contact:** Voice interface or `~/biomimetics/scripts/email/email-ingestion-daemon.py`
+
+<!-- LLM_TAGGED -->

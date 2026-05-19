@@ -7,7 +7,7 @@ status: active
 
 **Date**: 2026-03-19  
 **Status**: ✅ **PARTIALLY COMPLETE** - Path corrections done, migration ready  
-**Blocker**: ⚠️ ARCA Notion Database IDs not configured in codebase
+**Blocker**: ⚠️ ARCA Notion Database IDs not configured in codebase #bios/meta/operational #bios/notion/schema #bios/architecture/config #bios/meta #bios/meta/operational #bios/notion #bios/notion/schema #bios/architecture #bios/architecture/config
 
 ---
 
@@ -18,20 +18,20 @@ status: active
 1. **Environment Discovery** ✅
    - Searched all biomimetics files for 32-character hex strings
    - **Finding**: NO ARCA-specific Notion database IDs found in any configuration
-   - Only Biomimetics OS databases are configured (4 databases)   
+   - Only Biomimetics OS databases are configured (4 databases)    #bios/notion/query #bios/notion/schema #bios/meta/operational #bios/notion #bios/notion/query #bios/notion/schema #bios/meta #bios/meta/operational
 
 2. **Secrets Mapping** ✅
    - Location: `/Users/danexall/Documents/VS Code Projects/ARCA/.secrets/`
    - GitHub MCP required secrets identified:
      - `github_token` → `[GITHUB_TOKEN_REDACTED]` ✅
-   - 140+ other secret files mapped (not exposed)   
+   - 140+ other secret files mapped (not exposed)    #bios/mcp_server/auth #bios/architecture/config #bios/mcp_server #bios/mcp_server/auth #bios/architecture #bios/architecture/config
 
 3. **Path Corrections** ✅
    - Updated 3 files with environment variable support:
      - `scripts/deploy/redeploy-github-mcp.sh`
      - `scripts/deploy/deploy-github-mcp-sse.sh`
      - `scripts/memory/migrate_claws_data.py`
-   - All now use `$ARCA_SECRETS_DIR` with fallback to absolute path   
+   - All now use `$ARCA_SECRETS_DIR` with fallback to absolute path    #bios/mcp_server/deployment #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config
 
 4. **Migration Scripts** ✅
    - `scripts/migrate/deploy-to-koyeb.sh` - Koyeb deployment
@@ -40,7 +40,7 @@ status: active
 5. **Azure Teardown Preparation** ✅
    - Script created and tested
    - Targets: `arca-consolidated` resource group
-   - Preserves: ACR, Key Vault
+   - Preserves: ACR, Key Vault #bios/mcp_server/deployment #bios/architecture/component #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/component
 
 ---
 
@@ -86,7 +86,7 @@ COPAW_APPROVAL_DB_ID = "3284d2d9fc7c8113bfecca75f4235ece"
 
 **GitHub MCP Migration**: ✅ Can proceed (doesn't need Notion IDs)  
 **ARCA Integration**: ⏸️ Blocked until database IDs are provided  
-**Notion MCP**: ✅ Already working for Biomimetics   
+**Notion MCP**: ✅ Already working for Biomimetics    #bios/mcp_server #bios/mcp_server/deployment #bios/notion #bios/notion/query #bios/mcp_server #bios/mcp_server/deployment #bios/notion #bios/notion/query
 
 ---
 
@@ -98,14 +98,14 @@ COPAW_APPROVAL_DB_ID = "3284d2d9fc7c8113bfecca75f4235ece"
 |------|---------|
 | `scripts/deploy/redeploy-github-mcp.sh` | Added `$ARCA_SECRETS_DIR`, `$AZURE_RESOURCE_GROUP`, `$AZURE_ACR_NAME` env vars |
 | `scripts/deploy/deploy-github-mcp-sse.sh` | Added env var support, error handling for missing token |
-| `scripts/memory/migrate_claws_data.py` | Updated `get_gemini_api_key()`, `init_firestore()`, `init_qdrant()` to use `$ARCA_SECRETS_DIR` |
+| `scripts/memory/migrate_claws_data.py` | Updated `get_gemini_api_key()`, `init_firestore()`, `init_qdrant()` to use `$ARCA_SECRETS_DIR` | #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment
 
 ### New Scripts (2 files)
 
 | File | Purpose |
 |------|---------|
 | `scripts/migrate/deploy-to-koyeb.sh` | Automated Koyeb deployment |
-| `scripts/migrate/azure-teardown.sh` | Safe Azure container deletion |
+| `scripts/migrate/azure-teardown.sh` | Safe Azure container deletion | #bios/mcp_server #bios/mcp_server/deployment #bios/mcp_server #bios/mcp_server/deployment
 
 ---
 
@@ -124,14 +124,14 @@ ARCA_MEMORY_DB_ID=________________________
 - `cloudflare/wrangler.toml` - Add ARCA database variables
 - `cloudflare/index.js` - Add ARCA routing logic (code exists, needs DB IDs)
 - `~/.zed/settings.json` - Add ARCA_PM agent config
-- `~/biomimetics/.antigravity/settings.json` - Add ARCA namespaces   
+- `~/biomimetics/.antigravity/settings.json` - Add ARCA namespaces    #bios/architecture #bios/architecture/config #bios/personal_assistant #bios/personal_assistant/routing #bios/architecture #bios/architecture/config #bios/personal_assistant #bios/personal_assistant/routing
 
 ### 2. Koyeb Deployment
 
 **Status**: Script ready, cannot execute without:
 - Koyeb CLI authentication (`koyeb login`)
 - Docker Hub authentication (for image push)
-- User confirmation to proceed
+- User confirmation to proceed #bios/mcp_server #bios/mcp_server/auth #bios/mcp_server/deployment #bios/meta #bios/meta/operational #bios/mcp_server #bios/mcp_server/auth #bios/mcp_server/deployment #bios/meta #bios/meta/operational
 
 **Command** (run manually):
 ```bash
@@ -159,7 +159,7 @@ cd ~/biomimetics
 
 | Secret | Location | Value (masked) | Status |
 |--------|----------|----------------|--------|
-| `GITHUB_PERSONAL_ACCESS_TOKEN` | `ARCA/.secrets/github_token` | `[GITHUB_TOKEN_REDACTED]` | ✅ Found |
+| `GITHUB_PERSONAL_ACCESS_TOKEN` | `ARCA/.secrets/github_token` | `[GITHUB_TOKEN_REDACTED]` | ✅ Found | #bios/architecture #bios/architecture/config #bios/infrastructure #bios/architecture #bios/architecture/config #bios/infrastructure
 
 ### Not Required for Migration (60+ other keys)
 
@@ -167,7 +167,7 @@ The following exist but are NOT needed for GitHub MCP:
 - `notion_api_key` - Used by Notion MCP (separate)
 - `google_api_studio` - Used by GCP Gateway (separate)
 - `gcp_credentials.json` - Used by memory services
-- `aws_*`, `azure_*`, `oci_*`, etc. - Various other services   
+- `aws_*`, `azure_*`, `oci_*`, etc. - Various other services    #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/auth #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/auth
 
 **Total secrets in `.secrets/`**: 140+ files  
 **Required for this migration**: 1 file (`github_token`)
@@ -273,7 +273,7 @@ The following exist but are NOT needed for GitHub MCP:
 | Azure ACI | $0 (stopped) | $0 (deleted) | $0 |
 | Azure ACR | $5/month | $0 (after cleanup) | $5/month |
 | Koyeb | $0 | $0 (free tier) | $0 |
-| **Total** | **$5/month** | **$0** | **$60/year** |
+| **Total** | **$5/month** | **$0** | **$60/year** | #bios/architecture #bios/infrastructure #bios/meta #bios/meta/operational #bios/architecture #bios/infrastructure #bios/meta #bios/meta/operational
 
 ---
 
@@ -283,20 +283,20 @@ The following exist but are NOT needed for GitHub MCP:
 - [x] `redeploy-github-mcp.sh` uses `$ARCA_SECRETS_DIR`
 - [x] `deploy-github-mcp-sse.sh` uses `$ARCA_SECRETS_DIR`
 - [x] `migrate_claws_data.py` uses `$ARCA_SECRETS_DIR`
-- [x] All scripts have executable permissions
+- [x] All scripts have executable permissions #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment
 
 ### Migration Readiness ✅
 - [x] Koyeb deployment script created
 - [x] Azure teardown script created
 - [x] GitHub token identified and accessible
-- [x] Dockerfile location confirmed
+- [x] Dockerfile location confirmed #bios/architecture #bios/infrastructure #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/infrastructure #bios/mcp_server #bios/mcp_server/deployment
 
 ### Pending ⏸️
 - [ ] ARCA Notion database IDs provided
 - [ ] Koyeb deployment executed
 - [ ] Azure container deleted
 - [ ] Git secret block resolved
-- [ ] Client configs updated with Koyeb endpoint
+- [ ] Client configs updated with Koyeb endpoint #bios/notion #bios/notion/query #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/meta #bios/meta/operational #bios/notion #bios/notion/query #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/meta #bios/meta/operational
 
 ---
 
@@ -316,3 +316,5 @@ The following exist but are NOT needed for GitHub MCP:
 **Report Generated**: 2026-03-19  
 **Execution Status**: ✅ 70% Complete  
 **Blocker**: ARCA Notion database IDs not in codebase
+
+<!-- LLM_TAGGED -->

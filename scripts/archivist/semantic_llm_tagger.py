@@ -3,7 +3,7 @@
 BiOS LLM Semantic Tagger (v2.3.0) - High-Speed Array Mapping
 1 Document = N API Calls (Chunked) | 15 RPM Strict Compliance
 
-Optimized for speed and minimal Gemma 4 model calls.
+Optimized for speed and minimal Gemini Flash Lite calls.
 - Maps documents to numbered paragraph payloads in chunks.
 - Enforces strict 'Rule of 4' tags per paragraph.
 - Double-armored JSON parsing (API MimeType + Regex Scrubber).
@@ -17,16 +17,17 @@ import json
 import time
 import urllib.request
 import ssl
+import certifi
 import sys
 
 # --- Configuration ---
-DOCS_DIR = "/Users/danexall/biomimetics/docs"
+DOCS_DIR = "/Users/danexall/Google Drive/My Drive/Obsidian-life"
 CREDENTIALS_SERVER = "http://localhost:8089"
 RATE_LIMIT_DELAY = 6.0  # 6-second heartbeat for safe RPM/TPM pacing
 MIN_WORDS_PER_PARAGRAPH = 20  # Minimum words to trigger semantic tagging
-GEMMA_26B_MODEL = "gemma-4-26b-a4b-it"  # For general tagging
-GEMMA_31B_MODEL = "gemma-4-31b-it"   # For personal email content
+FLASH_LITE_MODEL = "gemini-3.1-flash-lite-preview"  # Primary tagging model
 PARAGRAPH_CHUNK_SIZE = 5 # Number of paragraphs to process per API call
+TAG_MARKER = "<!-- LLM_TAGGED -->"
 
 
 # --------------------------------------------------------------------------
@@ -96,33 +97,28 @@ def render_taxonomy_block(domain):
     for area, descriptors in TAXONOMY[domain].items():
         leaves = ", ".join(f"#{domain}/{area}/{d}" for d in descriptors)
         lines.append(f"  #{domain}/{area} -> {leaves}")
-    return "
-".join(lines)
+    return "\n".join(lines)
 
 # Few-shot examples per domain. Each shows TWO paragraphs tagged with the exact
 # 3-tier hierarchy (#domain, #domain/area, #domain/area/descriptor).
 FEWSHOT = {
     "email": {
-        "user":  ("[1] On 14 March I emailed the bank about the unauthorised standing order taken from my joint account.
-"
+        "user":  ("[1] On 14 March I emailed the bank about the unauthorised standing order taken from my joint account.\n"
                   "[2] The clinician failed to record my disclosed allergy, in breach of the duty of candour."),
         "model": '{"1":["#email","#email/finance","#email/finance/unauthorised_payment"],"2":["#email","#email/legal","#email/legal/duty_of_candour"]}',
     },
     "arca": {
-        "user":  ("[1] The mesh router uses ZMQ transport to coordinate worker nodes across the cluster.
-"
+        "user":  ("[1] The mesh router uses ZMQ transport to coordinate worker nodes across the cluster.\n"
                   "[2] Docker compose file pins the geometry kernel image to a CUDA 12.4 runtime."),
         "model": '{"1":["#arca","#arca/mesh","#arca/mesh/routing"],"2":["#arca","#arca/docker","#arca/docker/runtime"]}',
     },
     "bios": {
-        "user":  ("[1] The voice agent pipes STT output into an intent classifier before dispatching to the assistant.
-"
+        "user":  ("[1] The voice agent pipes STT output into an intent classifier before dispatching to the assistant.\n"
                   "[2] Notion cleanup script archives duplicate database entries on a nightly schedule."),
         "model": '{"1":["#bios","#bios/voice_agent","#bios/voice_agent/intent"],"2":["#bios","#bios/notion","#bios/notion/cleanup"]}',
     },
     "pythia": {
-        "user":  ("[1] The Hopfield network stores 10K binary patterns in the attractor landscape.
-"
+        "user":  ("[1] The Hopfield network stores 10K binary patterns in the attractor landscape.\n"
                   "[2] Conformal mapping projects the manifold onto a versor representation for VSA binding."),
         "model": '{"1":["#pythia","#pythia/neural_system","#pythia/neural_system/hopfield"],"2":["#pythia","#pythia/geometry","#pythia/geometry/conformal"]}',
     },
@@ -162,26 +158,25 @@ def build_prompt(domain, payload_text, frontmatter=""):
     # Add frontmatter context if available
     context_header = ""
     if frontmatter:
-        context_header = f"DOCUMENT CONTEXT:
+        context_header = f"""DOCUMENT CONTEXT:
 ---
 {frontmatter}
 ---
-
-"
+\n"""
 
     # Build the user turn shape that the fake-prior-turn will mirror.
-    real_user = f"{context_header}Please generate tags for the following paragraphs:
+    real_user = f"""{context_header}Please generate tags for the following paragraphs:
 
 Tags:
 {taxonomy_block}
 
-{payload_text}"
-    shot_user = f"{system_text}
+{payload_text}"""
+    shot_user = f"""{system_text}
 
 Tags:
 {taxonomy_block}
 
-{shot['user']}"
+{shot['user']}"""
 
     contents = [
         {"role": "user",  "parts": [{"text": shot_user}]},
@@ -232,23 +227,58 @@ def _scrub_to_json(raw_text):
         s = fence.group(1).strip()
 
     # Final scrub: ensure we have something starting with { or [
-    start = s.find("{")
-    if start == -1: start = s.find("[")
+    start_brace = s.find("{")
+    start_bracket = s.find("[")
+    
+    if start_brace != -1 and start_bracket != -1:
+        start = min(start_brace, start_bracket)
+    elif start_brace != -1:
+        start = start_brace
+    else:
+        start = start_bracket
 
-    end = s.rfind("}")
-    if end == -1: end = s.rfind("]")
+    end_brace = s.rfind("}")
+    end_bracket = s.rfind("]")
+    
+    if end_brace != -1 and end_bracket != -1:
+        end = max(end_brace, end_bracket)
+    elif end_brace != -1:
+        end = end_brace
+    else:
+        end = end_bracket
 
     if start != -1 and end != -1:
         s = s[start:end+1]
 
     try:
-        return json.loads(s)
+        parsed = json.loads(s)
+        # Normalize list of dicts to a single dict if the model drifted from few-shot format
+        if isinstance(parsed, list):
+            new_map = {}
+            for item in parsed:
+                if isinstance(item, dict):
+                    key = None
+                    tags = []
+                    for k, v in item.items():
+                        if k in ["id", "paragraph", "para", "index"]:
+                            key = str(v)
+                        elif k == "tags":
+                            tags = v
+                        elif isinstance(v, list) and str(k).isdigit():
+                            key = str(k)
+                            tags = v
+                    if key is not None:
+                        new_map[key] = tags
+            return new_map
+        return parsed
     except Exception as e:
         print(f"  ⚠ JSON parse error: {e}")
+        print(f"  [DEBUG] Raw response was: {repr(raw_text)}")
+        print(f"  [DEBUG] Scrubbed string was: {repr(s)}")
         return None
 
 def invoke_gemma(api_key, contents, model_id):
-    """Call Google Generative AI API (Gemma 4) with retries."""
+    """Call Google Generative AI API (Gemini) with retries."""
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}:generateContent?key={api_key}"
 
     payload = {
@@ -257,6 +287,7 @@ def invoke_gemma(api_key, contents, model_id):
             "temperature": 0.1,
             "maxOutputTokens": 8192,
             "topP": 0.95,
+            "responseMimeType": "application/json",
         }
     }
 
@@ -270,9 +301,7 @@ def invoke_gemma(api_key, contents, model_id):
     backoff_factor = 2
     for i in range(retries):
         try:
-            ctx = ssl.create_default_context()
-            ctx.check_hostname = False
-            ctx.verify_mode = ssl.CERT_NONE
+            ctx = ssl.create_default_context(cafile=certifi.where())
 
             with urllib.request.urlopen(req, timeout=60, context=ctx) as resp: # Increased timeout to 60s
                 data = json.loads(resp.read().decode("utf-8"))
@@ -282,8 +311,8 @@ def invoke_gemma(api_key, contents, model_id):
                 print(f"  ⚠ API returned success but no candidates. Response: {data}")
                 return None
         except urllib.error.HTTPError as e:
-            # 5xx errors are server-side and worth retrying
-            if 500 <= e.code < 600 and i < retries - 1:
+            # 5xx errors and 429 (Rate Limit) are worth retrying
+            if (500 <= e.code < 600 or e.code == 429) and i < retries - 1:
                 wait = backoff_factor ** i
                 print(f"  ⚠ API call failed with HTTP {e.code}. Retrying in {wait}s...")
                 time.sleep(wait)
@@ -310,16 +339,18 @@ def process_file(fpath, api_key):
     try:
         with open(fpath, "r", encoding="utf-8") as f:
             content = f.read()
+        if TAG_MARKER in content:
+            print(f"  ○ Skipping: Already tagged.")
+            return False
     except Exception as e:
         print(f"  ⚠ Read error: {e}")
         return False
 
     domain, host = route_domain(fpath, content)
-    model_id = GEMMA_31B_MODEL if domain == "email" else GEMMA_26B_MODEL
+    model_id = FLASH_LITE_MODEL if domain == "email" else FLASH_LITE_MODEL
     print(f"  ○ Using model: {model_id}")
 
-    lines = content.split("
-")
+    lines = content.split("\n")
     paragraphs = []
     current_para = []
     in_fence = False
@@ -330,42 +361,36 @@ def process_file(fpath, api_key):
             in_fence = "yaml"
             continue
         if in_fence == "yaml":
-            paragraphs[-1]["text"] += "
-" + line
+            paragraphs[-1]["text"] += "\n" + line
             if line.strip() == "---": in_fence = False
             continue
 
         if line.strip().startswith("```"):
             if not in_fence:
                 if current_para:
-                    paragraphs.append({"type": "text", "text": "
-".join(current_para)})
+                    paragraphs.append({"type": "text", "text": "\n".join(current_para)})
                     current_para = []
                 paragraphs.append({"type": "protected", "text": line})
                 in_fence = "code"
             else:
-                paragraphs[-1]["text"] += "
-" + line
+                paragraphs[-1]["text"] += "\n" + line
                 in_fence = False
             continue
 
         if in_fence == "code":
-            paragraphs[-1]["text"] += "
-" + line
+            paragraphs[-1]["text"] += "\n" + line
             continue
 
         if line.strip() == "":
             if current_para:
-                paragraphs.append({"type": "text", "text": "
-".join(current_para)})
+                paragraphs.append({"type": "text", "text": "\n".join(current_para)})
                 current_para = []
             paragraphs.append({"type": "newline", "text": ""})
         else:
             current_para.append(line)
 
     if current_para:
-        paragraphs.append({"type": "text", "text": "
-".join(current_para)})
+        paragraphs.append({"type": "text", "text": "\n".join(current_para)})
 
     frontmatter_text = ""
     if paragraphs and paragraphs[0]["type"] == "protected" and paragraphs[0]["text"].startswith("---"):
@@ -382,9 +407,7 @@ def process_file(fpath, api_key):
     for i in range(0, len(text_indices), PARAGRAPH_CHUNK_SIZE):
         chunk_indices = text_indices[i:i + PARAGRAPH_CHUNK_SIZE]
 
-        payload_text = "
-
-".join(f"[{j+1}] {paragraphs[idx]['text']}" for j, idx in enumerate(chunk_indices))
+        payload_text = "\n\n".join(f"[{j+1}] {paragraphs[idx]['text']}" for j, idx in enumerate(chunk_indices))
         prompt_contents = build_prompt(domain, payload_text, frontmatter_text)
 
         print(f"  ○ Processing chunk {i//PARAGRAPH_CHUNK_SIZE + 1}...")
@@ -413,10 +436,9 @@ def process_file(fpath, api_key):
         time.sleep(1.0) # Small delay between chunks
 
     if modified:
-        reassembled = "
-".join(p["text"] for p in paragraphs)
+        reassembled = "\n".join(p["text"] for p in paragraphs)
         with open(fpath, "w", encoding="utf-8") as f:
-            f.write(reassembled)
+            f.write(reassembled + "\n\n" + TAG_MARKER)
         if all_chunks_succeeded:
             print(f"  ✅ Tags injected.")
         else:

@@ -12,7 +12,7 @@ status: active
 
 ## Executive Summary
 
-All project files have been successfully consolidated from the home directory (`~/`) into the `~/biomimetics` project folder. The project structure is now organized, documented, and ready for version control and continued development.   
+All project files have been successfully consolidated from the home directory (`~/`) into the `~/biomimetics` project folder. The project structure is now organized, documented, and ready for version control and continued development.    #bios/architecture #bios/architecture/config #bios/meta #bios/meta/operational #bios/architecture #bios/architecture/config #bios/meta #bios/meta/operational
 
 ---
 
@@ -111,7 +111,7 @@ All project files have been successfully consolidated from the home directory (`
 | **MuninnDB** | 7 | `scripts/muninn/` + `scripts/setup/` |
 | **Deployment** | 4 | `scripts/deploy/` |
 | **Setup Scripts** | 9 | `scripts/setup/` |
-| **Core Scripts** | 3 | `scripts/` root |
+| **Core Scripts** | 3 | `scripts/` root | #bios/architecture #bios/architecture/component #bios/mcp_server #bios/mcp_server/deployment #bios/copaw #bios/copaw/workflow #bios/architecture #bios/architecture/component #bios/mcp_server #bios/mcp_server/deployment #bios/copaw #bios/copaw/workflow
 
 ### Documentation Moved: **7 files**
 
@@ -119,7 +119,7 @@ All project files have been successfully consolidated from the home directory (`
 |----------|----------|
 | Phase 4-7 Workflows | `docs/phases/` |
 | GitHub MCP Deployment | `docs/` |
-| Project Audit Report | `docs/` |
+| Project Audit Report | `docs/` | #bios/architecture #bios/architecture/schema #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/schema #bios/mcp_server #bios/mcp_server/deployment
 
 ### Configuration Moved: **3 files**
 
@@ -127,7 +127,7 @@ All project files have been successfully consolidated from the home directory (`
 |------|----------|
 | Notion DB Template | `notion/` |
 | Omni Sync Example | `config/` |
-| Webhook Worker (legacy) | `scripts/` |
+| Webhook Worker (legacy) | `scripts/` | #bios/notion #bios/notion/schema #bios/notion/sync #bios/architecture #bios/architecture/config #bios/notion #bios/notion/schema #bios/notion/sync #bios/architecture #bios/architecture/config
 
 ---
 
@@ -152,12 +152,12 @@ The following Notion databases are documented but not yet created:
 1. **Voice Session Logs**
    - Schema: Defined in `GEMINI_LIVE_VOICE_PROJECT.md`
    - Purpose: Track all voice interactions
-   - Status: Ready for creation
+   - Status: Ready for creation #bios/voice_agent #bios/voice_agent/dialogue #bios/architecture #bios/architecture/schema #bios/voice_agent #bios/voice_agent/dialogue #bios/architecture #bios/architecture/schema
 
 2. **Voice Tool Registry**
    - Schema: Defined
    - Purpose: Document available tools
-   - Status: Ready for creation ? ? ?
+   - Status: Ready for creation ? ? ? #bios/architecture #bios/architecture/schema #bios/mcp_server #bios/mcp_server/tool #bios/architecture #bios/architecture/schema #bios/mcp_server #bios/mcp_server/tool
 
 3. **Voice Interface Tasks**
    - Schema: Defined
@@ -182,7 +182,7 @@ The following Notion databases are documented but not yet created:
 | **Phase 5** | Email sync | ✅ Complete |
 | **Phase 6** | GitHub→Notion sync | ✅ Complete |
 | **Phase 7** | Gemini Live Voice API | ✅ Complete |
-| **Consolidation** | Project organization | ✅ Complete |
+| **Consolidation** | Project organization | ✅ Complete | #bios/meta #bios/meta/operational #bios/infrastructure #bios/notion #bios/notion/sync #bios/voice_agent #bios/meta #bios/meta/operational #bios/infrastructure #bios/notion #bios/notion/sync #bios/voice_agent
 
 ### 🎯 Current Focus
 
@@ -194,7 +194,7 @@ The following Notion databases are documented but not yet created:
 2. **Notion Database Creation**
    - Create 4 voice interface databases
    - Link to existing Biomimetic OS
-   - Test webhook integrations ` `
+   - Test webhook integrations ` ` #bios/notion #bios/notion/schema #bios/voice_agent #bios/voice_agent/dialogue #bios/notion #bios/notion/schema #bios/voice_agent #bios/voice_agent/dialogue
 
 3. **Git Repository**
    - Resolve secret scanning block
@@ -211,7 +211,7 @@ The following Notion databases are documented but not yet created:
 2. **Test Voice Interface**
    - Deploy to Cloudflare Pages
    - Test voice/vision input
-   - Verify tool calling (memory + Notion)
+   - Verify tool calling (memory + Notion) #bios/mcp_server #bios/mcp_server/deployment #bios/voice_agent #bios/voice_agent/stt #bios/personal_assistant #bios/personal_assistant/memory #bios/notion #bios/notion/query #bios/mcp_server #bios/mcp_server/deployment #bios/voice_agent #bios/voice_agent/stt #bios/personal_assistant #bios/personal_assistant/memory #bios/notion #bios/notion/query
 
 3. **Documentation Updates**
    - Create setup guide for new developers
@@ -221,7 +221,7 @@ The following Notion databases are documented but not yet created:
 4. **Git Cleanup**
    - Allow secret on GitHub OR rewrite history
    - Force push clean history
-   - Set up branch protection
+   - Set up branch protection #bios/meta #bios/meta/operational #bios/infrastructure #bios/meta #bios/meta/operational #bios/infrastructure
 
 ---
 
@@ -284,3 +284,5 @@ pytest scripts/
 **Consolidation Complete**: 2026-03-18  
 **Next Review**: After Notion database creation  
 **Owner**: Serena (Biomimetics Orchestrator)
+
+<!-- LLM_TAGGED -->

@@ -27,7 +27,14 @@ The Handoff Protocol: Upon completing a task, the IDE agent must dump all raw co
 
 Status Update: Once the raw artifacts are logged, change the Notion task status to Ready for Sync (or Done).
 
-The Archivist: A dedicated background agent handles the synthesis of these Notion artifacts into the local Obsidian Markdown vault and pushes them via the GDrive MCP. IDE agents must not attempt to write directly to the Obsidian vault unless explicitly commanded to do so by the host to bypass the Archivist.
+The Archivist: A dedicated daily pipeline handles the synthesis of Notion artifacts and authorized emails into the **Google Drive Obsidian Vault**.
+
+The pipeline executes every day at 18:00 (6:00 PM) via `scripts/bios_daily_pipeline.sh`:
+1. **Sweeper**: Moves authorized files from local staging to the GDrive Vault.
+2. **Tagger**: Injects semantic tags and the `LLM_TAGGED` marker into GDrive documents.
+3. **Sync**: Pushes processed GDrive documents to the long-term MuninnDB memory.
+
+IDE agents must not attempt to write directly to the Obsidian vault or commit to memory manually unless explicitly commanded to do so by the host to bypass the Archivist pipeline.
 
 ## BiOS Operational Lockdown (Strict Constraints)
 The following absolute constraints govern all agent operations:

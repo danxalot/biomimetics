@@ -150,7 +150,7 @@ POST Request Received
 | `SYNC_TASK` | `syncTask()` | Create/update task in Notion |
 | `UPDATE_STATUS` | `updateTaskStatus()` | Update task status |
 | `CREATE_ENTRY` | `createDatabaseEntry()` | Create generic entry |
-| `QUERY` | `queryDatabase()` | Query Notion database |
+| `QUERY` | `queryDatabase()` | Query Notion database | #bios/notion #bios/notion/sync #bios/notion/query #bios/notion #bios/notion/sync #bios/notion/query #bios/notion #bios/notion/sync #bios/notion/query
 
 ---
 
@@ -166,7 +166,7 @@ POST Request Received
 | `TOOL_GUARD_DB_ID` | Variable | Tool Guard database ID |
 | `GCP_GATEWAY` | Variable | GCP Memory System endpoint URL |
 | `COPAW_APPROVAL_DB_ID` | Variable | CoPaw Approvals database ID |
-| `GITHUB_WEBHOOK_SECRET` | Secret | Webhook signature validation |
+| `GITHUB_WEBHOOK_SECRET` | Secret | Webhook signature validation | #bios/architecture #bios/architecture/config #bios/notion #bios/notion/schema #bios/architecture #bios/architecture/config #bios/notion #bios/notion/schema #bios/architecture #bios/architecture/config #bios/notion #bios/notion/schema
 
 ---
 
@@ -221,7 +221,7 @@ curl -X POST https://arca-github-notion-sync.dan-exall.workers.dev \
 
 - **403 Forbidden**: Returned for requests without recognized headers
 - **401 Unauthorized**: Returned for invalid webhook signatures
-- **Signature Verification**: All GitHub webhooks are verified against `GITHUB_WEBHOOK_SECRET`      
+- **Signature Verification**: All GitHub webhooks are verified against `GITHUB_WEBHOOK_SECRET`       #bios/mcp_server #bios/mcp_server/auth #bios/architecture #bios/architecture/protocol #bios/mcp_server #bios/mcp_server/auth #bios/architecture #bios/architecture/protocol #bios/mcp_server #bios/mcp_server/auth #bios/architecture #bios/architecture/protocol
 
 ---
 
@@ -230,4 +230,6 @@ curl -X POST https://arca-github-notion-sync.dan-exall.workers.dev \
 | File | Changes |
 |------|---------|
 | `cloudflare/index.js` | Added X-Arca-Source routing, GCP memory integration, CoPaw tool approval workflow |
-| `cloudflare/wrangler.toml` | Added LIFE_OS_TRIAGE_DB_ID, TOOL_GUARD_DB_ID, GCP_GATEWAY, COPAW_APPROVAL_DB_ID variables |
+| `cloudflare/wrangler.toml` | Added LIFE_OS_TRIAGE_DB_ID, TOOL_GUARD_DB_ID, GCP_GATEWAY, COPAW_APPROVAL_DB_ID variables | #bios/architecture #bios/architecture/component #bios/architecture/config #bios/copaw #bios/copaw/workflow #bios/architecture #bios/architecture/component #bios/architecture/config #bios/copaw #bios/copaw/workflow #bios/architecture #bios/architecture/component #bios/architecture/config #bios/copaw #bios/copaw/workflow
+
+<!-- LLM_TAGGED -->

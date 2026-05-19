@@ -16,7 +16,7 @@ status: active
 
 **1. Notion Database IDs**
 - ✅ Biomimetics OS databases identified (4 databases)
-- ❌ ARCA databases NOT found - **NEED YOUR INPUT**
+- ❌ ARCA databases NOT found - **NEED YOUR INPUT** #bios/notion #bios/notion/schema #bios/meta #bios/meta/operational #bios/notion #bios/notion/schema #bios/meta #bios/meta/operational
 
 **2. Secrets Architecture**
 - ✅ Location: `/Users/danexall/Documents/VS Code Projects/ARCA/.secrets/`
@@ -25,14 +25,14 @@ status: active
 - ✅ Key secrets found:
   - `notion_api_key` → `[NOTION_TOKEN_REDACTED]`
   - `github_token` → `[GITHUB_TOKEN_REDACTED]`
-  - `google_api_studio` → ``   
+  - `google_api_studio` → ``    #bios/architecture #bios/architecture/config #bios/architecture/protocol #bios/architecture #bios/architecture/config #bios/architecture/protocol
 
 **3. Directory Bridging**
 - ✅ 3 files with hardcoded paths identified:
   - `scripts/deploy/redeploy-github-mcp.sh`
   - `scripts/deploy/deploy-github-mcp-sse.sh`
   - `scripts/memory/migrate_claws_data.py`
-- ✅ Fix: Use `$ARCA_SECRETS_DIR` environment variable
+- ✅ Fix: Use `$ARCA_SECRETS_DIR` environment variable #bios/architecture #bios/architecture/config #bios/meta #bios/meta/operational #bios/architecture #bios/architecture/config #bios/meta #bios/meta/operational
 
 ---
 
@@ -47,7 +47,7 @@ status: active
   - `arca-consolidated` RG: ACR + stopped container
   - `arca-rg` RG: 2 Key Vaults (still used by Biomimetics)
 - ✅ Teardown steps documented
-- ✅ Savings: $5/month ($60/year)   
+- ✅ Savings: $5/month ($60/year)    #bios/mcp_server #bios/mcp_server/deployment #bios/meta #bios/meta/operational #bios/mcp_server #bios/mcp_server/deployment #bios/meta #bios/meta/operational
 
 ---
 
@@ -58,13 +58,13 @@ status: active
 - ✅ Base: Node 20 Alpine
 - ✅ Packages: `@modelcontextprotocol/server-github` + `supergateway`
 - ✅ Resource usage: ~50-100MB RAM, <0.1 CPU (idle)
-- ✅ Koyeb Compatibility: **FULLY COMPATIBLE** ✅   
+- ✅ Koyeb Compatibility: **FULLY COMPATIBLE** ✅    #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/component #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/component
 
 **7. Free Tier Deployment Plan**
 - ✅ Koyeb: 0.1 vCPU / 512MB / Always-on / FREE
 - ✅ Deployment script created: `scripts/migrate/deploy-to-koyeb.sh`
 - ✅ Environment variables: `GITHUB_PERSONAL_ACCESS_TOKEN` only
-- ✅ Alternative: Vultr ($2.50/month)   
+- ✅ Alternative: Vultr ($2.50/month)    #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment
 
 ---
 
@@ -83,7 +83,7 @@ ARCA_MEMORY_DB_ID   = ________________________
 **How to find**:
 1. Open Notion → ARCA database
 2. Click `•••` → `Copy link`
-3. Extract 32-character hex ID from URL
+3. Extract 32-character hex ID from URL #bios/notion #bios/notion/query #bios/notion/schema #bios/notion #bios/notion/query #bios/notion/schema
 
 ---
 
@@ -127,7 +127,7 @@ Setup: 30 minutes
 |------|---------|
 | `docs/PROJECT_REALIGNMENT.md` | Full discovery report (40 pages) |
 | `docs/PROJECT_REALIGNMENT_EXEC_SUMMARY.md` | This document |
-| `scripts/migrate/deploy-to-koyeb.sh` | Koyeb migration script |
+| `scripts/migrate/deploy-to-koyeb.sh` | Koyeb migration script | #bios/meta #bios/meta/operational #bios/meta #bios/meta/operational
 
 ---
 
@@ -137,7 +137,7 @@ Setup: 30 minutes
 
 1. **Provide ARCA Database IDs** (5 min)
 2. **Resolve Git Block** (2 min)
-3. **Decision**: Koyeb or Vultr? (1 min)
+3. **Decision**: Koyeb or Vultr? (1 min) #bios/personal_assistant #bios/personal_assistant/task #bios/personal_assistant #bios/personal_assistant/task
 
 ### This Week
 
@@ -196,7 +196,7 @@ Setup: 30 minutes
 | Azure ACR | $5.00 | $0.00 | $5.00/month |
 | Azure ACI | $0.00 (stopped) | $0.00 | $0.00 |
 | Koyeb | $0.00 | $0.00 | $0.00 |
-| **Total** | **$5.00** | **$0.00** | **$60/year** |
+| **Total** | **$5.00** | **$0.00** | **$60/year** | #bios/meta #bios/meta/operational #bios/meta #bios/meta/operational
 
 ---
 
@@ -209,3 +209,5 @@ Setup: 30 minutes
 ---
 
 **Status**: ⏳ Awaiting your input to proceed
+
+<!-- LLM_TAGGED -->

@@ -243,7 +243,7 @@ High-risk tools require approval:
 | `puppeteer_type` | ✅ Yes |
 | `take_screenshot` | ❌ No (safe) |
 | `get_screen_info` | ❌ No (safe) |
-| `puppeteer_navigate` | ❌ No (safe) |
+| `puppeteer_navigate` | ❌ No (safe) | #bios/mcp_server #bios/mcp_server/tool #bios/mcp_server/auth
 
 ---
 
@@ -256,7 +256,7 @@ High-risk tools require approval:
 | `phase5-setup.sh` | Complete Phase 5 setup script |
 | `start-ollama-vision.sh` | Ollama + Qwen-VL startup |
 | `~/.copaw/config-phase5.json` | Phase 5 Copaw configuration |
-| `~/Library/LaunchAgents/com.arca.computer-use-mcp.plist` | Computer Use MCP service |
+| `~/Library/LaunchAgents/com.arca.computer-use-mcp.plist` | Computer Use MCP service | #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/copaw #bios/copaw/workflow
 
 ---
 
@@ -348,3 +348,5 @@ After (local Qwen-VL):
 
 Monthly Savings: $1350 (90%)
 ```
+
+<!-- LLM_TAGGED -->

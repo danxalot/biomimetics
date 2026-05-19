@@ -508,27 +508,28 @@ async def relay_voice_output(text: str, task_id: str):
 │                           COMPLETE BiOS DATA FLOW                                      │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
 │                                                                                        │
-│  1. TRIGGER (GitHub)                                                                   │
+│  1. TRIGGER (Hourly/Daily)                                                           │
 │     ┌─────────────────────────────────────────────────────────────────────────────┐  │
-│     │ GitHub Issue Created                                                          │  │
-│     │   └─► Cloudflare Worker (Gemma 3)                                              │  │
-│     │         └─► Generate Technical Documentation                                   │  │
+│     │ Hourly Email Ingest                                                         │  │
+│     │   └─► Stage in Local Docs → Notion Notification                             │  │
+│     │                                                                             │  │
+│     │ Daily Master Pipeline (18:00)                                               │  │
+│     │   └─► Sweep Auth items to GDrive Vault                                      │  │
+│     │         └─► Semantic Tagging → Memory Sync                                  │  │
 │     └─────────────────────────────────────────────────────────────────────────────┘  │
 │                                        │                                               │
 │                                        ▼                                               │
 │  2. ORCHESTRATE (Notion)                                                               │
 │     ┌─────────────────────────────────────────────────────────────────────────────┐  │
-│     │ Create "Ready for Dev" Task in Biomimetic OS Database                         │  │
-│     │   └─► Serena Poller detects task (30s interval)                               │  │
-│     │         └─► Claim task → "In Progress"                                        │  │
+│     │ User authorizes staging items in "BiOS Authorisation" database              │  │
+│     │   └─► "Auth Trigger" = True → "To Memory"                                   │  │
 │     └─────────────────────────────────────────────────────────────────────────────┘  │
 │                                        │                                               │
 │                                        ▼                                               │
 │  3. CONTEXT RETRIEVAL (MuninnDB)                                                      │
 │     ┌─────────────────────────────────────────────────────────────────────────────┐  │
 │     │ CoPaw queries MuninnDB for relevant context                                   │  │
-│     │   └─► Vector similarity search                                               │  │
-│     │         └─► Retrieve top 5 similar past executions                           │  │
+│     │   └─► Vector similarity search (includes GDrive Vault documents)             │  │
 │     └─────────────────────────────────────────────────────────────────────────────┘  │
 │                                        │                                               │
 │                                        ▼                                               │

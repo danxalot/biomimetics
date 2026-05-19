@@ -10,7 +10,10 @@ Biomimetics is the infrastructure automation system that provides:
 - ⚡ **Event Processing** - Cloudflare Workers for GitHub webhooks, Serena agents, GCP memory, CoPaw integration, and Gemma‑3‑27b powered Project‑Manager agent
 - 🧠 **Intelligent Memory** - GCP Cloud Function integration for contextual AI
 - 🛡️ **Approval Workflows** - CoPaw tool guard for safe AI agent operations
-- 🔔 **System Monitoring** - macOS LaunchAgents for continuous operation
+- 🔔 **System Monitoring** - macOS LaunchAgents for continuous operation:
+    - `com.bios.hourly-ingest`: Ingests emails every hour.
+    - `com.bios.daily-pipeline`: Runs the master document processing loop at 6 PM.
+    - `com.arca.omni-sync`: Continuous GDrive file watching.
 - 🎙️ **Live Voice Interface** - Gemini Live API for voice/vision interaction
 
 ---

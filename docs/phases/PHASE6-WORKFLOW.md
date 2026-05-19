@@ -167,7 +167,7 @@ tail -f ~/.arca/omni_sync.err
 |--------|------------|
 | Plain text | Direct extraction |
 | HTML | Stripped to text |
-| Attachments | Skipped (not processed) |
+| Attachments | Skipped (not processed) | #bios/architecture #bios/architecture/component
 
 ### Memory Format
 
@@ -208,7 +208,7 @@ tail -f ~/.arca/omni_sync.err
 | PDF | PyPDF2 | Text extraction |
 | DOCX | python-docx | Text extraction |
 | TXT | Built-in | Direct read |
-| MD | Built-in | Direct read |
+| MD | Built-in | Direct read | #bios/architecture #bios/architecture/component
 
 ### Memory Format
 
@@ -253,7 +253,7 @@ tail -f ~/.arca/omni_sync.err
 | Summary | Brief description |
 | Processed | Timestamp |
 | Sender | Email sender (for emails) |
-| Filepath | File path (for files) |
+| Filepath | File path (for files) | #bios/architecture #bios/architecture/schema
 
 ---
 
@@ -337,7 +337,7 @@ mount_smbfs //user@mycloud-ip/Obsidian /Volumes/MyCloud\ Home
 | `omni_sync_requirements.txt` | Python dependencies |
 | `omni_sync_config.example.json` | Sample config |
 | `com.arca.omni-sync.plist` | launchd service |
-| `phase6-setup.sh` | Setup script |
+| `phase6-setup.sh` | Setup script | #bios/architecture #bios/architecture/config
 
 ---
 
@@ -358,7 +358,7 @@ mount_smbfs //user@mycloud-ip/Obsidian /Volumes/MyCloud\ Home
 The daemon is designed to be lightweight:
 - Memory: ~50MB typical
 - CPU: <1% when idle
-- Network: Only on sync cycles
+- Network: Only on sync cycles #bios/meta #bios/meta/operational
 
 ---
 
@@ -367,4 +367,7 @@ The daemon is designed to be lightweight:
 - Store credentials in config file (chmod 600)
 - Use App Passwords, not main passwords
 - State files contain processed IDs (not sensitive)
-- Logs may contain email subjects (review before sharing) #bios/architecture #bios/swarm #bios/infrastructure
+- Logs may contain email subjects (review before sharing) #bios/architecture #bios/swarm #bios/infrastructure #bios/architecture #bios/architecture/config #bios/meta #bios/meta/operational
+
+
+<!-- LLM_TAGGED -->

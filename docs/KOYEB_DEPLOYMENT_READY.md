@@ -31,7 +31,7 @@ brew install koyeb/tap/koyeb
 - ✅ Automatic app create or update
 - ✅ Endpoint URL retrieval
 - ✅ Health check test
-- ✅ Configuration update instructions   
+- ✅ Configuration update instructions    #bios/mcp_server #bios/mcp_server/auth #bios/mcp_server/deployment #bios/architecture/config #bios/mcp_server #bios/mcp_server/auth #bios/mcp_server/deployment #bios/architecture/config
 
 ### 3. Dockerfile Verified ✅
 
@@ -83,7 +83,7 @@ cd ~/biomimetics
 4. Deploys with free tier instance (512MB/0.1vCPU)
 5. Retrieves endpoint URL
 6. Tests endpoint health
-7. Provides configuration update instructions   
+7. Provides configuration update instructions    #bios/mcp_server #bios/mcp_server/deployment #bios/architecture/component #bios/mcp_server #bios/mcp_server/deployment #bios/architecture/component
 
 ---
 
@@ -149,7 +149,7 @@ This will delete the Azure container and stop billing.
 | Azure ACR | $5/month | $0 |
 | Azure ACI | $0 (stopped) | $0 |
 | Koyeb | $0 | $0 (free tier) |
-| **Total** | **$60/year** | **$0** |
+| **Total** | **$60/year** | **$0** | #bios/infrastructure #bios/meta/operational #bios/infrastructure #bios/meta/operational
 
 ---
 
@@ -183,3 +183,5 @@ koyeb service logs github-mcp-server/main
 ---
 
 **Ready to Deploy**: Run `./scripts/migrate/deploy-to-koyeb.sh` after login
+
+<!-- LLM_TAGGED -->

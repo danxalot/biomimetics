@@ -16,7 +16,7 @@ All four critical gaps identified in the System Configuration Audit have been ad
 - ✅ Voice-enabled CoPaw with LLM routing
 - ✅ Secured Computer Use agent with Tool Guard approval workflow
 - ✅ Approval polling bridge between Notion and local execution
-- ✅ Cloud usage tracking for cost visibility 
+- ✅ Cloud usage tracking for cost visibility  #bios/architecture #bios/copaw #bios/copaw/workflow #bios/personal_assistant #bios/personal_assistant/routing #bios/notion #bios/notion/sync #bios/architecture #bios/copaw #bios/copaw/workflow #bios/personal_assistant #bios/personal_assistant/routing #bios/notion #bios/notion/sync
 
 ---
 
@@ -86,7 +86,7 @@ The Computer Use MCP server now includes:
 
 1. **Risk Assessment** - All tool calls are evaluated against patterns:
    - **Auto-approve:** `take_screenshot`, `get_screen_info`, slow mouse moves, simple typing
-   - **High-risk:** Instant mouse moves, sensitive text input, right-clicks, keyboard shortcuts   
+   - **High-risk:** Instant mouse moves, sensitive text input, right-clicks, keyboard shortcuts    #bios/mcp_server #bios/mcp_server/tool #bios/architecture #bios/architecture/protocol #bios/mcp_server #bios/mcp_server/tool #bios/architecture #bios/architecture/protocol
 
 2. **Approval Workflow:**
    ```
@@ -96,7 +96,7 @@ The Computer Use MCP server now includes:
 3. **Safety Features:**
    - Minimum mouse move duration: 0.3s (prevents instant jumps)
    - Dangerous key combinations blocked: `command+q`, `alt+f4`, `ctrl+alt+del`
-   - Sensitive content detection: passwords, tokens, secrets   
+   - Sensitive content detection: passwords, tokens, secrets    #bios/mcp_server #bios/mcp_server/tool #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/tool #bios/architecture #bios/architecture/config
 
 4. **Pending Approvals Storage:**
    - File: `~/.arca/pending_approvals.json`
@@ -134,7 +134,7 @@ HIGH_RISK_PATTERNS = [
 | **Poll Interval** | 15 seconds (configurable via `APPROVAL_POLL_INTERVAL`) |
 | **Target DB** | CoPaw Approval DB (`3284d2d9fc7c8113bfecca75f4235ece`) |
 | **Signal File** | `~/.arca/approved_actions.json` |
-| **State Tracking** | `~/.arca/approval_poller_state.json` |
+| **State Tracking** | `~/.arca/approval_poller_state.json` | #bios/notion #bios/notion/sync #bios/notion/query #bios/architecture #bios/architecture/config #bios/notion #bios/notion/sync #bios/notion/query #bios/architecture #bios/architecture/config
 
 ### Approval Flow
 
@@ -196,13 +196,13 @@ python3 ~/biomimetics/scripts/copaw/approval_poller.py
 | Provider | API | Metrics |
 |----------|-----|---------|
 | **Cloudflare** | Billing API | Total spend, Workers requests, CPU time |
-| **Azure** | Consumption API | Total spend, daily breakdown |
+| **Azure** | Consumption API | Total spend, daily breakdown | #bios/meta #bios/meta/operational #bios/infrastructure #bios/meta #bios/meta/operational #bios/infrastructure
 
 ### Output Destinations
 
 1. **Notion** - Tool Guard Database (`3284d2d9fc7c8113bfecca75f4235ece`)
 2. **GCP Gateway** - Memory archival via `memory-orchestrator`
-3. **Local Log** - `~/.arca/cloud_usage.log` `). `
+3. **Local Log** - `~/.arca/cloud_usage.log` `). ` #bios/notion #bios/notion/schema #bios/personal_assistant #bios/personal_assistant/memory #bios/meta #bios/meta/operational #bios/notion #bios/notion/schema #bios/personal_assistant #bios/personal_assistant/memory #bios/meta #bios/meta/operational
 
 ### Configuration
 
@@ -330,7 +330,7 @@ launchctl kickstart -k ~/Library/LaunchAgents/com.arca.computer-use-mcp.plist
 | Computer Use MCP | `ls -la /Users/danexall/computer-use-mcp.py` | File exists, ~18KB |
 | Approval Poller | `ls -la ~/biomimetics/scripts/copaw/approval_poller.py` | File exists |
 | Cloud Usage Tracker | `ls -la ~/biomimetics/scripts/monitor/cloud_usage_tracker.py` | File exists |
-| LaunchAgents Active | `launchctl list \| grep arca` | All agents show PID > 0 |
+| LaunchAgents Active | `launchctl list \| grep arca` | All agents show PID > 0 | #bios/architecture #bios/architecture/component #bios/architecture/config #bios/copaw #bios/copaw/workflow #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/component #bios/architecture/config #bios/copaw #bios/copaw/workflow #bios/mcp_server #bios/mcp_server/deployment
 
 ---
 
@@ -388,7 +388,7 @@ launchctl kickstart -k ~/Library/LaunchAgents/com.arca.computer-use-mcp.plist
 1. **Webhook Listener** - Replace polling with instant webhook callbacks from Notion
 2. **Cloudflare Tunnel** - Enable direct Cloudflare→localhost routing
 3. **Usage Alerts** - Add spending threshold alerts via Telegram/SMS
-4. **PM Agent Repo Config** - Update to use `biomimetics` repo instead of hardcoded `ARCA` ` 
+4. **PM Agent Repo Config** - Update to use `biomimetics` repo instead of hardcoded `ARCA` `  #bios/notion #bios/notion/sync #bios/architecture #bios/architecture/protocol #bios/meta #bios/meta/operational #bios/notion #bios/notion/sync #bios/architecture #bios/architecture/protocol #bios/meta #bios/meta/operational
 
 ---
 
@@ -399,3 +399,5 @@ All critical gaps have been addressed. The system is now:
 - Security-hardened
 - Approval-bridged
 - Cost-visible
+
+<!-- LLM_TAGGED -->

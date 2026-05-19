@@ -1,132 +1,161 @@
-"""KinematicBridge — polymorphic input gateway.
+"""KinematicBridge — NumPy runtime.
 
-Each domain in DOMAINS gets its own KinematicBridge that maps raw sensor data
-(pendulum angles, optical flow, lattice spins, etc.) into the 32D Cl(4,1)
-conformal manifold.
+1:1 parity port of Gold_Standard_Archive/pytorch/bridges.py.
 
-Two flavours coexist for historical reasons:
-- ``ConformalKinematicBridge`` — direct mapping, no learned encoder. Pads raw
-  features into multivector slots after a log-squash. This is the version used
-  in the active Kaggle script. Domain-aware: when ``domain == "relativity"``,
-  ``x[0]`` is treated as time and routed to the scalar grade ``mv[..., 0]``.
-- ``LearnedKinematicBridge`` — encoder MLP → 3D points → conformal_lift. This
-  is the version from `Gold_Standard_Archive/C2/master_c2_kinematics.py:157-172`.
-  Used when the trained `.npz` weights at `math_modules/kinematic_bridge_c2.npz`
-  are intended.
+Two flavours (matching pytorch originals):
+  ConformalKinematicBridge  — active training flavour. Domain-aware grade-0/1
+                              algebraic content + learned encoder for grades 2-5.
+  LearnedKinematicBridge    — MLP-encoded bridge: x → 3D → conformal_lift.
 
-The active training run uses the conformal-direct flavour. The learned flavour
-is preserved here for ablations and for pre-trained-weights compatibility.
+KinematicBridge = ConformalKinematicBridge  (default alias).
+
+Weight contract — ConformalKinematicBridge:
+  higher_grade_enc_0_weight: [hidden, in_dim]  float32
+  higher_grade_enc_0_bias:   [hidden]          float32
+  higher_grade_enc_2_weight: [hidden, hidden]  float32   (LayerNorm weight)
+  higher_grade_enc_2_bias:   [hidden]          float32   (LayerNorm bias)
+  higher_grade_enc_3_weight: [26, hidden]      float32
+  higher_grade_enc_3_bias:   [26]              float32
+
+Weight contract — LearnedKinematicBridge:
+  enc_0_weight: [64, in_dim]  float32
+  enc_0_bias:   [64]          float32
+  enc_2_weight: [3, 64]       float32
+  enc_2_bias:   [3]           float32
 """
-import torch
-import torch.nn as nn
-
+import numpy as np
 from .config import CONFIG
 from .geometry import conformal_lift
 
 
-class ConformalKinematicBridge(nn.Module):
+class ConformalKinematicBridge:
     """Domain-aware bridge populating ALL grades 0-5 of Cl(4,1).
 
     Forward shape: x [..., in_dim] → mv [..., 32].
 
-    Cl(4,1) grade decomposition (32 components total):
-      grade 0 (scalar):       1 comp  → mv[0]      (time for relativity, magnitude otherwise)
-      grade 1 (vectors):      5 comps → mv[1:6]    (e1-e3 spatial + e4=n_inf + e5=n_o)
-      grade 2 (bivectors):   10 comps → mv[6:16]   (rotation/orientation planes)
-      grade 3 (trivectors):  10 comps → mv[16:26]  (oriented volumes)
-      grade 4 (quadvectors):  5 comps → mv[26:31]  (pseudovectors)
-      grade 5 (pseudoscalar): 1 comp  → mv[31]     (I = e1e2e3e4e5, chirality/volume)
-
-    Round 7.4 — opened bridge from "grades 0-1 + raw-feature dump in bivector slots"
-    to FULL grades 0-5 via a learned encoder. The earlier C1 conformal_lift hardcoded
-    only grade-1 (mv[1:6]); subsequent C2 attempts dumped raw features into mv[6:6+n]
-    without grade-aware structure. Now: algebraic grade-0/1 + learned grades 2-5.
-
-    Initialization is near-zero on the higher-grade encoder output so the C1 prior
-    (which never saw signal at mv[6:32]) gets a smooth ramp into the new content as
-    training progresses, rather than a discontinuous jump that would destabilize the
-    transplanted weights.
+    Cl(4,1) grade decomposition:
+      grade 0 (scalar):       1 comp  → mv[0]      (time for relativity)
+      grade 1 (vectors):      5 comps → mv[1:6]
+      grade 2 (bivectors):   10 comps → mv[6:16]
+      grade 3 (trivectors):  10 comps → mv[16:26]
+      grade 4 (quadvectors):  5 comps → mv[26:31]
+      grade 5 (pseudoscalar): 1 comp  → mv[31]
     """
 
-    def __init__(self, in_dim: int, domain: str = ""):
-        super().__init__()
-        self.in_dim = in_dim
-        self.domain = domain
+    def __init__(self, in_dim: int, domain: str = "", weights: dict = None):
+        self.in_dim        = in_dim
+        self.domain        = domain
         self.is_relativity = (domain == "relativity")
 
-        # Learned encoder: raw input → 26 components for grades 2-5
         hidden = max(64, in_dim * 4)
-        self.higher_grade_encoder = nn.Sequential(
-            nn.Linear(in_dim, hidden),
-            nn.SiLU(),
-            nn.LayerNorm(hidden),
-            nn.Linear(hidden, 26),
-            nn.Tanh(),  # bound output to [-1, 1]
-        )
+        self.hidden = hidden
 
-        # Near-zero init on the final projection so the bridge starts close to
-        # the legacy grade-0/1-only behavior. Critical for C1 weight transplant:
-        # C1's input_proj never saw signal at mv[6:32] and the columns 6-31 of
-        # input_proj.weight are essentially random from C1's perspective. Ramp
-        # the higher-grade content in gradually so input_proj has time to adapt.
-        with torch.no_grad():
-            # The final Linear is index -2 (Tanh is index -1)
-            self.higher_grade_encoder[-2].weight.mul_(0.01)
-            self.higher_grade_encoder[-2].bias.zero_()
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # Log-squash to keep values bounded under FP16 / int8 quant.
-        x_squashed = torch.sign(x) * torch.log1p(torch.abs(x))
-
-        mv = torch.zeros(*x.shape[:-1], CONFIG["mv_dim"], device=x.device, dtype=x.dtype)
-
-        # ── Grade 0 (scalar) and Grade 1 (vectors): algebraic content ─────
-        # Relativity: x[0]=time → mv[0] (scalar grade); x[1:4]=spatial.
-        # Other domains: x[0:3]=spatial; mv[0] left at 0 (could carry magnitude).
-        if self.is_relativity:
-            mv[..., 0:1] = x_squashed[..., 0:1]
-            spatial_core = x_squashed[..., 1:4]
+        if weights is not None:
+            def _w(k): return np.asarray(weights[k], dtype=np.float32)
+            # Linear 0: [hidden, in_dim]
+            self.W0 = _w("higher_grade_enc_0_weight")
+            self.b0 = _w("higher_grade_enc_0_bias")
+            # LayerNorm 2: scale/shift over hidden
+            self.ln_w = _w("higher_grade_enc_2_weight")
+            self.ln_b = _w("higher_grade_enc_2_bias")
+            # Linear 3: [26, hidden]
+            self.W3 = _w("higher_grade_enc_3_weight")
+            self.b3 = _w("higher_grade_enc_3_bias")
         else:
-            spatial_core = x_squashed[..., :3]
+            # Near-zero init — preserves C1 prior behavior at inference without weights
+            rng = np.random.default_rng(2)
+            self.W0   = rng.standard_normal((hidden, in_dim)).astype(np.float32) * 0.02
+            self.b0   = np.zeros(hidden, dtype=np.float32)
+            self.ln_w = np.ones(hidden,  dtype=np.float32)
+            self.ln_b = np.zeros(hidden, dtype=np.float32)
+            self.W3   = rng.standard_normal((26, hidden)).astype(np.float32) * 0.01
+            self.b3   = np.zeros(26, dtype=np.float32)
 
-        # Conformal anchors (grade-1 vectors)
-        r2 = torch.sum(spatial_core ** 2, dim=-1, keepdim=True)
+    @staticmethod
+    def _silu(x: np.ndarray) -> np.ndarray:
+        return x / (1.0 + np.exp(-x))
+
+    @staticmethod
+    def _tanh(x: np.ndarray) -> np.ndarray:
+        return np.tanh(x)
+
+    @staticmethod
+    def _layer_norm(x: np.ndarray, w: np.ndarray, b: np.ndarray, eps: float = 1e-5) -> np.ndarray:
+        mean = x.mean(axis=-1, keepdims=True)
+        var  = x.var(axis=-1,  keepdims=True)
+        return w * (x - mean) / np.sqrt(var + eps) + b
+
+    def _higher_grade_encoder(self, x: np.ndarray) -> np.ndarray:
+        """Sequential: Linear → SiLU → LayerNorm → Linear → Tanh → [..., 26]."""
+        h = x @ self.W0.T + self.b0          # [..., hidden]
+        h = self._silu(h)
+        h = self._layer_norm(h, self.ln_w, self.ln_b)
+        h = h @ self.W3.T + self.b3          # [..., 26]
+        return self._tanh(h)
+
+    def __call__(self, x: np.ndarray) -> np.ndarray:
+        """Args: x [..., in_dim]. Returns mv [..., 32] float32."""
+        x  = np.asarray(x, dtype=np.float32)
+        mv = np.zeros(x.shape[:-1] + (CONFIG["mv_dim"],), dtype=np.float32)
+
+        # Log-squash
+        x_sq = np.sign(x) * np.log1p(np.abs(x))
+
+        # Grade 0/1 — algebraic
+        if self.is_relativity:
+            mv[..., 0:1] = x_sq[..., 0:1]
+            spatial_core  = x_sq[..., 1:4]
+        else:
+            spatial_core  = x_sq[..., :3]
+
+        r2 = np.sum(spatial_core ** 2, axis=-1, keepdims=True)
         mv[..., 1:4] = spatial_core
-        mv[..., 4:5] = 0.5 * r2 - 0.5      # n_inf (e4)
-        mv[..., 5:6] = 0.5 * r2 + 0.5      # n_o   (e5)
+        mv[..., 4:5] = 0.5 * r2 - 0.5    # n_inf (e4)
+        mv[..., 5:6] = 0.5 * r2 + 0.5    # n_o   (e5)
 
-        # ── Grades 2-5 (bivectors through pseudoscalar): learned content ──
-        # The encoder sees the FULL raw input (not just extras), so it can
-        # learn grade-2+ content from any combination of input features —
-        # not just the leftovers after spatial extraction.
-        higher_features = self.higher_grade_encoder(x_squashed.to(self.higher_grade_encoder[0].weight.dtype))
-        higher_features = higher_features.to(mv.dtype)
-        mv[..., 6:32] = higher_features  # bivectors + trivectors + quadvectors + pseudoscalar
+        # Grades 2-5 — learned encoder
+        mv[..., 6:32] = self._higher_grade_encoder(x_sq)
+
         return mv
 
 
-class LearnedKinematicBridge(nn.Module):
+class LearnedKinematicBridge:
     """MLP-encoded bridge: x → 3D points → conformal_lift.
 
-    Use this when you have pre-trained bridge weights (`kinematic_bridge_c2.npz`)
-    or for ablation runs where the bridge is learned end-to-end.
+    Weight contract:
+      enc_0_weight: [64, in_dim]
+      enc_0_bias:   [64]
+      enc_2_weight: [3, 64]
+      enc_2_bias:   [3]
     """
 
-    def __init__(self, in_dim: int):
-        super().__init__()
-        self.encoder = nn.Sequential(
-            nn.Linear(in_dim, 64),
-            nn.SiLU(),
-            nn.Linear(64, 3),
-        )
+    def __init__(self, in_dim: int, weights: dict = None):
+        if weights is not None:
+            self.W0 = np.asarray(weights["enc_0_weight"], dtype=np.float32)
+            self.b0 = np.asarray(weights["enc_0_bias"],   dtype=np.float32)
+            self.W2 = np.asarray(weights["enc_2_weight"], dtype=np.float32)
+            self.b2 = np.asarray(weights["enc_2_bias"],   dtype=np.float32)
+        else:
+            rng = np.random.default_rng(3)
+            self.W0 = rng.standard_normal((64, in_dim)).astype(np.float32) * 0.02
+            self.b0 = np.zeros(64, dtype=np.float32)
+            self.W2 = rng.standard_normal((3, 64)).astype(np.float32) * 0.02
+            self.b2 = np.zeros(3, dtype=np.float32)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def _silu(x: np.ndarray) -> np.ndarray:
+        return x / (1.0 + np.exp(-x))
+
+    def __call__(self, x: np.ndarray) -> np.ndarray:
+        """Args: x [..., in_dim]. Returns mv [..., 32] float32."""
+        x = np.asarray(x, dtype=np.float32)
         leading = x.shape[:-1]
-        points_3d = torch.tanh(self.encoder(x)) * 5.0
-        points_flat = points_3d.view(-1, 3)
-        mv_flat = conformal_lift(points_flat)
-        return mv_flat.view(*leading, CONFIG["mv_dim"])
+        h = self._silu(x @ self.W0.T + self.b0)           # [..., 64]
+        pts = np.tanh(h @ self.W2.T + self.b2) * 5.0      # [..., 3]
+        pts_flat = pts.reshape(-1, 3)
+        mv_flat  = conformal_lift(pts_flat)                # [-1, 32]
+        return mv_flat.reshape(leading + (CONFIG["mv_dim"],))
 
 
-# Default alias used by the Kaggle bundle.
+# Default alias — matches Kaggle bundle import
 KinematicBridge = ConformalKinematicBridge

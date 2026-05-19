@@ -21,9 +21,7 @@ import re
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
-import httpx
-import certifi
-from bs4 import BeautifulSoup
+from email_utils import apply_filtering_rules, update_sent_whitelist, extract_email_body, send_to_notion
 
 # Configuration paths
 CONFIG_FILE = Path.home() / "biomimetics" / "config" / "omni_sync_config.json"
@@ -69,33 +67,6 @@ SSL_CONTEXT.verify_mode = ssl.CERT_NONE
 # Gmail SSL context - Use certifi for macOS compatibility
 GMAIL_SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
 
-
-# --- Legacy Filter & Triage Logic ---
-KEEP_KEYWORDS = [
-    "invoice", "receipt", "you sent", "payment", "octopus", "vultr", "azure", "ticket",
-    "order", "document", "citizens advice", "cab", "debt", "arrears", "collection",
-    "bailiff", "stepchange", "credit", "complaint", "appeal", "ombudsman", "watchdog",
-    "legal", "solicitor", "police", "council", "security alert", "breach", "pwned",
-    "unauthorized", "login",
-]
-PATTERN = re.compile(r"\b(?:" + "|".join(map(re.escape, KEEP_KEYWORDS)) + r")\b", re.IGNORECASE)
-
-INSTITUTIONAL_DOMAINS = ["nhs.net", "nhs.uk", "gov.uk", "police.uk", "lgo.org.uk"]
-INSTITUTIONAL_KEYWORDS = ["citizens advice", "solicitor", "lawyer", "legal", "constabulary", "police"]
-HARD_REFUSE_PHRASES = ["that you follow published a new idea"]
-
-WHITELIST_FILE = Path.home() / "biomimetics" / "config" / "email_whitelist.json"
-
-def load_whitelist() -> set:
-    if WHITELIST_FILE.exists():
-        with open(WHITELIST_FILE, "r") as f:
-            return set(json.load(f))
-    return set()
-
-def save_whitelist(whitelist: set):
-    with open(WHITELIST_FILE, "w") as f:
-        json.dump(list(whitelist), f)
-
 def add_to_junk_cache(email_data: dict, reason: str):
     """Save rejected email metadata to a local JSON cache for later review"""
     try:
@@ -128,83 +99,6 @@ def add_to_junk_cache(email_data: dict, reason: str):
             
     except Exception as e:
         print(f"  ⚠️  Failed to update junk cache: {e}")
-
-def update_sent_whitelist(mail_client, account_email, state):
-    """Scan Sent folder and add recipients to whitelist"""
-    try:
-        # Task 1: Dynamic IMAP Sent Folder Discovery
-        sent_folder = None
-        
-        # Method A: Use mail.list() to find folder with \Sent flag
-        status, folder_list = mail_client.list()
-        if status == 'OK':
-            for line in folder_list:
-                line_str = line.decode('utf-8')
-                # Check for \Sent flag (case-insensitive)
-                if '\\sent' in line_str.lower():
-                    # Extract folder name (usually the last part after the delimiter)
-                    import re
-                    match = re.search(r'\(.*\) "/" "(.*)"', line_str)
-                    if not match:
-                        match = re.search(r'\(.*\) "." "(.*)"', line_str)
-                    
-                    if match:
-                        sent_folder = f'"{match.group(1)}"'
-                        break
-        
-        # Method B: Robust Fallback Loop
-        if not sent_folder:
-            fallbacks = ['"[Gmail]/Sent Mail"', '"[Google Mail]/Sent Mail"', '"Sent"', '"Sent Mail"']
-            for fb in fallbacks:
-                status, _ = mail_client.select(fb, readonly=True)
-                if status == 'OK':
-                    sent_folder = fb
-                    break
-        
-        if not sent_folder:
-            print(f"  ⚠️  Could not discover Sent folder for {account_email}")
-            return
-
-        # EXPLICIT SELECT & VERIFY
-        status, data = mail_client.select(sent_folder, readonly=True)
-        if status != 'OK':
-            print(f"  ⚠️  Failed to select {sent_folder}: {data}")
-            return
-
-
-        
-        last_check = state.get(f"last_sent_check_{account_email}")
-        if last_check:
-            since_date = datetime.strptime(last_check, "%Y-%m-%d").strftime("%d-%b-%Y")
-        else:
-            since_date = (datetime.now() - timedelta(days=30)).strftime("%d-%b-%Y")
-        
-        status, messages = mail_client.search(None, f'(SINCE {since_date})')
-        if status != "OK": return
-        
-        whitelist = load_whitelist()
-        new_entries = 0
-        
-        for e_id in messages[0].split():
-            status, msg_data = mail_client.fetch(e_id, "(RFC822.HEADER)")
-            if status != "OK": continue
-            msg = email.message_from_bytes(msg_data[0][1])
-            to_addr = msg.get("To", "")
-            # Extract email addresses using regex
-            addrs = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', to_addr)
-            for addr in addrs:
-                if addr.lower() not in whitelist:
-                    whitelist.add(addr.lower())
-                    new_entries += 1
-        
-        if new_entries > 0:
-            save_whitelist(whitelist)
-            print(f"  📝 Whitelist updated: +{new_entries} new recipients")
-            
-        state[f"last_sent_check_{account_email}"] = datetime.now().strftime("%Y-%m-%d")
-        
-    except Exception as e:
-        print(f"  ⚠️  Failed to update sent whitelist: {e}")
 
 def load_proton_password() -> str:
     """Load Proton Bridge password from secrets file."""
@@ -286,96 +180,6 @@ class EmailState:
         self.save()
 
 
-def extract_email_body(msg: email.message.Message) -> str:
-    """Extract plain text body from email message.
-    
-    Priority: text/html (with style/script stripping) > text/plain.
-    Traverses multipart trees to find the best HTML part first.
-    Falls back gracefully to text/plain if no HTML exists.
-    """
-    html_body = ""
-    plain_body = ""
-
-    if msg.is_multipart():
-        for part in msg.walk():
-            content_type = part.get_content_type()
-            content_disposition = str(part.get("Content-Disposition") or "")
-
-            # Skip attachments
-            if "attachment" in content_disposition:
-                continue
-
-            if content_type == "text/html" and not html_body:
-                try:
-                    charset = part.get_content_charset() or "utf-8"
-                    raw_html = part.get_payload(decode=True).decode(charset, errors="replace")
-                    soup = BeautifulSoup(raw_html, "html.parser")
-                    # Deep cleanse: remove style and script tags to prevent code-clumping
-                    for tag in soup.find_all(["style", "script"]):
-                        tag.decompose()
-                    html_body = soup.get_text(separator="\n", strip=True)
-                except Exception:
-                    pass
-
-            elif content_type == "text/plain" and not plain_body:
-                try:
-                    charset = part.get_content_charset() or "utf-8"
-                    plain_body = part.get_payload(decode=True).decode(charset, errors="replace")
-                except Exception:
-                    pass
-
-        # Prefer HTML result; fall back to plain text
-        body = html_body if html_body else plain_body
-
-    else:
-        # Single-part message — attempt decode directly
-        content_type = msg.get_content_type()
-        try:
-            charset = msg.get_content_charset() or "utf-8"
-            raw = msg.get_payload(decode=True).decode(charset, errors="replace")
-            if content_type == "text/html":
-                soup = BeautifulSoup(raw, "html.parser")
-                for tag in soup.find_all(["style", "script"]):
-                    tag.decompose()
-                body = soup.get_text(separator="\n", strip=True)
-            else:
-                body = raw
-        except Exception:
-            body = str(msg.get_payload())
-
-    return body.strip()
-
-
-def send_to_webhook_receiver(email_data: dict) -> dict:
-    """Send email to local webhook receiver"""
-    try:
-        response = httpx.post(
-            WEBHOOK_RECEIVER_URL,
-            json=email_data,
-            headers={"Content-Type": "application/json"},
-            timeout=30.0
-        )
-        response.raise_for_status()
-        return response.json()
-    except Exception as e:
-        return {"error": str(e)}
-
-
-def send_to_notion(email_data: dict) -> dict:
-    """Rerouted: Send email metadata to local webhook translator for Notion dashboard"""
-    try:
-        response = httpx.post(
-            WEBHOOK_RECEIVER_URL,
-            json=email_data,
-            headers={"Content-Type": "application/json"},
-            timeout=15.0
-        )
-        response.raise_for_status()
-        return response.json()
-    except Exception as e:
-        return {"error": str(e)}
-
-
 def connect_imap(account: Dict) -> Optional[imaplib.IMAP4]:
     """
     Dual-protocol IMAP connection factory.
@@ -435,7 +239,6 @@ def poll_account(account: Dict, state: EmailState, lookback_minutes: int = 5, st
     Uses dual-protocol connection factory.
     """
     email_addr = account["email"]
-    password = account["password"]
     protocol = account.get("protocol", "proton")
     emails_processed = []
 
@@ -472,79 +275,43 @@ def poll_account(account: Dict, state: EmailState, lookback_minutes: int = 5, st
         email_ids = messages[0].split()
 
         for email_id in email_ids:
-            # Enforce 15 RPM limit (4s heartbeat) for Notion API safety
             time.sleep(4)
             
             email_id_str = email_id.decode()
 
-            # Skip if already processed
             if state.is_processed(f"{email_addr}:{email_id_str}"):
                 continue
 
-            # Fetch email
             status, msg_data = mail.fetch(email_id, "(RFC822)")
             if status != "OK":
                 continue
 
-            # Parse email
             raw_email = msg_data[0][1]
             msg = email.message_from_bytes(raw_email)
 
-            # Extract headers for triage
             subject = str(msg.get("Subject", "No Subject"))
             sender = str(msg.get("From", "Unknown"))
             message_id = str(msg.get("Message-ID", ""))
             date_str = str(msg.get("Date", ""))
             list_unsubscribe = str(msg.get("List-Unsubscribe", ""))
+            body = extract_email_body(msg)
 
-            # --- TRIAGE HIERARCHY ---
-            pass_reason = None
-            
-            # 0. Hard Refusal (Silent Drop)
-            if any(phrase.lower() in subject.lower() for phrase in HARD_REFUSE_PHRASES):
+            action, reason = apply_filtering_rules(subject, sender, list_unsubscribe, body)
+
+            if action == "hard_refuse":
                 print(f"  🛑 [HARD REFUSE] {subject[:50]}...")
                 state.mark_processed(f"{email_addr}:{email_id_str}")
                 continue
-
-            # 1. Institutional Check
-            sender_domain = sender.split("@")[-1].strip(">").lower()
-            if any(dom in sender_domain for dom in INSTITUTIONAL_DOMAINS) or \
-               any(kw.lower() in sender.lower() for kw in INSTITUTIONAL_KEYWORDS):
-                pass_reason = "Institutional"
             
-            # 2. Whitelist Check
-            if not pass_reason:
-                whitelist = load_whitelist()
-                sender_addr = re.findall(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', sender)
-                if sender_addr and sender_addr[0].lower() in whitelist:
-                    pass_reason = "Whitelisted"
-            
-            # 3. Newsletter Check (REJECT)
-            if not pass_reason and list_unsubscribe:
-                print(f"  🔴 [REJECT] Newsletter: {subject[:50]}...")
+            if action in ["reject", "review"]:
+                print(f"  🔴 [{action.upper()}] {reason}: {subject[:50]}...")
                 add_to_junk_cache({
-                    "from": sender, "subject": subject, "received_at": date_str, "body": extract_email_body(msg)
-                }, "Newsletter")
-                state.mark_processed(f"{email_addr}:{email_id_str}")
-                continue
-            
-            # 4. Legacy Keyword Filter
-            if not pass_reason:
-                if PATTERN.search(f"{subject} {sender}"):
-                    pass_reason = "Legacy Filter"
-            
-            if not pass_reason:
-                print(f"  🔴 [REJECT] Failed Triage: {subject[:50]}...")
-                add_to_junk_cache({
-                    "from": sender, "subject": subject, "received_at": date_str, "body": extract_email_body(msg)
-                }, "Triage Failure")
+                    "from": sender, "subject": subject, "received_at": date_str, "body": body
+                }, reason)
                 state.mark_processed(f"{email_addr}:{email_id_str}")
                 continue
 
-            print(f"  🟢 [PASS - {pass_reason}] {subject[:50]}...")
-
-            # Extract body (strips HTML for both Proton and Gmail)
-            body = extract_email_body(msg)
+            print(f"  🟢 [PASS - {reason}] {subject[:50]}...")
 
             if not body:
                 state.mark_processed(f"{email_addr}:{email_id_str}")
@@ -562,72 +329,20 @@ def poll_account(account: Dict, state: EmailState, lookback_minutes: int = 5, st
             )
             notion_status = "Read" if is_auto_read else "New"
 
-            # Create email data
-            email_data = {
-                "subject": subject,
-                "from": sender,
-                "message_id": message_id,
-                "received_at": date_str,
-                "body": body,
-                "source": protocol,
-                "account": email_addr,
-                "recipient": email_addr
-            }
-
-            # Local-First Markdown Drop (Enforce Local-First / Context-Lock)
-            # Directed to STAGING for triage
+            # Use centralized processing and saving
             output_dir = Path.home() / "biomimetics" / "docs" / "personal" / "emails" / "staging"
-            output_dir.mkdir(parents=True, exist_ok=True)
+            notion_metadata, filepath = process_and_save_email(
+                raw_email, 
+                email_id_str, 
+                output_dir, 
+                email_addr, 
+                notion_status
+            )
 
-            # Sanitize filename: YYYY-MM-DD_Sanitized_Subject.md
-            # Extract date for filename (try to parse email date, fallback to now)
-            try:
-                dt = email.utils.parsedate_to_datetime(date_str)
-                date_prefix = dt.strftime("%Y-%m-%d")
-            except:
-                date_prefix = datetime.now().strftime("%Y-%m-%d")
-
-            safe_subject = re.sub(r'[^\w\s-]', '', subject).strip().replace(" ", "_")[:50]
-            filename = f"{date_prefix}_{safe_subject}.md"
-            filepath = output_dir / filename
-
-            # Construct Markdown with Strict Frontmatter (Task 2: recipient injected)
-            md_content = f"""---
-privacy: strict
-type: personal
-source: email
-date: {date_str}
-sender: {sender}
-recipient: {email_addr}
-subject: {subject}
-status: {notion_status}
----
-
-# {subject}
-
-{body}
-"""
-
-            with open(filepath, "w", encoding="utf-8") as f:
-                f.write(md_content)
-
-            print(f"💾 Saved to Staging: {filename}")
-
-            # Notify Notion via local webhook receiver (Task 4: schema matches handle_email + send_to_notion)
-            notion_metadata = {
-                "type": "email",
-                "subject": subject,
-                "from": sender,
-                "recipient": email_addr,
-                "received_at": date_str,
-                "body": body,
-                "local_file": filename,
-                "status": notion_status
-            }
+            print(f"💾 Saved to Staging: {filepath.name}")
             send_to_notion(notion_metadata)
             print(f"🔔 Triage notification sent ({'Read (auto-routed)' if is_auto_read else 'New'})")
 
-            # Mark as processed
             state.mark_processed(f"{email_addr}:{email_id_str}")
 
             emails_processed.append({
@@ -663,14 +378,14 @@ def poll_all_accounts(state: EmailState, lookback_minutes: int = 5, start_date: 
     for account in proton_accounts:
         results = poll_account(account, state, lookback_minutes, start_date, end_date)
         all_results.extend(results)
-        time.sleep(5)  # Stagger login requests
+        time.sleep(5)
     
     if gmail_accounts:
         print(f"\n📧 Polling {len(gmail_accounts)} Gmail account(s)...")
         for account in gmail_accounts:
             results = poll_account(account, state, lookback_minutes, start_date, end_date)
             all_results.extend(results)
-            time.sleep(5)  # Stagger login requests
+            time.sleep(5)
     
     return all_results
 
@@ -684,7 +399,6 @@ def main():
     parser.add_argument("--end-date", type=str, help="Batch end date (YYYY-MM-DD)")
     args = parser.parse_args()
 
-    # Load accounts
     proton_accounts, gmail_accounts = load_accounts()
 
     print("=" * 60)
@@ -704,17 +418,14 @@ def main():
     print(f"Mode: {'single poll' if args.once else 'continuous daemon'}")
     print("=" * 60)
 
-    # Initialize state
     state = EmailState(STATE_FILE)
     print(f"Loaded {len(state.processed_ids)} processed email IDs from state")
 
-    # Main loop
     iteration = 0
     while True:
         iteration += 1
         print(f"\n--- Poll iteration {iteration} at {datetime.now().isoformat()} ---")
 
-        # Poll all accounts
         all_results = poll_all_accounts(
             state, 
             lookback_minutes=args.lookback,
@@ -722,7 +433,6 @@ def main():
             end_date=args.end_date
         )
         
-        # Summary by protocol
         proton_count = len([r for r in all_results if r.get('protocol') == 'proton'])
         gmail_count = len([r for r in all_results if r.get('protocol') == 'gmail'])
         
@@ -735,7 +445,6 @@ def main():
             print("\n👋 Single poll mode - exiting")
             break
 
-        # Wait for next poll
         print(f"\n⏱️  Sleeping for {POLL_INTERVAL}s...")
         time.sleep(POLL_INTERVAL)
 

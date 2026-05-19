@@ -49,34 +49,20 @@ Biomimetics is the infrastructure automation system that provides project manage
 
 ### 2. Email Synchronization System
 **Components**:
-- **ProtonMail Sync**: `scripts/email/email_backfill.py` and daemon (5 ProtonMail accounts via local bridge on port 1143).
-- **Processing Pipeline**: Local IMAP (Unverified SSL Context) → Qwen3.5-2b LLM Filter → Direct Notion API → BiOS Triage Database.
-- **LLM Intelligence**: Uses a "Ruthless SKIP" prompt to specifically extract personal, financial, legal, and business affairs related to Daniel Exall or Sheila Tilmouth. Default behavior: **SKIP on ambiguity** (highly skeptical filtering).
+- **Hourly Ingestion Daemon**: `scripts/email/email-ingestion-daemon.py` (Runs hourly via `com.bios.hourly-ingest` LaunchAgent).
+- **Processing Pipeline**: Local IMAP → Rule-Based Triage → Staging Folder (`docs/personal/emails/staging`) → Notion Webhook Notification.
+- **BiOS Master Daily Pipeline**: `scripts/bios_daily_pipeline.sh` (Runs at 6:00 PM via `com.bios.daily-pipeline` LaunchAgent). Coordinates Sweeping, Tagging, and Memory Sync.
+- **Source of Truth**: All authorized emails and documentation are moved to the **Google Drive Obsidian Vault** (`Obsidian-life/Personal/Emails/Vault`) before being committed to long-term memory.
 
-**LLM Prompt Configuration**:
-```
-You are a ruthless, precision email triage agent. Your ONLY job is to identify 
-emails directly related to the personal, financial, legal, or business affairs 
-of 'Daniel Exall' or 'Sheila Tilmouth'. You must be highly skeptical. If an email 
-is marketing, a newsletter, a generic automated alert, or spam, classify it as 
-'SKIP'. ONLY classify an email as 'KEEP' if you have high confidence it requires 
-human review by Daniel or Sheila. When in doubt, default to 'SKIP'.
-```
+**Triage Logic**:
+- **Rule-Based Net**: Uses a deterministic list of `KEEP_KEYWORDS` (e.g., invoice, legal, council, security) to identify high-signal emails.
+- **Institutional Detection**: Automatically keeps emails from institutional domains (`gov.uk`, `nhs.net`, etc.).
+- **Authorisation Flow**: Emails stay in `staging` until a user checks the **Auth Trigger** in the Notion "BiOS Authorisation" database.
 
-**Accounts**:
-| Email | Purpose |
-|-------|---------|
-| dan.exall@pm.me | Primary personal |
-| dan@arca-vsa.tech | ARCA business |
-| claws@arca-vsa.tech | AI identity |
-| arca@pm.me | ARCA projects |
-| info@pm.me | General info |
-
-**Database Purge Utility**:
-- **Script**: `scripts/email/purge_notion_triage.py`
-- **Purpose**: Bulk-archive all pages in BiOS Triage database
-- **Auth**: Securely fetches `notion-api-key` from Credentials Server at runtime
-- **Usage**: `python3 scripts/email/purge_notion_triage.py`
+**Database Maintenance**:
+- **Script**: `scripts/email/reset_notion_db.py`
+- **Purpose**: Bulk-archive all pages in the BiOS Triage database to clear the dashboard.
+- **Usage**: `python3 scripts/email/reset_notion_db.py`
 
 ### 3. File Processing System
 **Location**: `scripts/omni_sync.py`
@@ -1156,11 +1142,15 @@ ssh root@<instance_ip>
 
 #### 1. Email Processing Pipeline
 ```
-Proton Bridge (localhost:1143) 
-    → email_backfill.py 
-    → Qwen3.5-2b (Entity-Targeted Classification)
-    → Direct HTTPS POST 
-    → Notion Database (BiOS Triage)
+Hourly Ingest Daemon (com.bios.hourly-ingest)
+    → imaplib (Local Bridge/Gmail SSL)
+    → Local Staging (docs/personal/emails/staging)
+    → Notion Dashboard (Auth Required)
+                    ↓
+Master Daily Pipeline (6:00 PM - com.bios.daily-pipeline)
+    → Vault Sweeper (Move to GDrive Vault)
+    → Semantic Tagger (Inject <!-- LLM_TAGGED -->)
+    → Memory Sync (Push to GCP MuninnDB)
 ```
 
 #### 2. File Processing Pipeline

@@ -12,7 +12,7 @@ status: active
 
 ## Executive Summary
 
-Zed Editor and Antigravity have been configured with full MCP integration. **GitHub MCP was previously deployed** but the container is no longer running. All Azure resources (ACR, Key Vault) are still available for redeployment.   
+Zed Editor and Antigravity have been configured with full MCP integration. **GitHub MCP was previously deployed** but the container is no longer running. All Azure resources (ACR, Key Vault) are still available for redeployment.    #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment
 
 ---
 
@@ -26,7 +26,7 @@ Zed Editor and Antigravity have been configured with full MCP integration. **Git
 | "Resource group not found" | **RG exists**: `arca-consolidated` (eastus) |
 | "Needs new deployment" | **Needs redeployment** (container stopped) |
 | "ARCA databases don't exist" | **Need verification** - you said they exist |
-| Endpoint: `westus2...sse` | **Actual**: `eastus...mcp` |
+| Endpoint: `westus2...sse` | **Actual**: `eastus...mcp` | #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment
 
 ### Corrected Status ✅
 
@@ -37,7 +37,7 @@ Zed Editor and Antigravity have been configured with full MCP integration. **Git
 | **Notion MCP** | ✅ Ready | Token: `ntn_2071...` |
 | **GitHub MCP** | ⚠️ Was Deployed | **Redeploy** (10 min) |
 | **GCP Gateway** | ✅ Active | Running |
-| **Notion DBs** | ⚠️ Biomimetics exists | Verify ARCA DBs |
+| **Notion DBs** | ⚠️ Biomimetics exists | Verify ARCA DBs | #bios/architecture #bios/architecture/component #bios/mcp_server #bios/mcp_server/tool #bios/notion #bios/notion/query #bios/architecture #bios/architecture/component #bios/mcp_server #bios/mcp_server/tool #bios/notion #bios/notion/query
 
 ---
 
@@ -126,7 +126,7 @@ This will:
 - Retrieve `github-token` from Key Vault `arca-mcp-kv-dae`
 - Get ACR credentials from `arcamcpconsolidated`
 - Redeploy container to `arca-consolidated` RG (eastus)
-- Provide new endpoint URL   
+- Provide new endpoint URL    #bios/mcp_server #bios/mcp_server/deployment #bios/mcp_server/auth #bios/mcp_server #bios/mcp_server/deployment #bios/mcp_server/auth
 
 **Expected Output**:
 ```
@@ -141,7 +141,7 @@ You mentioned ARCA databases already exist. Please verify:
 
 - [ ] ARCA Projects database ID
 - [ ] ARCA Tasks database ID  
-- [ ] ARCA Memory database ID
+- [ ] ARCA Memory database ID #bios/notion #bios/notion/schema #bios/personal_assistant #bios/personal_assistant/task #bios/personal_assistant/memory #bios/notion #bios/notion/schema #bios/personal_assistant #bios/personal_assistant/task #bios/personal_assistant/memory
 
 Once confirmed, update:
 - `cloudflare/wrangler.toml` (add ARCA_DB_ID vars)
@@ -165,12 +165,12 @@ cd ~/biomimetics
 - `docs/ARCA_MCP_INTEGRATION.md` - ARCA integration guide
 - `docs/MCP_INTEGRATION_SUMMARY.md` - Original summary
 - `scripts/setup_mcp_integration.sh` - Setup script
-- `scripts/test_mcp_integration.sh` - Test script
+- `scripts/test_mcp_integration.sh` - Test script #bios/mcp_server #bios/mcp_server/deployment #bios/meta #bios/meta/operational #bios/mcp_server #bios/mcp_server/deployment #bios/meta #bios/meta/operational
 
 ### Modified Files
 - `~/.zed/settings.json` - Added GitHub MCP + GCP Gateway
 - `~/biomimetics/.antigravity/settings.json` - Created with full config
-- `README.md` - Added documentation links
+- `README.md` - Added documentation links #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/transport #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/transport
 
 ---
 
@@ -179,16 +179,16 @@ cd ~/biomimetics
 1. **ARCA Notion Databases**: What are the database IDs?
    - ARCA Projects: `________________________`
    - ARCA Tasks: `________________________`
-   - ARCA Memory: `________________________`
+   - ARCA Memory: `________________________` #bios/notion #bios/notion/schema #bios/personal_assistant #bios/personal_assistant/memory #bios/notion #bios/notion/schema #bios/personal_assistant #bios/personal_assistant/memory
 
 2. **GitHub MCP**: Was there a specific reason the container was stopped?
    - Cost optimization?
    - Migration in progress?
-   - Technical issues?
+   - Technical issues? #bios/mcp_server #bios/mcp_server/deployment #bios/meta #bios/meta/operational #bios/mcp_server #bios/mcp_server/deployment #bios/meta #bios/meta/operational
 
 3. **Endpoint Preference**: 
    - Previous was SSE (`/sse`) vs MCP (`/mcp`)
-   - Any reason to use one over the other?
+   - Any reason to use one over the other? #bios/architecture #bios/architecture/protocol #bios/mcp_server #bios/mcp_server/transport #bios/architecture #bios/architecture/protocol #bios/mcp_server #bios/mcp_server/transport
 
 ---
 
@@ -198,3 +198,5 @@ Let me know the ARCA database IDs and I'll update all configurations accordingly
 
 **Status**: Ready for redeployment + ARCA DB verification  
 **Next Action**: `./azure/deploy_github_mcp_eastus.sh`
+
+<!-- LLM_TAGGED -->

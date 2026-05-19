@@ -1,15 +1,8 @@
 #!/usr/bin/env python3
 """
-BiOS Vault to Memory Syncer
-Scans the local documentation vault and synchronizes new or modified markdown files 
-to the GCP Memory Orchestrator (MuninnDB/MemU).
-
-Architecture:
-1. Scan ~/biomimetics/docs/ recursively for .md files.
-2. Compute SHA-256 hash of content.
-3. Compare against ~/.arca/vault_sync_state.json.
-4. On change/new: POST to GCP_GATEWAY_URL with 'memorize' operation.
-5. Update state file.
+BiOS Tagged-to-Memory Syncer
+Specifically targets documents that have been processed by the semantic tagger
+(containing the <!-- LLM_TAGGED --> marker) and synchronizes them to MuninnDB.
 """
 
 import os
@@ -20,14 +13,16 @@ from pathlib import Path
 from datetime import datetime
 import urllib.request
 import urllib.error
+import ssl
 
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
 
-VAULT_ROOT = Path("/Users/danexall/biomimetics/docs")
-STATE_FILE = Path.home() / ".arca" / "vault_sync_state.json"
+VAULT_ROOT = Path("/Users/danexall/Google Drive/My Drive/Obsidian-life/Personal/Emails/Vault")
+STATE_FILE = Path.home() / ".arca" / "tagged_sync_state.json"
 GCP_GATEWAY_URL = "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator"
+TAG_MARKER = "<!-- LLM_TAGGED -->"
 
 # Supported extensions
 EXTENSIONS = {".md", ".markdown"}
@@ -37,11 +32,9 @@ EXTENSIONS = {".md", ".markdown"}
 # ---------------------------------------------------------------------------
 
 def compute_sha256(content: str) -> str:
-    """Compute SHA-256 hash of string content."""
     return hashlib.sha256(content.encode('utf-8')).hexdigest()
 
 def extract_tags(content: str) -> list:
-    """Extract tags from YAML frontmatter."""
     tags = []
     # Match YAML frontmatter
     match = re.match(r"^---\n(.*?)\n---\n", content, re.DOTALL)
@@ -57,33 +50,35 @@ def extract_tags(content: str) -> list:
             if tags_list_match:
                 tags = [line.strip().lstrip("-").strip() for line in tags_list_match.group(1).strip().split("\n")]
     
-    return tags
+    # Also find inline hashtags if not in frontmatter
+    inline_tags = re.findall(r"(?<!\S)#([a-zA-Z0-9_/]+)", content)
+    tags.extend(inline_tags)
+    
+    return list(set(tags))
 
 def load_state() -> dict:
-    """Load sync state from disk."""
     if STATE_FILE.exists():
         try:
             with open(STATE_FILE, "r") as f:
                 return json.load(f)
-        except Exception as e:
-            print(f"⚠ Warning: Could not load state file: {e}")
+        except Exception:
+            pass
     return {"files": {}}
 
 def save_state(state: dict):
-    """Save sync state to disk."""
     STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(STATE_FILE, "w") as f:
         json.dump(state, f, indent=2)
 
 def sync_to_gcp(content: str, filepath: str, tags: list) -> bool:
-    """POST payload to GCP Gateway."""
     payload = {
         "operation": "memorize",
         "content": content,
         "metadata": {
             "source": filepath,
             "tags": tags,
-            "synced_at": datetime.now().isoformat()
+            "synced_at": datetime.now().isoformat(),
+            "tagged": True
         }
     }
     
@@ -95,15 +90,11 @@ def sync_to_gcp(content: str, filepath: str, tags: list) -> bool:
     )
     
     try:
-        # Note: SSL verification is disabled as per previous pipeline stabilization 
-        # (local cert issues). If production security is required, remove context.
-        import ssl
         ctx = ssl.create_default_context()
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
         
         with urllib.request.urlopen(req, timeout=30, context=ctx) as response:
-            res_data = json.loads(response.read().decode('utf-8'))
             return True
     except Exception as e:
         print(f"❌ Failed to sync {filepath}: {e}")
@@ -111,7 +102,7 @@ def sync_to_gcp(content: str, filepath: str, tags: list) -> bool:
 
 def main():
     print("="*60)
-    print(f"  BiOS Vault-to-Memory Syncer | {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"  BiOS Tagged Memory Syncer | {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("="*60)
     
     if not VAULT_ROOT.exists():
@@ -122,11 +113,12 @@ def main():
     synced_count = 0
     skipped_count = 0
     error_count = 0
+    untagged_count = 0
 
-    # Walk the vault
+    # Walk the vault recursively
     for root, dirs, files in os.walk(VAULT_ROOT):
-        # Skip hidden, staging, and archive directories to prevent database pollution
-        dirs[:] = [d for d in dirs if not (d.startswith('.') or d == 'staging' or d == '.archive')]
+        # We allow staging here IF the files are tagged
+        dirs[:] = [d for d in dirs if not d.startswith('.')]
         
         for file in files:
             file_path = Path(root) / file
@@ -143,11 +135,16 @@ def main():
                 error_count += 1
                 continue
             
+            # CRITICAL CHECK: Only sync if it has the LLM_TAGGED marker
+            if TAG_MARKER not in content:
+                untagged_count += 1
+                continue
+            
             current_hash = compute_sha256(content)
             previous_hash = state["files"].get(rel_path)
             
             if current_hash != previous_hash:
-                print(f"🔄 Syncing: {rel_path}...")
+                print(f"🔄 Syncing Tagged: {rel_path}...")
                 tags = extract_tags(content)
                 if sync_to_gcp(content, rel_path, tags):
                     state["files"][rel_path] = current_hash
@@ -162,7 +159,7 @@ def main():
     save_state(state)
     
     print("-" * 60)
-    print(f"Summary: {synced_count} synced, {skipped_count} unchanged, {error_count} errors.")
+    print(f"Summary: {synced_count} synced, {skipped_count} unchanged, {untagged_count} untagged (skipped), {error_count} errors.")
     print("=" * 60)
 
 if __name__ == "__main__":

@@ -49,12 +49,12 @@ python3 azure/azure_secrets_init.py --refresh
 |----------|-----|
 | Biomimetic OS | `3244d2d9fc7c808b97c3ce78648d77a1` |
 | Life OS Triage | Auto-detected |
-| Tool Guard | Auto-detected |   
+| Tool Guard | Auto-detected |    #bios #bios/notion #bios/notion/schema #bios #bios/notion #bios/notion/schema
 
 **Usage in Copilot Chat**:
 - "Search my Notion for [topic]"
 - "Query the Biomimetic OS database"
-- "Create a page in Life OS Triage"
+- "Create a page in Life OS Triage" #bios #bios/notion #bios/notion/query #bios #bios/notion #bios/notion/query
 
 ---
 
@@ -80,7 +80,7 @@ python3 azure/azure_secrets_init.py --refresh
 **Usage**:
 - Open Command Palette (`Cmd+Shift+P`)
 - Search for "Notion" tools
-- Or use in Agent chat: "Search Notion for..."
+- Or use in Agent chat: "Search Notion for..." #bios #bios/notion #bios/notion/query #bios #bios/notion #bios/notion/query
 
 ---
 
@@ -199,7 +199,7 @@ python3 azure/azure_secrets_init.py --refresh
 
 - Ensure database IDs are correct in config
 - Check Notion integration has access to databases
-- In Notion: Open database → `...` → `Connect to` → Select integration   
+- In Notion: Open database → `...` → `Connect to` → Select integration    #bios #bios/notion #bios/notion/sync #bios/architecture/config #bios #bios/notion #bios/notion/sync #bios/architecture/config
 
 ### Permission Errors
 
@@ -222,7 +222,7 @@ python3 ~/biomimetics/azure/azure_secrets_init.py --refresh
 | `get_page` | Retrieve page by ID | `page_id` (string) |
 | `create_page` | Create new page | `database_id`, `properties` |
 | `update_page` | Modify existing page | `page_id`, `properties` |
-| `query_database` | Query database with filters | `database_id`, `filter` |
+| `query_database` | Query database with filters | `database_id`, `filter` | #bios #bios/mcp_server #bios/mcp_server/tool #bios/notion #bios/notion/query #bios #bios/mcp_server #bios/mcp_server/tool #bios/notion #bios/notion/query
 
 ---
 
@@ -231,4 +231,6 @@ python3 ~/biomimetics/azure/azure_secrets_init.py --refresh
 - All secrets stored in `~/biomimetics/secrets/azure_secrets.json` (mode 600)
 - Editor configs with secrets are gitignored
 - Use Azure Key Vault for centralized secret management
-- Rotate tokens regularly via `az keyvault secret set` `. `. `.
+- Rotate tokens regularly via `az keyvault secret set` `. `. `. #bios/architecture #bios/architecture/config #bios/architecture #bios/architecture/config
+
+<!-- LLM_TAGGED -->

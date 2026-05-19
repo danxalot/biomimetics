@@ -1,63 +1,119 @@
-"""Geometric Product Attention (GPA).
+"""Geometric Product Attention (GPA) — NumPy runtime.
 
-Replaces standard dot-product attention with a geometric-product decomposition:
-    Q·K = ⟨Q,K⟩ (scalar / proximity) + Q∧K (bivector / orientational coupling)
+1:1 parity port of Gold_Standard_Archive/pytorch/attention.py.
+No autograd. FP32 strict. All nn.Linear replaced with np.dot + bias arrays.
 
-The dual decomposition is interpretable: the system reveals whether attention
-is driven by distance (scalar) or alignment (bivector).
-
-Originally from `train_script.py:286-343`.
+Weight contract (loaded from checkpoint via weight_store):
+  W_q:           [d_model, d_model] float32
+  W_q_bias:      [d_model]          float32
+  W_k:           [d_model, d_model] float32
+  W_k_bias:      [d_model]          float32
+  W_v:           [d_model, d_model] float32
+  W_v_bias:      [d_model]          float32
+  W_out:         [d_model, d_model] float32
+  W_out_bias:    [d_model]          float32
+  scalar_weight: scalar float32
+  bivector_weight: scalar float32
 """
 import math
-from typing import Optional
-
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
+import numpy as np
+from .config import CONFIG
 
 
-class GeometricProductAttention(nn.Module):
-    def __init__(self, d_model: int, n_heads: int, mv_dim: int):
-        super().__init__()
-        self.d_model = d_model
-        self.n_heads = n_heads
-        self.head_dim = d_model // n_heads
-        self.mv_dim = mv_dim
+class GeometricProductAttention:
+    """GPA: scalar proximity + bivector orientational coupling.
 
-        self.W_q = nn.Linear(d_model, d_model)
-        self.W_k = nn.Linear(d_model, d_model)
-        self.W_v = nn.Linear(d_model, d_model)
-        self.W_out = nn.Linear(d_model, d_model)
+    Q·K  =  ⟨Q,K⟩  (scalar / proximity)
+           + Q∧K    (bivector / orientational coupling)
 
-        # Geometric product mixing: scalar + bivector weighting.
-        self.scalar_weight = nn.Parameter(torch.tensor(0.6))
-        self.bivector_weight = nn.Parameter(torch.tensor(0.4))
+    Mirrors pytorch GeometricProductAttention(nn.Module).
+    Call as gpa(x) to match forward() signature.
 
-        self.scale = math.sqrt(self.head_dim)
+    Args:
+        weights: dict with keys as documented in module docstring.
+                 If None, random-init weights are used (for testing).
+    """
 
-    def forward(self, x: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def __init__(self, d_model: int, n_heads: int, mv_dim: int, weights: dict = None):
+        self.d_model   = d_model
+        self.n_heads   = n_heads
+        self.head_dim  = d_model // n_heads
+        self.mv_dim    = mv_dim
+        self.scale     = math.sqrt(self.head_dim)
+
+        if weights is not None:
+            self.W_q   = np.asarray(weights["W_q"],   dtype=np.float32)
+            self.b_q   = np.asarray(weights["W_q_bias"], dtype=np.float32)
+            self.W_k   = np.asarray(weights["W_k"],   dtype=np.float32)
+            self.b_k   = np.asarray(weights["W_k_bias"], dtype=np.float32)
+            self.W_v   = np.asarray(weights["W_v"],   dtype=np.float32)
+            self.b_v   = np.asarray(weights["W_v_bias"], dtype=np.float32)
+            self.W_out = np.asarray(weights["W_out"],  dtype=np.float32)
+            self.b_out = np.asarray(weights["W_out_bias"], dtype=np.float32)
+            self.scalar_weight  = float(weights["scalar_weight"])
+            self.bivector_weight = float(weights["bivector_weight"])
+        else:
+            # Random init — for unit tests only
+            rng = np.random.default_rng(0)
+            def _rand(shape): return rng.standard_normal(shape).astype(np.float32) * 0.02
+            self.W_q   = _rand((d_model, d_model))
+            self.b_q   = np.zeros(d_model, dtype=np.float32)
+            self.W_k   = _rand((d_model, d_model))
+            self.b_k   = np.zeros(d_model, dtype=np.float32)
+            self.W_v   = _rand((d_model, d_model))
+            self.b_v   = np.zeros(d_model, dtype=np.float32)
+            self.W_out = _rand((d_model, d_model))
+            self.b_out = np.zeros(d_model, dtype=np.float32)
+            self.scalar_weight   = 0.6
+            self.bivector_weight = 0.4
+
+    @staticmethod
+    def _softmax(x: np.ndarray) -> np.ndarray:
+        """Numerically stable softmax along last axis."""
+        e = np.exp(x - x.max(axis=-1, keepdims=True))
+        return e / e.sum(axis=-1, keepdims=True)
+
+    def __call__(self, x: np.ndarray, mask: np.ndarray = None) -> np.ndarray:
+        """Forward pass.
+
+        Args:
+            x:    np.ndarray [B, T, d_model] float32
+            mask: np.ndarray [B, n_heads, T, T] float32 or None
+                  (0 = masked, 1 = unmasked — matches pytorch convention)
+
+        Returns:
+            np.ndarray [B, T, d_model] float32
+        """
+        x = np.asarray(x, dtype=np.float32)
         B, T, D = x.shape
 
-        Q = self.W_q(x).view(B, T, self.n_heads, self.head_dim).transpose(1, 2)
-        K = self.W_k(x).view(B, T, self.n_heads, self.head_dim).transpose(1, 2)
-        V = self.W_v(x).view(B, T, self.n_heads, self.head_dim).transpose(1, 2)
+        # Linear projections: [B, T, d_model]
+        Q = x @ self.W_q.T + self.b_q
+        K = x @ self.W_k.T + self.b_k
+        V = x @ self.W_v.T + self.b_v
 
-        # Scalar attention (inner product / proximity). FP32 to avoid overflow under AMP.
-        scalar_attn = torch.matmul(Q.float(), K.transpose(-2, -1).float()) / self.scale
+        # Reshape to [B, n_heads, T, head_dim]
+        Q = Q.reshape(B, T, self.n_heads, self.head_dim).transpose(0, 2, 1, 3)
+        K = K.reshape(B, T, self.n_heads, self.head_dim).transpose(0, 2, 1, 3)
+        V = V.reshape(B, T, self.n_heads, self.head_dim).transpose(0, 2, 1, 3)
 
-        # Bivector attention: antisymmetric component captures orientational coupling.
-        # Q∧K ≈ Q·Kᵀ - K·Qᵀ — magnitudes summed over keys give a per-row alignment score.
-        bivector_attn = (scalar_attn - scalar_attn.transpose(-2, -1)) * 0.5
-        bivector_magnitude = bivector_attn.abs().sum(dim=-1, keepdim=True)
-        bivector_magnitude = bivector_magnitude.expand_as(scalar_attn)
+        # Scalar attention [B, n_heads, T, T]
+        scalar_attn = np.matmul(Q, K.transpose(0, 1, 3, 2)) / self.scale
+
+        # Bivector attention: antisymmetric component — captures orientational coupling
+        bivector_attn      = (scalar_attn - scalar_attn.transpose(0, 1, 3, 2)) * 0.5
+        bivector_magnitude = np.abs(bivector_attn).sum(axis=-1, keepdims=True)
+        bivector_magnitude = np.broadcast_to(bivector_magnitude, scalar_attn.shape).copy()
 
         attn = self.scalar_weight * scalar_attn + self.bivector_weight * bivector_magnitude
 
         if mask is not None:
-            attn = attn.masked_fill(mask == 0, float("-inf"))
+            attn = np.where(mask == 0, -1e9, attn)
 
-        attn = F.softmax(attn, dim=-1).to(V.dtype)
+        attn = self._softmax(attn)
 
-        out = torch.matmul(attn, V)
-        out = out.transpose(1, 2).contiguous().view(B, T, D)
-        return self.W_out(out)
+        # Context vectors [B, n_heads, T, head_dim]
+        out = np.matmul(attn, V)
+        # Merge heads: [B, T, d_model]
+        out = out.transpose(0, 2, 1, 3).reshape(B, T, D)
+        return out @ self.W_out.T + self.b_out

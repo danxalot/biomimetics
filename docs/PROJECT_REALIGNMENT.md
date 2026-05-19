@@ -7,7 +7,7 @@ status: active
 
 **Date**: 2026-03-19  
 **Directive**: Project Realignment for Biomimetics ↔ ARCA Integration  
-**Status**: ✅ Discovery Complete | ⚠️ ARCA Database IDs NOT FOUND in codebase
+**Status**: ✅ Discovery Complete | ⚠️ ARCA Database IDs NOT FOUND in codebase #bios/meta #bios/meta/operational #bios/architecture #bios/meta #bios/meta/operational #bios/architecture
 
 ---
 
@@ -23,7 +23,7 @@ status: active
 | **GitHub MCP** | ⚠️ Stopped | Azure container not running |
 | **Migration Target** | ✅ Ready | Koyeb 512MB/0.1vCPU free tier compatible |
 | **Path Corrections** | ✅ COMPLETE | All scripts updated |
-| **Migration Scripts** | ✅ CREATED | Koyeb deploy + Azure teardown ready |
+| **Migration Scripts** | ✅ CREATED | Koyeb deploy + Azure teardown ready | #bios/notion #bios/notion/schema #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/notion #bios/notion/schema #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config
 
 ---
 
@@ -40,7 +40,7 @@ status: active
 **Conclusion**: ARCA project Notion databases are either:
 1. Not yet created in Notion
 2. Created but not configured in biomimetics codebase
-3. Configured externally (not in version control)   
+3. Configured externally (not in version control)    #bios/notion #bios/notion/schema #bios/notion #bios/notion/schema
 
 **Required Action**: User must provide ARCA database IDs to complete integration.
 
@@ -57,7 +57,7 @@ status: active
 | **Biomimetic OS** | `3284d2d9fc7c811188deeeaba9c5f845` | ✅ Active |
 | **Life OS Triage** | `3284d2d9fc7c81bd9a91e865511e642f` | ✅ Active |
 | **Tool Guard** | `3284d2d9fc7c8113bfecca75f4235ece` | ✅ Active |
-| **CoPaw Approval** | `3284d2d9fc7c8113bfecca75f4235ece` | ✅ Active |
+| **CoPaw Approval** | `3284d2d9fc7c8113bfecca75f4235ece` | ✅ Active | #bios/notion #bios/notion/query #bios/copaw #bios/copaw/workflow #bios/notion #bios/notion/query #bios/copaw #bios/copaw/workflow
 
 #### ARCA Project (Unknown ❌)
 
@@ -66,13 +66,13 @@ status: active
 **Required Action**: User must provide the following database IDs:
 - `ARCA_PROJECTS_DB_ID` = `________________________`
 - `ARCA_TASKS_DB_ID` = `________________________`
-- `ARCA_MEMORY_DB_ID` = `________________________`
+- `ARCA_MEMORY_DB_ID` = `________________________` #bios/notion #bios/notion/schema #bios/personal_assistant #bios/personal_assistant/task #bios/personal_assistant/memory #bios/notion #bios/notion/schema #bios/personal_assistant #bios/personal_assistant/task #bios/personal_assistant/memory
 
 **Where to Find**:
 1. Open Notion
 2. Navigate to ARCA project databases
 3. Click `•••` → `Copy link`
-4. Extract database ID from URL (32-character hex string)   
+4. Extract database ID from URL (32-character hex string)    #bios #bios/notion #bios/notion/query #bios #bios/notion #bios/notion/query
 
 ---
 
@@ -123,7 +123,7 @@ GITHUB_PAT=$(cat "$GITHUB_PAT_FILE" | tr -d '\n')
 **Integration Pattern**:
 1. Scripts read secrets directly from `.secrets/` directory
 2. Secrets injected as environment variables to containers
-3. No centralized secret manager (unlike Biomimetics which uses Azure Key Vault)   
+3. No centralized secret manager (unlike Biomimetics which uses Azure Key Vault)    #bios #bios/architecture #bios/architecture/config #bios #bios/architecture #bios/architecture/config
 
 #### `.env` File Configuration
 
@@ -163,7 +163,7 @@ AZURE_CLIENT_SECRET=[AZURE_CLIENT_SECRET_REDACTED]
 |------|----------------|-----------------|
 | `scripts/deploy/redeploy-github-mcp.sh` | `/Users/danexall/Documents/VS Code Projects/ARCA/.secrets/github_token` | Use `$ARCA_SECRETS_DIR` variable |
 | `scripts/deploy/deploy-github-mcp-sse.sh` | `/Users/danexall/Documents/VS Code Projects/ARCA/.secrets/github_token` | Use `$ARCA_SECRETS_DIR` variable |
-| `scripts/memory/migrate_claws_data.py` | Multiple `/Users/danexall/Documents/VS Code Projects/ARCA/.secrets/` paths | Use environment variable |
+| `scripts/memory/migrate_claws_data.py` | Multiple `/Users/danexall/Documents/VS Code Projects/ARCA/.secrets/` paths | Use environment variable | #bios #bios/architecture #bios/architecture/config #bios #bios/architecture #bios/architecture/config
 
 #### Recommended Fix
 
@@ -185,7 +185,7 @@ These already use `Path.home()` or `~/.arca/`:
 - `scripts/omni_sync.py` → `~/.arca/omni_sync/`
 - `scripts/backfill_claws.py` → `~/.arca/proton_sync_state.json`
 - `scripts/email/email-ingestion-daemon.py` → `~/.arca/email_state.json`
-- `scripts/sync/obsidian-sync-skill.py` → `~/.arca/obsidian_sync_state.json`
+- `scripts/sync/obsidian-sync-skill.py` → `~/.arca/obsidian_sync_state.json` #bios #bios/architecture #bios/architecture/config #bios #bios/architecture #bios/architecture/config
 
 ---
 
@@ -247,7 +247,7 @@ git reflog expire --expire=now --all
 git gc --prune=now --aggressive
 ```
 
-**Recommendation**: Use **Option A** if the secret is already rotated or not sensitive. The GitHub token in use (`[GITHUB_TOKEN_REDACTED]`) appears to be intentionally exposed for the MCP server.   
+**Recommendation**: Use **Option A** if the secret is already rotated or not sensitive. The GitHub token in use (`[GITHUB_TOKEN_REDACTED]`) appears to be intentionally exposed for the MCP server.    #bios #bios/mcp_server #bios/mcp_server/auth #bios #bios/mcp_server #bios/mcp_server/auth
 
 ---
 
@@ -311,7 +311,7 @@ az acr delete \
 **Option A: Keep Key Vaults (Recommended)**
 - Biomimetics still uses `arca-mcp-kv-dae`
 - Cost: $0 (within free tier)
-- No action needed
+- No action needed #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment
 
 **Option B: Delete Key Vaults**
 ```bash
@@ -346,7 +346,7 @@ az group show --name arca-consolidated --query "properties.provisioningState"
 | ACR Basic | $5.00 | $0.00 | $5.00/month |
 | ACI (stopped) | $0.00 | $0.00 | $0.00 |
 | Key Vaults | $0.00 | $0.00 | $0.00 |
-| **Total** | **$5.00** | **$0.00** | **$60/year** |
+| **Total** | **$5.00** | **$0.00** | **$60/year** | #bios/architecture #bios/meta #bios/meta/operational #bios/architecture #bios/meta #bios/meta/operational
 
 ---
 
@@ -384,7 +384,7 @@ CMD ["npx", "-y", "supergateway", \
 **Actual Usage** (based on MCP server behavior):
 - CPU: < 0.1 cores (idle), < 0.5 cores (active)
 - Memory: ~50-100 MB
-- Storage: None (stateless)   
+- Storage: None (stateless)    #bios/architecture #bios/architecture/component #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/component #bios/mcp_server #bios/mcp_server/deployment
 
 #### Koyeb Compatibility Assessment
 
@@ -393,7 +393,7 @@ CMD ["npx", "-y", "supergateway", \
 - Memory: 512 MB
 - Storage: Ephemeral (stateless)
 - Bandwidth: 100 GB/month
-- Always-on: ✅ Yes (free tier includes 2 services)   
+- Always-on: ✅ Yes (free tier includes 2 services)    #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment
 
 **Compatibility**: ✅ **FULLY COMPATIBLE**
 
@@ -411,7 +411,7 @@ The GitHub MCP server is stateless and low-resource, making it ideal for Koyeb's
 - ✅ Built-in Docker support
 - ✅ Automatic HTTPS
 - ✅ Global edge network
-- ✅ No credit card required for free tier   
+- ✅ No credit card required for free tier    #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment
 
 **Deployment Steps**:
 
@@ -470,7 +470,7 @@ koyeb service create \
 |----------|---------|---------|
 | `PORT` | `8080` | Server port |
 | `HOST` | `0.0.0.0` | Bind address |
-| `LOG_LEVEL` | `info` | Logging verbosity |
+| `LOG_LEVEL` | `info` | Logging verbosity | #bios/architecture #bios/architecture/config #bios/architecture #bios/architecture/config
 
 **Expected Output**:
 ```
@@ -506,7 +506,7 @@ With new endpoint:
 - ✅ $2.50/month (cheapest paid option)
 - ✅ 0.5 vCPU / 512 MB
 - ✅ Full VM control
-- ✅ Docker support
+- ✅ Docker support #bios/infrastructure #bios/mcp_server #bios/mcp_server/deployment #bios/infrastructure #bios/mcp_server #bios/mcp_server/deployment
 
 **Deployment Steps**:
 
@@ -545,7 +545,7 @@ docker run -d \
 - [ ] Backup Azure Key Vault secrets
 - [ ] Test Docker image locally
 - [ ] Verify GitHub PAT is still valid
-- [ ] Create Koyeb account (if needed)   
+- [ ] Create Koyeb account (if needed)    #bios/meta #bios/meta/operational #bios/personal_assistant #bios/personal_assistant/task #bios/meta #bios/meta/operational #bios/personal_assistant #bios/personal_assistant/task
 
 #### Migration Day
 
@@ -553,7 +553,7 @@ docker run -d \
 - [ ] Test endpoint (`curl https://<koyeb-url>/sse`)
 - [ ] Update client configurations
 - [ ] Test GitHub MCP from Zed/Antigravity/CoPaw
-- [ ] Monitor logs for errors   
+- [ ] Monitor logs for errors    #bios/mcp_server #bios/mcp_server/deployment #bios/mcp_server/transport #bios/copaw #bios/mcp_server #bios/mcp_server/deployment #bios/mcp_server/transport #bios/copaw
 
 #### Post-Migration
 
@@ -561,7 +561,7 @@ docker run -d \
 - [ ] Delete Azure container
 - [ ] Delete Azure ACR (optional)
 - [ ] Update documentation
-- [ ] Notify users of new endpoint   
+- [ ] Notify users of new endpoint    #bios/meta #bios/meta/operational #bios/personal_assistant #bios/personal_assistant/task #bios/meta #bios/meta/operational #bios/personal_assistant #bios/personal_assistant/task
 
 ---
 
@@ -576,7 +576,7 @@ docker run -d \
 2. **Provide ARCA Database IDs** (5 min)
    - Open Notion → ARCA databases
    - Copy database IDs
-   - Update `docs/PROJECT_REALIGNMENT.md`
+   - Update `docs/PROJECT_REALIGNMENT.md` #bios/notion #bios/notion/query #bios/notion/schema #bios/architecture #bios/architecture/config #bios/notion #bios/notion/query #bios/notion/schema #bios/architecture #bios/architecture/config
 
 3. **Deploy to Koyeb** (15 min)
    ```bash
@@ -598,7 +598,7 @@ After migration, update these files with new Koyeb endpoint:
 |------|---------|-----|
 | `~/.zed/settings.json` | `http://github-mcp-server.eastus.azurecontainer.io:8080/mcp` | `https://<koyeb-url>/sse` |
 | `~/biomimetics/.antigravity/settings.json` | Same as above | Same as above |
-| `~/.copaw/config.json` | Same as above | Same as above |
+| `~/.copaw/config.json` | Same as above | Same as above | #bios/mcp_server #bios/mcp_server/transport #bios/mcp_server/deployment #bios/copaw #bios/copaw/workflow #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/transport #bios/mcp_server/deployment #bios/copaw #bios/copaw/workflow #bios/architecture #bios/architecture/config
 
 ### Open Questions for User
 
@@ -615,3 +615,5 @@ After migration, update these files with new Koyeb endpoint:
 **Report Generated**: 2026-03-19  
 **Next Review**: After ARCA database IDs provided  
 **Owner**: Qwen (Project Realignment Agent)
+
+<!-- LLM_TAGGED -->

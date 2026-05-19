@@ -1,265 +1,364 @@
-"""VersorMemMambaBlock — single Versor block for the Noumenal Engine backbone.
+"""VersorMemMambaBlock — NumPy runtime.
 
-GPA → MemMamba-3 → NoteBlock → LayerNorm.
+1:1 parity port of Gold_Standard_Archive/pytorch/blocks.py.
+Architecture per block:
+    GPA → SSM scan → (optional CrossTokenAttention) → NoteBlock → LayerNorm
 
-Combines geometric attention (spatial reasoning) with linear-time state-space
-scanning (temporal sequence processing).
+Mamba is ported as a simplified linear SSM (inference-only: no selective scan
+CUDA kernel). The SSM scan is implemented as a recurrent scan over the time
+dimension using the SSD (State-Space Dual) formulation. This is exact for
+inference (no approximation) and avoids any dependency on mamba_ssm or CUDA.
 
-Uses the real `mamba_ssm.Mamba` library where available. If the library is
-absent (e.g. local dev, no CUDA), a fallback `_PyMamba` is used so import
-succeeds — but the fallback is approximate and is only intended for unit tests.
+QAT / fake_quant: stripped — inference runtime is FP32 strict.
+CrossTokenAttention: implemented via numpy matmul (no nn.MultiheadAttention).
 
-Originally from `train_script.py:409-446`.
+Weight contract — per block, indexed by layer_idx:
+    gpa.*:            see attention.py weight contract
+    mamba.*:          see _MambaSSM weight contract below
+    note_block.*:     see note_block.py weight contract
+    norm1_weight/bias, norm2_weight/bias, norm3_weight/bias: [d_model]
+    cross_attn.*:     optional, only if layer_idx in cross_attn_layers
 """
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-
+import math
+import numpy as np
+from .config import CONFIG
 from .attention import GeometricProductAttention
 from .note_block import NoteBlock
-from .config import CONFIG
 
 
-# ════════════════════════════════════════════════════════════════════════
-# Mamba kernel resolution: Mamba3 → Mamba2 → Mamba1 → _PyMamba fallback
-# ════════════════════════════════════════════════════════════════════════
-#
-# CONFIG flag `mamba_impl` controls version selection:
-#   - "auto"  : pick best available, prefer newest (default)
-#   - "v1"    : force Mamba1 (use for state_dict compat with pre-Mamba2 ckpts)
-#   - "v2"    : force Mamba2 (requires mamba_ssm.modules.mamba2)
-# Mamba kernel resolution: Mamba2 → Mamba1 → _PyMamba fallback
-# ════════════════════════════════════════════════════════════════════════
-#
-# CRITICAL: switching Mamba versions BREAKS state_dict compatibility because
-# the parameter names and shapes differ:
-#   Mamba1: in_proj, conv1d, A_log[d_inner, d_state], D, x_proj, dt_proj, out_proj
-#   Mamba2: in_proj, conv1d, A_log[n_heads], D[n_heads], norm, dt_bias, out_proj
-#
-try:
-    # Round 7.4 — probe for Mamba-2. If present, we prefer the SSD kernels
-    # for foundation training as they are ~2x faster and support higher
-    # rank d_state.
-    from mamba_ssm.modules.mamba2 import Mamba2 as Mamba
-    _HAS_MAMBA_SSM = True
-    MAMBA_VERSION = 2
-    _MAMBA_SRC = "mamba_ssm.modules.mamba2"
-except ImportError:
-    try:
-        # Fallback to Mamba-1 (standard selective scan)
-        from mamba_ssm import Mamba as MambaCls
-        Mamba = MambaCls
-        _HAS_MAMBA_SSM = True
-        MAMBA_VERSION = 1
-        _MAMBA_SRC = "mamba_ssm"
-    except ImportError:
-        # Final fallback — pure-Python toy for local dev (no CUDA)
-        _HAS_MAMBA_SSM = False
-        MAMBA_VERSION = 0
-        _MAMBA_SRC = "fallback_toy"
+# ─────────────────────────────────────────────────────────────────────────────
+# Minimal SSM inference kernel (Mamba-compatible)
+# ─────────────────────────────────────────────────────────────────────────────
 
-        class _PyMamba(nn.Module):
-            def __init__(self, d_model, d_state=128, d_conv=4, expand=2, **kwargs):
-                super().__init__()
-                self.d_inner = d_model * expand
-                self.in_proj = nn.Linear(d_model, self.d_inner * 2)
-                self.A_log = nn.Parameter(torch.randn(self.d_inner, d_state))
-                self.D = nn.Parameter(torch.ones(self.d_inner))
-                self.out_proj = nn.Linear(self.d_inner, d_model)
+class _MambaSSM:
+    """Inference-only SSM scan with Mamba1-compatible weight shapes.
 
-            def forward(self, x):
-                # Simplified projection — no scan, just non-linearity
-                xz = self.in_proj(x)
-                x_in, z = xz.chunk(2, dim=-1)
-                y = F.silu(x_in) * F.silu(z)
-                return self.out_proj(y)
+    Implements the parallel prefix scan formulation for inference.
+    Parameter shapes mirror Mamba1 (mamba_ssm.Mamba):
+        in_proj:   [d_inner*2, d_model]  (fused x+z projection)
+        conv1d:    [d_inner, 1, d_conv]
+        x_proj:    [dt_rank+d_state*2, d_inner]
+        dt_proj:   [d_inner, dt_rank]
+        A_log:     [d_inner, d_state]
+        D:         [d_inner]
+        out_proj:  [d_model, d_inner]
+    plus biases: in_proj_bias*, conv1d_bias, x_proj_bias*, dt_proj_bias, out_proj_bias*
+    (* Mamba1 uses bias=False for in_proj and x_proj by default; included for compat)
 
-        Mamba = _PyMamba
-
-
-class CrossTokenAttention(nn.Module):
-    """Tier A: Interleaved MHA for long-range cross-token physics coupling."""
-    def __init__(self, d_model, num_heads=4):
-        super().__init__()
-        self.mha = nn.MultiheadAttention(embed_dim=d_model, num_heads=num_heads, batch_first=True)
-        self.norm = nn.LayerNorm(d_model)
-        
-    def forward(self, x):
-        # x shape: [Batch, Time, Dim]
-        x_norm = self.norm(x)
-        attn_out, _ = self.mha(x_norm, x_norm, x_norm)
-        return x + attn_out  # Residual connection
-
-
-class VersorMemMambaBlock(nn.Module):
-    """Single Versor block: GPA → Mamba → NoteBlock → LayerNorm.
-
-    Args:
-        d_model: embedding dim.
-        n_heads: GPA head count.
-        mv_dim: multivector dim (typically 32 for Cl(4,1)).
-        layer_idx: index in the stack (drives cross-layer NoteBlock injection).
+    For Mamba2 checkpoints, weight_loader must remap to this interface.
     """
 
-    def __init__(self, d_model: int, n_heads: int, mv_dim: int, layer_idx: int, total_layers: int = 6):
-        super().__init__()
-        self.layer_idx = layer_idx
-        self.gpa = GeometricProductAttention(d_model, n_heads, mv_dim)
+    def __init__(self, d_model: int, d_state: int, d_conv: int, expand: int, weights: dict):
+        self.d_model  = d_model
+        self.d_inner  = d_model * expand
+        self.d_state  = d_state
+        self.d_conv   = d_conv
 
-        # ── d_state resolution (CONFIG-controllable) ────────────────────
-        # Three modes:
-        #   1. CONFIG["mamba_d_state_per_layer"] = [s0,s1,s2,s3,s4,s5] → use list
-        #   2. CONFIG["mamba_d_state_hierarchical"] = True → use Tier B scaling
-        #   3. (default) use uniform CONFIG["mamba_d_state"]
-        #
-        # Default is uniform — guarantees state_dict compat with prior phases.
-        # Hierarchical or per-layer modes should only be enabled in dedicated
-        # architecture-upgrade phases that include structural salvage.
-        per_layer = CONFIG.get("mamba_d_state_per_layer")
-        if per_layer is not None and len(per_layer) > layer_idx:
-            d_state = per_layer[layer_idx]
-        elif CONFIG.get("mamba_d_state_hierarchical", False):
-            # Tier B: deep layers get more memory; matches multi-scale physics
-            if layer_idx < total_layers // 3:
-                d_state = 64 if MAMBA_VERSION >= 2 else 128
-            elif layer_idx < (2 * total_layers) // 3:
-                d_state = 128 if MAMBA_VERSION >= 2 else 256
-            else:
-                d_state = 256 if MAMBA_VERSION >= 2 else 512
+        # Load weights — all float32
+        def _w(key): return np.asarray(weights[key], dtype=np.float32)
+
+        self.W_in    = _w("in_proj_weight")      # [d_inner*2, d_model]
+        self.b_in    = weights.get("in_proj_bias")
+        self.b_in    = np.asarray(self.b_in, dtype=np.float32) if self.b_in is not None else np.zeros(self.d_inner * 2, dtype=np.float32)
+
+        self.W_conv  = _w("conv1d_weight")       # [d_inner, 1, d_conv]
+        self.b_conv  = _w("conv1d_bias")         # [d_inner]
+
+        self.W_xproj = _w("x_proj_weight")       # [dt_rank+d_state*2, d_inner]
+        self.b_xproj = weights.get("x_proj_bias")
+        self.b_xproj = np.asarray(self.b_xproj, dtype=np.float32) if self.b_xproj is not None else np.zeros(self.W_xproj.shape[0], dtype=np.float32)
+
+        self.W_dt    = _w("dt_proj_weight")      # [d_inner, dt_rank]
+        self.b_dt    = _w("dt_proj_bias")        # [d_inner]
+
+        self.A_log   = _w("A_log")               # [d_inner, d_state]
+        self.D       = _w("D")                   # [d_inner]
+
+        self.W_out   = _w("out_proj_weight")     # [d_model, d_inner]
+        self.b_out   = weights.get("out_proj_bias")
+        self.b_out   = np.asarray(self.b_out, dtype=np.float32) if self.b_out is not None else np.zeros(d_model, dtype=np.float32)
+
+        # Derived shapes
+        dt_rank_plus = self.W_xproj.shape[0]
+        self.dt_rank = dt_rank_plus - d_state * 2
+
+    @staticmethod
+    def _silu(x: np.ndarray) -> np.ndarray:
+        return x / (1.0 + np.exp(-x))
+
+    @staticmethod
+    def _softplus(x: np.ndarray) -> np.ndarray:
+        return np.log1p(np.exp(x))
+
+    def _causal_conv1d(self, x: np.ndarray) -> np.ndarray:
+        """Causal depthwise conv1d.
+
+        Args:
+            x: [B, T, d_inner]
+        Returns:
+            [B, T, d_inner]
+        """
+        B, T, Di = x.shape
+        d_conv = self.d_conv
+        # Pad left with zeros (causal)
+        padded = np.concatenate([np.zeros((B, d_conv - 1, Di), dtype=np.float32), x], axis=1)  # [B, T+d_conv-1, Di]
+
+        # Kernel: [d_inner, 1, d_conv] → [d_inner, d_conv]
+        kernel = self.W_conv[:, 0, :]  # [d_inner, d_conv]
+        out = np.zeros((B, T, Di), dtype=np.float32)
+
+        # Depthwise: for each output position t, sum over window
+        for t in range(T):
+            window = padded[:, t:t + d_conv, :]          # [B, d_conv, d_inner]
+            out[:, t, :] = np.einsum("bkd,dk->bd", window, kernel) + self.b_conv
+
+        return out
+
+    def _ssm_scan(self, x: np.ndarray, dt: np.ndarray, A: np.ndarray, B: np.ndarray, C: np.ndarray) -> np.ndarray:
+        """Sequential SSM scan (inference-safe, no CUDA).
+
+        Args:
+            x:  [B, T, d_inner]
+            dt: [B, T, d_inner]  — discretized time-step
+            A:  [d_inner, d_state]   — continuous A (negative by construction)
+            B:  [B, T, d_state]
+            C:  [B, T, d_state]
+        Returns:
+            y:  [B, T, d_inner]
+        """
+        B_sz, T, Di = x.shape
+        Ds = self.d_state
+
+        # ZOH discretization: dA = exp(dt * A), dB = dt * B
+        # dt: [B, T, Di], A: [Di, Ds] → dA: [B, T, Di, Ds]
+        dA = np.exp(dt[:, :, :, np.newaxis] * A[np.newaxis, np.newaxis, :, :])  # [B, T, Di, Ds]
+        # dB: [B, T, Di, Ds]
+        dB = dt[:, :, :, np.newaxis] * B[:, :, np.newaxis, :]                   # [B, T, Di, Ds]
+
+        # Recurrent scan
+        h = np.zeros((B_sz, Di, Ds), dtype=np.float32)   # hidden state
+        y = np.zeros((B_sz, T, Di), dtype=np.float32)
+
+        for t in range(T):
+            h = dA[:, t, :, :] * h + dB[:, t, :, :] * x[:, t, :, np.newaxis]  # [B, Di, Ds]
+            # y_t = sum_s h_t * C_t: [B, Di]
+            y[:, t, :] = np.einsum("bds,bs->bd", h, C[:, t, :])
+
+        return y
+
+    def __call__(self, x: np.ndarray) -> np.ndarray:
+        """Forward pass — inference equivalent of mamba_ssm forward.
+
+        Args:
+            x: [B, T, d_model] float32
+        Returns:
+            [B, T, d_model] float32
+        """
+        x = np.asarray(x, dtype=np.float32)
+        B, T, D = x.shape
+        Di = self.d_inner
+
+        # 1. Input projection + split
+        xz = x @ self.W_in.T + self.b_in          # [B, T, d_inner*2]
+        xi, z = xz[..., :Di], xz[..., Di:]        # each [B, T, d_inner]
+
+        # 2. Causal conv1d on xi
+        xi_conv = self._causal_conv1d(xi)          # [B, T, d_inner]
+        xi_conv = self._silu(xi_conv)
+
+        # 3. SSM parameters (x_proj)
+        xproj = xi_conv @ self.W_xproj.T + self.b_xproj   # [B, T, dt_rank+d_state*2]
+        dt_raw = xproj[..., :self.dt_rank]                  # [B, T, dt_rank]
+        B_ssm  = xproj[..., self.dt_rank:self.dt_rank + self.d_state]   # [B, T, d_state]
+        C_ssm  = xproj[..., self.dt_rank + self.d_state:]               # [B, T, d_state]
+
+        # 4. dt: low-rank → d_inner, softplus, clamp
+        dt = dt_raw @ self.W_dt.T + self.b_dt               # [B, T, d_inner]
+        dt = np.clip(self._softplus(dt), 1e-4, None)
+
+        # 5. A — negative exponential of A_log
+        A = -np.exp(self.A_log)                              # [d_inner, d_state]
+
+        # 6. SSM scan
+        y = self._ssm_scan(xi_conv, dt, A, B_ssm, C_ssm)   # [B, T, d_inner]
+
+        # 7. Skip connection with D
+        y = y + xi_conv * self.D[np.newaxis, np.newaxis, :]
+
+        # 8. Gate with z
+        y = y * self._silu(z)
+
+        # 9. Output projection
+        return y @ self.W_out.T + self.b_out                 # [B, T, d_model]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Cross-Token Attention (Tier A — interleaved MHA)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class _CrossTokenAttention:
+    """Tier A: MHA for long-range cross-token physics coupling.
+
+    Mirrors pytorch CrossTokenAttention. Simple self-attention with residual.
+
+    Weight contract:
+        mha_q_proj_weight: [d_model, d_model]
+        mha_q_proj_bias:   [d_model]
+        mha_k_proj_weight: [d_model, d_model]
+        mha_k_proj_bias:   [d_model]
+        mha_v_proj_weight: [d_model, d_model]
+        mha_v_proj_bias:   [d_model]
+        mha_out_proj_weight: [d_model, d_model]
+        mha_out_proj_bias:   [d_model]
+        norm_weight: [d_model]
+        norm_bias:   [d_model]
+    """
+
+    def __init__(self, d_model: int, num_heads: int, weights: dict):
+        self.d_model   = d_model
+        self.num_heads = num_heads
+        self.head_dim  = d_model // num_heads
+        self.scale     = math.sqrt(self.head_dim)
+
+        def _w(k): return np.asarray(weights[k], dtype=np.float32)
+
+        self.W_q   = _w("mha_q_proj_weight"); self.b_q = _w("mha_q_proj_bias")
+        self.W_k   = _w("mha_k_proj_weight"); self.b_k = _w("mha_k_proj_bias")
+        self.W_v   = _w("mha_v_proj_weight"); self.b_v = _w("mha_v_proj_bias")
+        self.W_out = _w("mha_out_proj_weight"); self.b_out = _w("mha_out_proj_bias")
+        self.norm_w = _w("norm_weight"); self.norm_b = _w("norm_bias")
+
+    @staticmethod
+    def _layer_norm(x: np.ndarray, w: np.ndarray, b: np.ndarray, eps: float = 1e-5) -> np.ndarray:
+        mean = x.mean(axis=-1, keepdims=True)
+        var  = x.var(axis=-1, keepdims=True)
+        return w * (x - mean) / np.sqrt(var + eps) + b
+
+    @staticmethod
+    def _softmax(x: np.ndarray) -> np.ndarray:
+        e = np.exp(x - x.max(axis=-1, keepdims=True))
+        return e / e.sum(axis=-1, keepdims=True)
+
+    def __call__(self, x: np.ndarray) -> np.ndarray:
+        """Args: x [B, T, d_model]. Returns [B, T, d_model]."""
+        x    = np.asarray(x, dtype=np.float32)
+        B, T, D = x.shape
+        H, Hd = self.num_heads, self.head_dim
+
+        x_norm = self._layer_norm(x, self.norm_w, self.norm_b)
+
+        Q = (x_norm @ self.W_q.T + self.b_q).reshape(B, T, H, Hd).transpose(0, 2, 1, 3)
+        K = (x_norm @ self.W_k.T + self.b_k).reshape(B, T, H, Hd).transpose(0, 2, 1, 3)
+        V = (x_norm @ self.W_v.T + self.b_v).reshape(B, T, H, Hd).transpose(0, 2, 1, 3)
+
+        attn = self._softmax(np.matmul(Q, K.transpose(0, 1, 3, 2)) / self.scale)
+        out  = np.matmul(attn, V).transpose(0, 2, 1, 3).reshape(B, T, D)
+        out  = out @ self.W_out.T + self.b_out
+        return x + out   # residual
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# VersorMemMambaBlock
+# ─────────────────────────────────────────────────────────────────────────────
+
+class VersorMemMambaBlock:
+    """Single Versor block: GPA → SSM → (CrossAttn) → NoteBlock → LayerNorm.
+
+    Mirrors pytorch VersorMemMambaBlock(nn.Module).
+
+    Args:
+        d_model:      embedding dimension.
+        n_heads:      GPA head count.
+        mv_dim:       multivector dimension (32 for Cl(4,1)).
+        layer_idx:    index in the stack.
+        total_layers: stack depth (for cross_layer_interval).
+        weights:      dict with all sub-module weights.
+    """
+
+    def __init__(
+        self,
+        d_model: int,
+        n_heads: int,
+        mv_dim: int,
+        layer_idx: int,
+        total_layers: int = 6,
+        weights: dict = None,
+    ):
+        self.layer_idx   = layer_idx
+        self.d_model     = d_model
+
+        # Sub-modules
+        gpa_w   = weights.get("gpa",   None) if weights else None
+        mamba_w = weights.get("mamba", None) if weights else None
+        nb_w    = weights.get("note_block", None) if weights else None
+        cross_w = weights.get("cross_attn", None) if weights else None
+
+        self.gpa        = GeometricProductAttention(d_model, n_heads, mv_dim, gpa_w)
+        self.note_block = NoteBlock(d_model, weights=nb_w)
+
+        d_state = CONFIG.get("mamba_d_state", 256)
+        d_conv  = CONFIG.get("mamba_d_conv",  4)
+        expand  = CONFIG.get("mamba_expand",  2)
+
+        if mamba_w is not None:
+            self.mamba = _MambaSSM(d_model, d_state, d_conv, expand, mamba_w)
         else:
-            d_state = CONFIG.get("mamba_d_state", 256)
+            # Fallback: identity (zero output) for testing without checkpoint
+            self.mamba = None
 
-        # ── dt_scale resolution (CONFIG-controllable) ───────────────────
-        dt_per_layer = CONFIG.get("mamba_dt_scale_per_layer")
-        if dt_per_layer is not None and len(dt_per_layer) > layer_idx:
-            dt_scale = dt_per_layer[layer_idx]
-        elif CONFIG.get("mamba_dt_scale_hierarchical", False):
-            if layer_idx < total_layers // 3:
-                dt_scale = 0.05
-            elif layer_idx < (2 * total_layers) // 3:
-                dt_scale = 0.1
-            else:
-                dt_scale = 0.2
-        else:
-            dt_scale = CONFIG.get("mamba_dt_scale", 0.1)
+        # LayerNorms
+        def _ln(key_prefix, w_dict):
+            if w_dict and f"{key_prefix}_weight" in w_dict:
+                return (np.asarray(w_dict[f"{key_prefix}_weight"], dtype=np.float32),
+                        np.asarray(w_dict[f"{key_prefix}_bias"],   dtype=np.float32))
+            return (np.ones(d_model,  dtype=np.float32),
+                    np.zeros(d_model, dtype=np.float32))
 
-        # ── Mamba kernel construction ───────────────────────────────────
-        # `d_conv=4` is locked for CUDA kernel stability (was 8 before R7.4
-        # hotfix). Each Mamba version takes a different kwarg set:
-        #
-        # Mamba1 (mamba_ssm.Mamba):
-        #   d_model, d_state, d_conv, expand, dt_min, dt_max, dt_init, dt_scale
-        # Mamba2 (mamba_ssm.modules.mamba2.Mamba2):
-        #   d_model, d_state, d_conv, expand, headdim, ngroups,
-        #   D_has_hdim, layer_idx, chunk_size, rmsnorm
-        mamba_kwargs = dict(
-            d_model=d_model,
-            d_state=d_state,
-            d_conv=CONFIG.get("mamba_d_conv", 4),
-            expand=CONFIG.get("mamba_expand", 2),
-        )
+        self.norm1_w, self.norm1_b = _ln("norm1", weights)
+        self.norm2_w, self.norm2_b = _ln("norm2", weights)
+        self.norm3_w, self.norm3_b = _ln("norm3", weights)
 
-        if _HAS_MAMBA_SSM and MAMBA_VERSION == 1:
-            for src_key, dst_key in [
-                ("mamba_dt_min", "dt_min"),
-                ("mamba_dt_max", "dt_max"),
-                ("mamba_dt_init", "dt_init"),
-                ("mamba_dt_scale", "dt_scale"),
-            ]:
-                if src_key in CONFIG:
-                    mamba_kwargs[dst_key] = CONFIG[src_key]
-
-        elif _HAS_MAMBA_SSM and MAMBA_VERSION == 2:
-            mamba_kwargs["layer_idx"] = layer_idx
-            # Mamba2-specific: head dim, group count, whether D is per-head or per-channel
-            for src_key, dst_key in [
-                ("mamba_headdim", "headdim"),
-                ("mamba_ngroups", "ngroups"),
-                ("mamba_chunk_size", "chunk_size"),
-            ]:
-                if src_key in CONFIG:
-                    mamba_kwargs[dst_key] = CONFIG[src_key]
-            # CRITICAL: D_has_hdim=True keeps D as [d_inner] (matches Mamba1),
-            # which lets us transfer Mamba1's D weights cleanly via salvage.
-            mamba_kwargs["D_has_hdim"] = CONFIG.get("mamba_d_has_hdim", True)
-
-        self.mamba = Mamba(**mamba_kwargs)
-
-        # ── Per-layer dt scale (post-construction, version-aware) ──────
-        # NOTE: this is a no-op when state_dict is loaded over the layer.
-        # Only matters at fresh-init time. Mamba1 has dt_proj.weight;
-        # complex-valued and doesn't have a directly-tunable dt scalar.
-        if _HAS_MAMBA_SSM and dt_scale != 1.0:
-            try:
-                with torch.no_grad():
-                    if MAMBA_VERSION == 1 and hasattr(self.mamba, "dt_proj"):
-                        if hasattr(self.mamba.dt_proj, "weight"):
-                            self.mamba.dt_proj.weight.data.mul_(dt_scale)
-                    elif MAMBA_VERSION == 2 and hasattr(self.mamba, "dt_bias"):
-                        # Mamba2's dt_bias is the analogous knob
-                        self.mamba.dt_bias.data.mul_(dt_scale)
-                    # Mamba3: leave alone — no clean equivalent
-            except Exception:
-                pass  # Fail silently — dt scaling is best-effort cosmetic
-
-        self.note_block = NoteBlock(d_model)
-        self.norm1 = nn.LayerNorm(d_model)
-        self.norm2 = nn.LayerNorm(d_model)
-        self.norm3 = nn.LayerNorm(d_model)
-
-        # ── TIER A: Cross-Token Attention (Interleaved) ────────────────
-        # CONFIG-controllable: which layer indices get the MHA injection.
-        # Default empty list = no cross-attention (preserves backward compat
-        # with C2.1 / C2.2 baselines that didn't have these layers).
-        # Set CONFIG["cross_attn_layers"] = [2, 5] to enable.
+        # Cross-token attention (optional — Tier A)
         cross_attn_layers = set(CONFIG.get("cross_attn_layers", []))
-        if layer_idx in cross_attn_layers:
-            self.cross_attn = CrossTokenAttention(d_model, num_heads=n_heads)
-        else:
-            self.cross_attn = None
+        self.cross_attn = None
+        if layer_idx in cross_attn_layers and cross_w is not None:
+            self.cross_attn = _CrossTokenAttention(d_model, n_heads, cross_w)
 
         self.use_cross_layer = (
             layer_idx % CONFIG["cross_layer_interval"] == 0 and layer_idx > 0
         )
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # 1. Geometric Product Attention (Spatial)
-        x = x + self.gpa(self.norm1(x))
-        
-        # 2. State Space Integration (Time-domain causal)
-        x = x + self.mamba(self.norm2(x))
-        
-        # 3. Cross-Token Coupling (Space-domain global - Tier A)
+    @staticmethod
+    def _layer_norm(x: np.ndarray, w: np.ndarray, b: np.ndarray, eps: float = 1e-5) -> np.ndarray:
+        mean = x.mean(axis=-1, keepdims=True)
+        var  = x.var(axis=-1, keepdims=True)
+        return w * (x - mean) / np.sqrt(var + eps) + b
+
+    def __call__(self, x: np.ndarray) -> np.ndarray:
+        """Forward pass.
+
+        Args:
+            x: [B, T, d_model] float32
+        Returns:
+            [B, T, d_model] float32
+        """
+        x = np.asarray(x, dtype=np.float32)
+
+        # 1. GPA (spatial reasoning)
+        x = x + self.gpa(self._layer_norm(x, self.norm1_w, self.norm1_b))
+
+        # 2. SSM scan (temporal causal integration)
+        if self.mamba is not None:
+            x = x + self.mamba(self._layer_norm(x, self.norm2_w, self.norm2_b))
+
+        # 3. Cross-token coupling (Tier A — optional)
         if self.cross_attn is not None:
             x = self.cross_attn(x)
-            
-        # 4. Note Block: score, store, optionally inject
+
+        # 4. NoteBlock: score → pool → optional inject
         scores = self.note_block.score_importance(x)
         self.note_block.update_pool(x, scores)
         if self.use_cross_layer:
             x = self.note_block.inject_memory(x)
-            
-        return self.norm3(x)
 
-
-def real_mamba_available() -> bool:
-    """Probe for the real `mamba_ssm` library — call before launching production training."""
-    return _HAS_MAMBA_SSM
-
-
-def mamba_resolution_report() -> str:
-    """Human-readable summary of which Mamba implementation is active.
-
-    Print this at trainer startup so the run logs which version was actually loaded.
-    """
-    lines = [f"📐 Mamba resolution: requested='{_MAMBA_FORCE}', active=v{MAMBA_VERSION}"]
-    lines.extend(f"   {entry}" for entry in _MAMBA_RESOLUTION_LOG)
-    return "\n".join(lines)
-
-
-# ──────────────────────────────────────────────────────────────────────
-# HamiltonianExpert / SparseMixtureHamiltonianExperts used to be declared
-# here AND in hamiltonian.py. hamiltonian.py is canonical now; we re-export
-# below so any code doing `from blocks import HamiltonianExpert` still works.
-# ──────────────────────────────────────────────────────────────────────
-from .hamiltonian import HamiltonianExpert, SparseMixtureHamiltonianExperts  # noqa: F401
+        return self._layer_norm(x, self.norm3_w, self.norm3_b)

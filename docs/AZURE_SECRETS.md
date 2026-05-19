@@ -7,7 +7,7 @@ status: active
 
 ## Overview
 
-Biomimetics uses Azure Key Vault for centralized secret management. The `azure_secrets_init.py` script fetches secrets and injects them into all configured services.
+Biomimetics uses Azure Key Vault for centralized secret management. The `azure_secrets_init.py` script fetches secrets and injects them into all configured services. #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/auth #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/auth
 
 ## Azure Key Vault Setup
 
@@ -134,7 +134,7 @@ python3 azure/azure_secrets_init.py
 | Cloudflare Worker | `NOTION_API_KEY`, `GITHUB_WEBHOOK_SECRET` |
 | Claude Desktop | Notion MCP config |
 | Qwen Code | Notion MCP config |
-| `secrets/azure_secrets.json` | Local backup (mode 600) |
+| `secrets/azure_secrets.json` | Local backup (mode 600) | #bios/architecture #bios/architecture/config #bios/notion #bios/notion/sync #bios/architecture #bios/architecture/config #bios/notion #bios/notion/sync
 
 ## Verification
 
@@ -168,4 +168,6 @@ Install Cloudflare Wrangler: `npm install -g wrangler`
 - Local backup at `secrets/azure_secrets.json` has mode 0600 (owner read/write only)
 - Secrets are never committed to git (`.gitignore` excludes them)
 - Use Azure RBAC for team access control
-- Rotate secrets regularly via Azure Portal or CLI
+- Rotate secrets regularly via Azure Portal or CLI #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/auth #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/auth
+
+<!-- LLM_TAGGED -->

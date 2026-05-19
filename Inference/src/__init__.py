@@ -1,43 +1,69 @@
-"""Gold Standard Archive - PyTorch Neural Components.
+"""ARCA NoumenalEngine — NumPy Inference Runtime.
 
-Canonical implementations for ARCA C2 production training.
+Stage 5 GSA NumPy port. ARM64 / OCI Ampere A1 target.
+
+Public surface:
+  Phase 1 — Geometric Foundation
+    config            : CONFIG, DOMAINS, GRADE_SLICES
+    geometry          : conformal_lift, normalize_rotor, rotor_distance, cayley_map
+    grade_projection  : GradeProjection, grade_loss
+    slerp             : slerp, expand_state_dim_slerp
+
+  Phase 2 — Core Components
+    attention         : GeometricProductAttention
+    note_block        : NoteBlock
+    blocks            : VersorMemMambaBlock
+    bridges           : KinematicBridge, ConformalKinematicBridge, LearnedKinematicBridge
+    hamiltonian       : HamiltonianExpert, SparseMixtureHamiltonianExperts
+    symplectic        : HamiltonianDynamics
+    lyapunov          : LyapunovStability
+    hopfield          : ModernHopfield, SandboxHopfieldMemory
+    jepa              : JEPA
+
+  Phase 3 — Engine
+    engine            : NoumenalEngine
+
+Excluded (training-only / C3+ cognitive suite):
+  quant.py, koopman.py, kuramoto.py, memory_sdm.py,
+  memory_infini.py, riemann.py
 """
 
-# Stage 1 — Geometric Foundation
-from .config import DOMAINS
-from .geometry import conformal_lift, rotor_distance, normalize_rotor, cayley_map
-from .quant import Int8SaturationFakeQuantize, fake_quant_int8
-from .slerp import slerp, expand_state_dim_slerp, salvage_and_expand_state_dict
+# ── Phase 1 ──────────────────────────────────────────────────────────────────
+from .config          import CONFIG, DOMAINS, GRADE_SLICES
+from .geometry        import conformal_lift, normalize_rotor, rotor_distance, cayley_map
+from .grade_projection import GradeProjection, grade_loss
+from .slerp           import slerp, expand_state_dim_slerp
 
-# Stage 2 — Core Attention & Blocks
-from .attention import GeometricProductAttention
-from .note_block import NoteBlock
-from .blocks import VersorMemMambaBlock, real_mamba_available
-from .hamiltonian import HamiltonianExpert, SparseMixtureHamiltonianExperts
-from .hopfield import ModernHopfield
-from .bridges import ConformalKinematicBridge, LearnedKinematicBridge
+# ── Phase 2 ──────────────────────────────────────────────────────────────────
+from .attention       import GeometricProductAttention
+from .note_block      import NoteBlock
+from .blocks          import VersorMemMambaBlock
+from .bridges         import KinematicBridge, ConformalKinematicBridge, LearnedKinematicBridge
+from .hamiltonian     import HamiltonianExpert, SparseMixtureHamiltonianExperts
+from .symplectic      import HamiltonianDynamics
+from .lyapunov        import LyapunovStability
+from .hopfield        import ModernHopfield, SandboxHopfieldMemory
+from .jepa            import JEPA
 
-# Stage 3 — Kuramoto & Dynamics
-from .kuramoto import KuramotoLayer, GOLDEN_RATIO
-from .symplectic import HamiltonianDynamics
-from .lyapunov import LyapunovStability
-
-# Stage 4 — Engine & Projections
-from .engine import NoumenalEngine, GradeProjection
+# ── Phase 3 ──────────────────────────────────────────────────────────────────
+from .engine          import NoumenalEngine
 
 __all__ = [
-    "DOMAINS",
-    "conformal_lift", "rotor_distance", "normalize_rotor", "cayley_map",
-    "Int8SaturationFakeQuantize", "fake_quant_int8",
-    "slerp", "expand_state_dim_slerp", "salvage_and_expand_state_dict",
+    # Phase 1
+    "CONFIG", "DOMAINS", "GRADE_SLICES",
+    "conformal_lift", "normalize_rotor", "rotor_distance", "cayley_map",
+    "GradeProjection", "grade_loss",
+    "slerp", "expand_state_dim_slerp",
+    # Phase 2
     "GeometricProductAttention",
     "NoteBlock",
-    "VersorMemMambaBlock", "real_mamba_available",
+    "VersorMemMambaBlock",
+    "KinematicBridge", "ConformalKinematicBridge", "LearnedKinematicBridge",
     "HamiltonianExpert", "SparseMixtureHamiltonianExperts",
-    "ModernHopfield",
-    "ConformalKinematicBridge", "LearnedKinematicBridge",
-    "KuramotoLayer", "GOLDEN_RATIO",
     "HamiltonianDynamics",
     "LyapunovStability",
-    "GradeProjection", "NoumenalEngine",
+    "ModernHopfield", "SandboxHopfieldMemory",
+    "JEPA",
+    # Phase 3
+    "NoumenalEngine",
 ]

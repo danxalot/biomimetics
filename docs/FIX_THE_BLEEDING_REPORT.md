@@ -72,7 +72,7 @@ def save_db_state(db_ids: Dict[str, str]) -> bool:
 
 ### 4. Updated `create_notion_databases()` method (lines 755-797):
 - **Before**: Always created new databases (no persistence check)
-- **After**: Checks `db_state.json` first, returns existing IDs if found
+- **After**: Checks `db_state.json` first, returns existing IDs if found #bios/notion #bios/notion/schema #bios/notion/sync #bios/architecture #bios/architecture/component #bios/notion #bios/notion/schema #bios/notion/sync #bios/architecture #bios/architecture/component #bios/notion #bios/notion/schema #bios/notion/sync #bios/architecture #bios/architecture/component
 
 **Key Logic**:
 ```python
@@ -104,14 +104,14 @@ save_db_state(db_ids)
 | brew | `brew install koyeb` | ❌ No formula found |
 | go install (koyeb-cli) | `go install github.com/koyeb/koyeb-cli@latest` | ❌ Module not found |
 | go install (cli) | `go install github.com/koyeb/cli@latest` | ❌ Repository not found |
-| Direct download | `curl -sSL github.com/.../koyeb-darwin-amd64` | ❌ Returns "Not Found" (HTML) |
+| Direct download | `curl -sSL github.com/.../koyeb-darwin-amd64` | ❌ Returns "Not Found" (HTML) | #bios/mcp_server #bios/mcp_server/deployment #bios/meta #bios/meta/operational #bios/mcp_server #bios/mcp_server/deployment #bios/meta #bios/meta/operational #bios/mcp_server #bios/mcp_server/deployment #bios/meta #bios/meta/operational
 
 **Root Cause**: Koyeb CLI is not publicly available through standard package managers. The GitHub releases URL returns 404.
 
 **Workaround Applied**: Updated `deploy-to-koyeb.sh` to:
 - Check multiple possible installation paths
 - Provide clear installation instructions if CLI is missing
-- Exit gracefully with helpful error message   
+- Exit gracefully with helpful error message    #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config
 
 **Status**: ⏸️ **BLOCKED** - Koyeb CLI installation requires manual intervention
 
@@ -123,7 +123,7 @@ save_db_state(db_ids)
 |------|--------|-------|
 | 1. Kill omni-sync | ✅ Complete | Service unloaded and stopped |
 | 2. Persistence fix | ✅ Complete | `db_state.json` logic implemented |
-| 3. Install Koyeb CLI | ⏸️ Blocked | CLI not available via standard methods |
+| 3. Install Koyeb CLI | ⏸️ Blocked | CLI not available via standard methods | #bios/personal_assistant #bios/personal_assistant/task #bios/meta #bios/meta/operational #bios/personal_assistant #bios/personal_assistant/task #bios/meta #bios/meta/operational #bios/personal_assistant #bios/personal_assistant/task #bios/meta #bios/meta/operational
 
 ---
 
@@ -133,7 +133,7 @@ save_db_state(db_ids)
 
 1. **Contact Koyeb support** or check their documentation for the correct CLI installation method
 2. **Alternative**: Use Koyeb web dashboard at https://app.koyeb.com/
-3. **Alternative**: Use Koyeb API directly with curl   
+3. **Alternative**: Use Koyeb API directly with curl    #bios/mcp_server #bios/mcp_server/deployment #bios/meta #bios/meta/uncategorized #bios/mcp_server #bios/mcp_server/deployment #bios/meta #bios/meta/uncategorized #bios/mcp_server #bios/mcp_server/deployment #bios/meta #bios/meta/uncategorized
 
 ### For Migration Script:
 
@@ -157,9 +157,11 @@ cd ~/biomimetics
 | File | Change |
 |------|--------|
 | `scripts/omni_sync.py` | Added `db_state.json` persistence logic |
-| `scripts/migrate/deploy-to-koyeb.sh` | Updated CLI detection logic |
+| `scripts/migrate/deploy-to-koyeb.sh` | Updated CLI detection logic | #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/notion #bios/notion/sync #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/notion #bios/notion/sync #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/notion #bios/notion/sync #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/notion #bios/notion/sync
 
 ---
 
 **Execution Complete**: 2026-03-19  
 **Blocker**: Koyeb CLI installation (external dependency)
+
+<!-- LLM_TAGGED -->

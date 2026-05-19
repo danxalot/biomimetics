@@ -5,7 +5,7 @@ status: active
 
 # Biomimetics System Architecture
 
-> **Biomimetics** is the project management and optimization layer that brings structure, automation, and intelligence to the ARCA development ecosystem and related projects.
+> **Biomimetics** is the project management and optimization layer that brings structure, automation, and intelligence to the ARCA development ecosystem and related projects. #bios/meta #bios/meta/operational #bios/meta #bios/meta/operational
 
 ---
 
@@ -32,14 +32,14 @@ Biomimetics provides:
 - **System Monitoring**: LaunchAgents for continuous operation
 - **AI Integration**: Local model inference for summarization and analysis
 - **Intelligent Memory**: GCP Cloud Function integration for contextual AI
-- **Approval Workflows**: CoPaw tool guard for safe AI agent operations `. `.
+- **Approval Workflows**: CoPaw tool guard for safe AI agent operations `. `. #bios/notion #bios/notion/sync #bios/notion/query #bios/personal_assistant #bios/personal_assistant/task #bios/copaw #bios/copaw/workflow #bios/copaw/trigger #bios/copaw/action #bios/architecture #bios/architecture/component #bios/notion #bios/notion/sync #bios/notion/query #bios/personal_assistant #bios/personal_assistant/task #bios/copaw #bios/copaw/workflow #bios/copaw/trigger #bios/copaw/action #bios/architecture #bios/architecture/component
 
 ### Core Principles
 
 1. **Passive Collection**: Gather data without user intervention
 2. **Intelligent Filtering**: Circuit breakers prevent overload
 3. **Stateful Processing**: Track processed items to avoid duplicates
-4. **Modular Design**: Each component operates independently   
+4. **Modular Design**: Each component operates independently    #bios/architecture #bios/architecture/component #bios/architecture/protocol #bios/architecture #bios/architecture/component #bios/architecture/protocol
 
 ---
 
@@ -112,7 +112,7 @@ Biomimetics provides:
 - Injects into `omni_sync_config.json`
 - Updates Cloudflare Worker secrets via `wrangler`
 - Configures Notion MCP Server for Claude Desktop
-- Creates local encrypted backup   
+- Creates local encrypted backup    #bios/mcp_server #bios/mcp_server/auth #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/notion #bios/notion/sync #bios/mcp_server #bios/mcp_server/auth #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/notion #bios/notion/sync
 
 **Secrets Managed**:
 | Secret Name | Used By |
@@ -122,7 +122,7 @@ Biomimetics provides:
 | `proton-bridge-password` | ProtonMail 5-account sync |
 | `gcp-service-account` | Google Drive API |
 | `mycloud-password` | SMB NAS mount |
-| `gcp-gateway-url` | GCP Cloud Functions endpoint |   
+| `gcp-gateway-url` | GCP Cloud Functions endpoint |    #bios/mcp_server #bios/mcp_server/auth #bios/notion #bios/notion/sync #bios/mcp_server #bios/mcp_server/auth #bios/notion #bios/notion/sync
 
 **Usage**:
 ```bash
@@ -146,7 +146,7 @@ python3 azure/azure_secrets_init.py --vault my-custom-vault
 - Google Drive file watching with circuit breakers
 - Gmail IMAP integration
 - Notion database creation
-- Local file processing
+- Local file processing #bios/architecture #bios/architecture/component #bios/notion #bios/notion/schema #bios/architecture #bios/architecture/component #bios/notion #bios/notion/schema
 
 **Circuit Breakers**:
 ```python
@@ -170,7 +170,7 @@ MAX_CONTENT_LENGTH = 100000  # Max chars to extract
 | dan@arca-vsa.tech | ARCA business |
 | claws@arca-vsa.tech | AI identity |
 | arca@pm.me | ARCA projects |
-| info@pm.me | General info |   
+| info@pm.me | General info |    #bios/meta #bios/meta/operational #bios/meta #bios/meta/operational
 
 **Process**:
 1. Connect via Proton Bridge (localhost:1143)
@@ -178,7 +178,7 @@ MAX_CONTENT_LENGTH = 100000  # Max chars to extract
 3. Filter by date (90-day window)
 4. Skip already-processed (Message-ID tracking)
 5. Summarize with Ollama (deepseek-r1-1.5b)
-6. Send to GCP Gateway   
+6. Send to GCP Gateway    #bios/architecture #bios/architecture/protocol #bios/meta #bios/meta/operational #bios/architecture #bios/architecture/protocol #bios/meta #bios/meta/operational
 
 **State File**: `~/.arca/proton_sync_state.json`
 
@@ -208,7 +208,7 @@ else:
 - GitHub Webhooks (Issues, PRs, Pushes) → Biomimetic OS database
 - Serena Agent Tasks → Life OS Triage & Biomimetic OS databases  
 - GCP Memory Insights → Biomimetic OS (task suggestions, context updates)
-- CoPaw Requests → Tool approval workflow, skill queuing `. ` ` ` 
+- CoPaw Requests → Tool approval workflow, skill queuing `. ` ` `  #bios/copaw #bios/copaw/trigger #bios/copaw/workflow #bios/personal_assistant #bios/personal_assistant/task #bios/copaw #bios/copaw/trigger #bios/copaw/workflow #bios/personal_assistant #bios/personal_assistant/task
 
 **Flow**:
 ```
@@ -224,7 +224,7 @@ GitHub Event → Cloudflare Worker → Notion Database
 - **Serena → Notion**: Agent tasks create/update Notion entries
 - **Notion → GCP Memory**: Updates forwarded for contextual AI enrichment  
 - **GCP Memory → Biomimetic OS**: Insights generate task suggestions/context updates
-- **CoPaw Integration**: Tool approval workflow and skill execution queuing `
+- **CoPaw Integration**: Tool approval workflow and skill execution queuing ` #bios/notion #bios/notion/sync #bios/copaw #bios/copaw/workflow #bios/copaw/action #bios/personal_assistant #bios/personal_assistant/task #bios/notion #bios/notion/sync #bios/copaw #bios/copaw/workflow #bios/copaw/action #bios/personal_assistant #bios/personal_assistant/task
 
 **Deployment**:
 ```bash
@@ -238,7 +238,7 @@ npx wrangler deploy
 - NOTION_API_KEY / NOTION_TOKEN: Notion integration
 - GITHUB_WEBHOOK_SECRET: Webhook validation  
 - GCP_SERVICE_ACCOUNT: GCP memory gateway auth
-- COPAW_APPROVAL_DB_ID: CoPaw approvals database ID   
+- COPAW_APPROVAL_DB_ID: CoPaw approvals database ID    #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/auth #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/auth
 
 ---
 
@@ -277,7 +277,7 @@ npx wrangler deploy
 - Read/write Notion pages and databases
 - Create and update database entries
 - Search and query Notion content
-- Bi-directional sync with ARCA project tracking   
+- Bi-directional sync with ARCA project tracking    #bios/notion #bios/notion/sync #bios/notion/query #bios/notion #bios/notion/sync #bios/notion/query
 
 ---
 
@@ -287,7 +287,7 @@ npx wrangler deploy
 |-------|----------|---------|
 | `com.arca.omni-sync.plist` | Continuous | Main sync heartbeat |
 | `com.arca.proton-sync.plist` | 3600s (1hr) | Email sync |
-| `com.arca.mycloud-watchdog.plist` | 60s | NAS mount keepalive |
+| `com.arca.mycloud-watchdog.plist` | 60s | NAS mount keepalive | #bios/meta #bios/meta/operational #bios/meta #bios/meta/operational
 
 **Location**: `~/Library/LaunchAgents/` (active), `launch_agents/` (backup)
 
@@ -380,7 +380,7 @@ npx wrangler deploy
 | Notion API Key | Cloudflare Worker Secret |
 | Gmail App Password | config/omni_sync_config.json |
 | Proton Bridge Passwords | config/omni_sync_config.json |
-| GCP Service Account | ~/.secrets/gcp_credentials.json |
+| GCP Service Account | ~/.secrets/gcp_credentials.json | #bios/architecture #bios/architecture/config #bios/architecture #bios/architecture/config
 
 ---
 
@@ -441,7 +441,7 @@ curl http://localhost:11434/api/tags
 **Fix**:
 1. Open Proton Mail Bridge application
 2. Ensure all 5 accounts are configured
-3. Verify port 1143 in Bridge settings
+3. Verify port 1143 in Bridge settings #bios/meta #bios/meta/operational #bios/meta #bios/meta/operational
 
 ### Google Drive 403 Error
 
@@ -471,7 +471,7 @@ curl http://localhost:11434/api/tags
 **Fix**:
 1. Check webhook URL in GitHub settings
 2. Verify Cloudflare secret: `wrangler secret list`
-3. Check worker logs: `wrangler tail`
+3. Check worker logs: `wrangler tail` #bios/architecture #bios/infrastructure #bios/mcp_server #bios/mcp_server/deployment #bios/meta #bios/meta/operational #bios/architecture #bios/infrastructure #bios/mcp_server #bios/mcp_server/deployment #bios/meta #bios/meta/operational
 
 ---
 
@@ -507,7 +507,7 @@ curl http://localhost:11434/api/tags
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0.0 | 2026-03-17 | Initial consolidation |
-| 1.3.1 | 2026-05-13 | Upgraded MemU to gemma-4-31b-it, restored /purge, and formalized SOP 001 pipeline. |
+| 1.3.1 | 2026-05-13 | Upgraded MemU to gemma-4-31b-it, restored /purge, and formalized SOP 001 pipeline. | #bios/architecture #bios/meta #bios/meta/operational #bios/architecture #bios/meta #bios/meta/operational
 
 ---
 
@@ -516,3 +516,5 @@ curl http://localhost:11434/api/tags
 - **Repository**: https://github.com/danxalot/biomimetics
 - **Primary Identity**: Claws <claws@arca-vsa.tech>
 - **Project**: ARCA Development Ecosystem
+
+<!-- LLM_TAGGED -->

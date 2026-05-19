@@ -13,7 +13,7 @@ The Proton Mail Bridge sync was failing with SSL errors:
 [Errno 61] Connection refused
 ```
 
-**Root Cause:** `backfill_claws.py` was using `imaplib.IMAP4_SSL()` which expects SSL from connection start, but Proton Mail Bridge uses **STARTTLS** (upgrade from plain to SSL). #email #email/meta #email/meta/uncategorized
+**Root Cause:** `backfill_claws.py` was using `imaplib.IMAP4_SSL()` which expects SSL from connection start, but Proton Mail Bridge uses **STARTTLS** (upgrade from plain to SSL). #email #email/meta #email/meta/uncategorized #email #email/meta #email/meta/uncategorized
 
 ---
 
@@ -46,7 +46,7 @@ mail.starttls(ssl_context=SSL_CONTEXT)
 - Added `--once` flag for single-poll mode
 - Added `--lookback` parameter for configurable time window
 - **Configured all 5 ProtonMail accounts**
-- Added proper CLI argument parsing    #email #email/meta #email/meta/uncategorized
+- Added proper CLI argument parsing    #email #email/meta #email/meta/uncategorized #email #email/meta #email/meta/uncategorized
 
 **Usage:**
 ```bash
@@ -79,7 +79,7 @@ python3 scripts/email/email-ingestion-daemon.py --lookback 10
 Interactive setup script that:
 - Prompts for ProtonMail Bridge credentials **for all 5 accounts**
 - Saves environment to `~/.arca/email_env.sh` (chmod 600)
-- Configures and loads the LaunchAgent    #email #email/meta #email/meta/uncategorized
+- Configures and loads the LaunchAgent    #email #email/meta #email/meta/uncategorized #email #email/meta #email/meta/uncategorized
 
 **Run setup:**
 ```bash
@@ -179,7 +179,7 @@ Total new emails: 0
    | dan@arca-vsa.tech | ✅ Already configured |
    | claws@arca-vsa.tech | ⚠️ Needs Bridge password |
    | arca@arca-vsa.tech | ⚠️ Needs Bridge password |
-   | info@arca-vsa.tech | ⚠️ Needs Bridge password | #email #email/meta #email/meta/uncategorized
+   | info@arca-vsa.tech | ⚠️ Needs Bridge password | #email #email/meta #email/meta/uncategorized #email #email/meta #email/meta/uncategorized
 
 Find Bridge passwords in Proton Mail app:
    **Settings → Advanced → Proton Mail Bridge → Copy password**
@@ -212,7 +212,7 @@ python3 scripts/email/email-ingestion-daemon.py --once --lookback 60
 | `scripts/backfill_claws.py` | ✅ Fixed | Hourly batch sync (5 accounts) |
 | `scripts/email/email-ingestion-daemon.py` | ✅ Rewritten | Continuous polling (all 5 accounts) |
 | `launch_agents/com.arca.email-ingest.plist` | ✅ Created | LaunchAgent for daemon |
-| `scripts/email/setup_email_daemon.sh` | ✅ Created | Interactive setup (5 accounts) | #email #email/meta #email/meta/uncategorized
+| `scripts/email/setup_email_daemon.sh` | ✅ Created | Interactive setup (5 accounts) | #email #email/meta #email/meta/uncategorized #email #email/meta #email/meta/uncategorized
 
 ---
 
@@ -267,6 +267,8 @@ launchctl load ~/Library/LaunchAgents/com.arca.email-ingest.plist
 ✅ **Two Options Available:** Batch sync (hourly) + Continuous polling (5 min)
 ✅ **All 5 Accounts Configured:** dan.exall, dan.arca, claws, arca, info
 ✅ **Setup Automated:** Interactive script handles credentials securely
-✅ **LaunchAgent Ready:** New plist for continuous operation   
+✅ **LaunchAgent Ready:** New plist for continuous operation    #email/meta #email/meta/uncategorized
 
-**The bottleneck is now resolved.** The emails will sync for all 5 accounts once you run the setup script with the correct Bridge passwords.
+**The bottleneck is now resolved.** The emails will sync for all 5 accounts once you run the setup script with the correct Bridge passwords. #email/correspondence #email/correspondence/action_required
+
+<!-- LLM_TAGGED -->

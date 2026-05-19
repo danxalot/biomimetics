@@ -1,123 +1,151 @@
-"""Spherical Linear Interpolation + state-dim expansion utilities.
+"""Spherical Linear Interpolation — NumPy runtime.
 
-Used to transplant C1 (16-dim Mamba state) weights into C2 (128-dim) by
-populating the new state dimensions with SLERP-interpolated vectors that
-preserve geometric manifold structure rather than zero-padding.
+1:1 parity port of Gold_Standard_Archive/pytorch/slerp.py.
+All torch operations replaced with NumPy equivalents.
+FP32 strict. No autograd.
 
-Originally from `Gold_Standard_Archive/C2/master_c2_kinematics.py:109-122`
-plus the `salvage_and_expand_weights` flow at lines 356-393.
-
-Training-only — runtime never expands weights.
+Note: expand_state_dim_slerp / salvage_and_expand_state_dict are utility
+functions for weight transplanting (C1 → C2). They are included here for
+archive completeness but are NOT called during live inference.
 """
-import torch
+import logging
+import numpy as np
+
+log = logging.getLogger("slerp")
 
 
-def slerp(val: float, low: torch.Tensor, high: torch.Tensor) -> torch.Tensor:
+def slerp(val: float, low: np.ndarray, high: np.ndarray) -> np.ndarray:
     """Spherical linear interpolation between two vectors on the unit sphere.
 
     Args:
-        val: interpolation parameter in [0, 1]. 0 → low, 1 → high.
-        low, high: vectors of matching shape (last dim is the spherical dim).
+        val:       interpolation parameter in [0, 1]. 0 → low, 1 → high.
+        low, high: np.ndarray of matching shape (last dim is the spherical dim).
 
     Returns:
-        Interpolated vector of the same shape as inputs.
+        np.ndarray — interpolated vector, same shape as inputs.
 
     Falls back to linear interpolation when sin(omega) is near zero
-    (i.e. when low and high are nearly identical), avoiding division by zero.
+    (vectors nearly collinear) to avoid division-by-zero.
     """
-    low_norm = low / torch.norm(low, dim=-1, keepdim=True).clamp(min=1e-8)
-    high_norm = high / torch.norm(high, dim=-1, keepdim=True).clamp(min=1e-8)
-    omega = torch.acos((low_norm * high_norm).sum(dim=-1).clamp(-1, 1))
-    so = torch.sin(omega)
+    low  = np.asarray(low,  dtype=np.float32)
+    high = np.asarray(high, dtype=np.float32)
 
-    mask = (so.abs() < 1e-6).unsqueeze(-1)
+    # Normalise onto unit sphere
+    low_norm  = low  / np.linalg.norm(low,  axis=-1, keepdims=True).clip(1e-8)
+    high_norm = high / np.linalg.norm(high, axis=-1, keepdims=True).clip(1e-8)
+
+    dot = np.clip((low_norm * high_norm).sum(axis=-1), -1.0, 1.0)
+    omega = np.arccos(dot)     # angle between vectors on the sphere
+    so = np.sin(omega)         # sin of that angle
+
+    # Where sin(omega) ≈ 0, vectors are nearly identical → linear fallback
+    near_collinear = np.abs(so) < 1e-6   # shape [...] (no last dim)
+
     linear_interp = (1.0 - val) * low + val * high
-    slerp_interp = (
-        (torch.sin((1.0 - val) * omega) / so).unsqueeze(-1) * low
-        + (torch.sin(val * omega) / so).unsqueeze(-1) * high
-    )
-    return torch.where(mask, linear_interp, slerp_interp)
+
+    # Safe division: wherever collinear, denominator ≠ 0 (we pick 1.0)
+    safe_so = np.where(near_collinear, 1.0, so)
+    w_low   = (np.sin((1.0 - val) * omega) / safe_so)[..., np.newaxis]
+    w_high  = (np.sin(val * omega)         / safe_so)[..., np.newaxis]
+    slerp_interp = w_low * low + w_high * high
+
+    # Broadcast mask to last dim for element-wise select
+    mask = near_collinear[..., np.newaxis]
+    return np.where(mask, linear_interp, slerp_interp)
 
 
 def expand_state_dim_slerp(
-    old_tensor: torch.Tensor, new_state_dim: int
-) -> torch.Tensor:
-    """Expand a Mamba A_log-shaped tensor's state dimension via SLERP.
+    old_tensor: np.ndarray,
+    new_state_dim: int,
+    rng: np.random.Generator = None,
+) -> np.ndarray:
+    """Expand a Mamba A_log-shaped array's state dimension via SLERP.
 
-    Pads C1's trained state (e.g. 16-D) into the first slots of the new tensor
-    and fills the remainder by SLERP-interpolating between random init and the
-    last trained state vector. Preserves the geometric manifold the C1 weights
-    learned rather than abruptly zero-padding.
+    Pads C1's trained state (e.g. 16-D) into the first slots of the new array
+    and fills the remainder by SLERP-interpolating between a random anchor and
+    the last trained state vector. Preserves geometric manifold structure.
 
     Args:
-        old_tensor: shape [d_inner, old_state_dim] (e.g. [d_inner, 16])
-        new_state_dim: target last-axis size (e.g. 128)
+        old_tensor:    np.ndarray [d_inner, old_state_dim] float32
+        new_state_dim: target last-axis size (e.g. 256)
+        rng:           optional np.random.Generator for reproducibility.
 
     Returns:
-        new_tensor: shape [d_inner, new_state_dim] with C1 weights at [:, :old_state_dim]
-                    and SLERP-interpolated extension at [:, old_state_dim:].
+        np.ndarray [d_inner, new_state_dim] float32
     """
+    old_tensor = np.asarray(old_tensor, dtype=np.float32)
     old_state_dim = old_tensor.shape[-1]
+
     if new_state_dim <= old_state_dim:
         return old_tensor[..., :new_state_dim]
 
-    new_tensor = torch.zeros(
-        *old_tensor.shape[:-1], new_state_dim,
-        device=old_tensor.device, dtype=old_tensor.dtype,
+    new_tensor = np.zeros(
+        old_tensor.shape[:-1] + (new_state_dim,), dtype=np.float32
     )
     new_tensor[..., :old_state_dim] = old_tensor
 
-    # Extend via SLERP from random-init to the LAST trained state column.
-    anchor_low = torch.randn_like(old_tensor[..., 0])
+    # Random anchor ↔ last trained state column
+    if rng is None:
+        rng = np.random.default_rng()
+    anchor_low  = rng.standard_normal(old_tensor.shape[:-1]).astype(np.float32)
     anchor_high = old_tensor[..., -1]
+
     span = new_state_dim - old_state_dim
     for i in range(span):
-        val = (i + 1) / (span + 1)        # never 0 or 1, so SLERP is well-defined
+        val = (i + 1) / (span + 1)    # never 0 or 1 — SLERP stays well-defined
         new_tensor[..., old_state_dim + i] = slerp(val, anchor_low, anchor_high)
+
     return new_tensor
 
 
 def salvage_and_expand_state_dict(
-    old_state_dict: dict, new_state_dict: dict
+    old_state_dict: dict,
+    new_state_dict: dict,
+    rng: np.random.Generator = None,
 ) -> dict:
     """Walk a state-dict pair, copy matching keys, SLERP-expand A_log keys.
 
-    Returns a state-dict ready for `model.load_state_dict(...)`.
-    Logs (via standard logging) which keys were transplanted, expanded, or skipped.
+    Parity with pytorch salvage_and_expand_state_dict().
+    State-dicts here are {str: np.ndarray} rather than {str: torch.Tensor}.
+
+    Returns:
+        dict ready for manual weight loading into NumPy weight stores.
     """
-    import logging
-    log = logging.getLogger("slerp")
-    out = dict(new_state_dict)  # start from the new model's shape contract
+    out = dict(new_state_dict)
     transplanted, expanded, skipped = 0, 0, 0
 
-    for key, new_tensor in new_state_dict.items():
+    for key, new_arr in new_state_dict.items():
         if key not in old_state_dict:
             skipped += 1
             continue
-        old_tensor = old_state_dict[key]
-        if old_tensor.shape == new_tensor.shape:
-            out[key] = old_tensor
+
+        old_arr = np.asarray(old_state_dict[key], dtype=np.float32)
+        new_arr = np.asarray(new_arr, dtype=np.float32)
+
+        if old_arr.shape == new_arr.shape:
+            out[key] = old_arr
             transplanted += 1
         elif (
             "A_log" in key
-            and old_tensor.dim() == new_tensor.dim()
-            and old_tensor.shape[:-1] == new_tensor.shape[:-1]
-            and new_tensor.shape[-1] > old_tensor.shape[-1]
+            and old_arr.ndim == new_arr.ndim
+            and old_arr.shape[:-1] == new_arr.shape[:-1]
+            and new_arr.shape[-1] > old_arr.shape[-1]
         ):
-            out[key] = expand_state_dim_slerp(old_tensor, new_tensor.shape[-1])
+            out[key] = expand_state_dim_slerp(old_arr, new_arr.shape[-1], rng=rng)
             expanded += 1
             log.info(
-                f"SLERP-expanded {key}: {tuple(old_tensor.shape)} → {tuple(out[key].shape)}"
+                "SLERP-expanded %s: %s → %s",
+                key, old_arr.shape, out[key].shape,
             )
         else:
             skipped += 1
             log.debug(
-                f"Shape mismatch on {key}: old {tuple(old_tensor.shape)} vs "
-                f"new {tuple(new_tensor.shape)} — keeping new init."
+                "Shape mismatch on %s: old %s vs new %s — keeping new init.",
+                key, old_arr.shape, new_arr.shape,
             )
 
     log.info(
-        f"Salvage summary: {transplanted} transplanted, {expanded} SLERP-expanded, "
-        f"{skipped} skipped."
+        "Salvage summary: %d transplanted, %d SLERP-expanded, %d skipped.",
+        transplanted, expanded, skipped,
     )
     return out

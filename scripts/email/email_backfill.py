@@ -23,6 +23,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from email.header import decode_header
 from typing import List, Dict, Optional, Tuple
+from email_utils import apply_filtering_rules
 
 # ============================================================================
 # Secure Credential Loading from Credentials Server
@@ -36,7 +37,7 @@ CREDENTIALS_SERVER_URL = "http://localhost:8089"
 # Configuration
 # ============================================================================
 
-START_DATE = "25-Dec-2025"  # Backfill from this date (IMAP enforced)
+START_DATE = "01-Mar-2026"  # Backfill from this date (IMAP enforced)
 # No email limit - process ALL emails since START_DATE
 
 # Proton Bridge Configuration
@@ -56,7 +57,7 @@ NOTION_TRIAGE_DB_ID = "3284d2d9fc7c81bd9a91e865511e642f"  # BiOS Triage
 NOTION_API_URL = "https://api.notion.com/v1/pages"
 
 # Test Mode Configuration (set to False for full production run)
-TEST_MODE = True  # If True, only processes arca-vsa.tech accounts with limited batch
+TEST_MODE = False  # If False, only processes arca-vsa.tech accounts with limited batch
 TEST_BATCH_SIZE = 50  # Number of emails to process per account in test mode
 
 # Multi-Account Configuration
@@ -72,46 +73,6 @@ ACCOUNTS = [
 # Filter accounts for test mode
 if TEST_MODE:
     ACCOUNTS = [acc for acc in ACCOUNTS if "arca-vsa.tech" in acc["email"]]
-
-# The strict deterministic net (Word boundaries applied automatically)
-KEEP_KEYWORDS = [
-    "invoice",
-    "receipt",
-    "you sent",
-    "payment",
-    "octopus",
-    "vultr",
-    "azure",
-    "ticket",
-    "order",
-    "document",
-    "citizens advice",
-    "cab",
-    "debt",
-    "arrears",
-    "collection",
-    "bailiff",
-    "stepchange",
-    "credit",
-    "complaint",
-    "appeal",
-    "ombudsman",
-    "watchdog",
-    "legal",
-    "solicitor",
-    "police",
-    "council",
-    "security alert",
-    "breach",
-    "pwned",
-    "unauthorized",
-    "login",
-]
-
-# Build regex pattern for exact word boundaries
-PATTERN = re.compile(
-    r"\b(?:" + "|".join(map(re.escape, KEEP_KEYWORDS)) + r")\b", re.IGNORECASE
-)
 
 # SSL contexts
 PROTON_SSL_CONTEXT = ssl.create_default_context()
@@ -233,62 +194,19 @@ def extract_email_body(msg: email.message.Message) -> str:
 # ============================================================================
 
 
-def check_rule_based_filter(subject: str, sender: str) -> bool:
+def triage_email(subject: str, sender: str, body: str = "", list_unsubscribe: str = "") -> Tuple[str, bool]:
     """
-    Check if email matches rule-based filters.
-    SCOPE: Only Subject and From headers are checked (NOT body)
-    REGEX: Uses word boundaries to prevent false positives
-    """
-    combined_header_text = f"{subject} {sender}"
-    return PATTERN.search(combined_header_text) is not None
-
-
-def classify_with_llm(subject: str, sender: str, body: str = "") -> bool:
-    """
-    Use local Qwen3.5-2b LLM to classify email.
-    Returns True if KEEP, False if SKIP.
-    """
-    try:
-        client = openai.OpenAI(
-            base_url=LOCAL_LLM_BASE_URL,
-            api_key="not-needed",
-        )
-
-        prompt = f"""You are a ruthless, precision email triage agent. Your ONLY job is to identify emails directly related to the personal, financial, legal, or business affairs of 'Daniel Exall' or 'Sheila Tilmouth'. You must be highly skeptical. If an email is marketing, a newsletter, a generic automated alert, or spam, classify it as 'SKIP'. ONLY classify an email as 'KEEP' if you have high confidence it requires human review by Daniel or Sheila. When in doubt, default to 'SKIP'.
-
-Subject: {subject[:100]}
-From: {sender[:50]}
-
-Reply with exactly one word: KEEP or SKIP"""
-
-        response = client.chat.completions.create(
-            model=LOCAL_LLM_MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=5,
-            temperature=0.1
-        )
-
-        llm_result = response.choices[0].message.content.strip().upper() if response.choices[0].message.content else "SKIP"
-        return "KEEP" in llm_result
-
-    except Exception as e:
-        print(f"  ⚠️  LLM error: {e}")
-        return False  # Default to SKIP if LLM fails
-
-
-def triage_email(subject: str, sender: str, body: str = "") -> Tuple[str, bool]:
-    """
-    Apply hybrid triage: rules first, then LLM fallback.
+    Apply rule-based triage.
     Returns: (method, should_keep)
     """
-    # Step 1: Check rule-based filters (header-only)
-    rule_match = check_rule_based_filter(subject, sender)
-    if rule_match:
-        return ("Rule", True)
-
-    # Step 2: Fall back to LLM
-    llm_keep = classify_with_llm(subject, sender, body)
-    return ("LLM", llm_keep)
+    # Check centralized rule-based filters
+    action, reason = apply_filtering_rules(subject, sender, list_unsubscribe, body)
+    
+    if action == "pass":
+        return (reason, True)
+    
+    # review and reject/hard_refuse both return False for immediate keep
+    return (f"{action}:{reason}", False)
 
 
 # ============================================================================
@@ -441,6 +359,7 @@ def backfill_account(email_addr: str, password: str, mail, state: Dict, notion_a
             # Extract headers
             raw_subject = msg.get("Subject", "")
             raw_from = msg.get("From", "")
+            list_unsubscribe = str(msg.get("List-Unsubscribe", ""))
             subject = decode_header_value(raw_subject)
             sender = decode_header_value(raw_from)
 
@@ -466,7 +385,7 @@ def backfill_account(email_addr: str, password: str, mail, state: Dict, notion_a
 
             # Hybrid Triage
             print(f"  🔍 [{processed_count}] {subject[:50]}...")
-            method, should_keep = triage_email(subject, sender, body)
+            method, should_keep = triage_email(subject, sender, body, list_unsubscribe)
 
             if not should_keep:
                 print(f"    🚫 Skipped by {method}")
@@ -474,12 +393,12 @@ def backfill_account(email_addr: str, password: str, mail, state: Dict, notion_a
                 state["processed_ids"].append(state_key)
                 continue
 
-            if method == "Rule":
-                print(f"    ✅ [Rule] - KEEP")
-                stats["rule_keep"] += 1
-            else:
+            if method == "LLM":
                 print(f"    ✅ [LLM] - KEEP")
                 stats["llm_keep"] += 1
+            else:
+                print(f"    ✅ [Rule: {method}] - KEEP")
+                stats["rule_keep"] += 1
 
             # Send to Notion with date
             payload = create_notion_payload(subject, sender, body, email_addr, email_date_iso)

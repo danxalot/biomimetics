@@ -109,7 +109,7 @@ Create the following databases in Notion:
 - `Github Link` (URL)
 - `Team` (Multi-select)
 - `Start Date` (Date)
-- `Due Date` (Date)   
+- `Due Date` (Date)    #bios #bios/architecture #bios/architecture/schema #bios #bios/architecture #bios/architecture/schema
 
 #### 2. ARCA Tasks Database
 
@@ -121,7 +121,7 @@ Create the following databases in Notion:
 - `Priority` (Select: Critical, High, Medium, Low)
 - `Description` (Text)
 - `Github Issue` (URL)
-- `Due Date` (Date)   
+- `Due Date` (Date)    #bios #bios/architecture #bios/architecture/schema #bios #bios/architecture #bios/architecture/schema
 
 #### 3. ARCA Memory Logs Database
 
@@ -131,14 +131,14 @@ Create the following databases in Notion:
 - `Type` (Select: Query, Update, Insight, Event)
 - `Source` (Select: ARCA, Biomimetics, GitHub, Serena)
 - `Content` (Text)
-- `Memory UUID` (Text)   
+- `Memory UUID` (Text)    #bios #bios/personal_assistant #bios/personal_assistant/memory #bios #bios/personal_assistant #bios/personal_assistant/memory
 
 ### Share Databases with Integration
 
 1. Open each database in Notion
 2. Click `...` → `Connect to`
 3. Select your Notion integration
-4. Copy database IDs for configuration
+4. Copy database IDs for configuration #bios #bios/notion #bios/notion/sync #bios/architecture #bios/architecture/config #bios #bios/notion #bios/notion/sync #bios/architecture #bios/architecture/config
 
 ---
 
@@ -581,10 +581,12 @@ Both projects share the GCP Memory Gateway with project-specific namespaces:
 4. ✅ Configure Zed Editor
 5. ✅ Configure Antigravity
 6. ✅ Test all integrations
-7. ✅ Document cross-project workflows   
+7. ✅ Document cross-project workflows    #bios #bios/meta #bios/meta/operational #bios #bios/meta #bios/meta/operational
 
 ---
 
 **Contact**: Claws <claws@arca-vsa.tech>  
 **Documentation**: `docs/MCP_INTEGRATION_STATUS.md`  
 **Repository**: https://github.com/danxalot/biomimetics
+
+<!-- LLM_TAGGED -->

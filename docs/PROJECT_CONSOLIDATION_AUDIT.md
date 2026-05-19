@@ -13,7 +13,7 @@ status: active
 
 ## Executive Summary
 
-This document provides a complete audit of all project files scattered across the home directory (`~/`) that should be consolidated into the `~/biomimetics` project folder for proper version control, documentation, and development tracking. .
+This document provides a complete audit of all project files scattered across the home directory (`~/`) that should be consolidated into the `~/biomimetics` project folder for proper version control, documentation, and development tracking. . #bios/meta #bios/meta/operational #bios/architecture #bios/architecture/config #bios/meta #bios/meta/operational #bios/architecture #bios/architecture/config #bios/meta #bios/meta/operational #bios/architecture #bios/architecture/config #bios/meta #bios/meta/operational #bios/architecture #bios/architecture/config
 
 ---
 
@@ -51,7 +51,7 @@ This document provides a complete audit of all project files scattered across th
 | `email-ingestion-daemon.py` | `~/` | Email ingestion service | `~/biomimetics/scripts/email/` |
 | `serena-memory-sync.py` | `~/` | Serena memory synchronization | `~/biomimetics/scripts/memory/` |
 | `obsidian-sync-skill.py` | `~/` | Obsidian vault sync | `~/biomimetics/scripts/sync/` |
-| `vision-router.py` | `~/` | Vision API routing | `~/biomimetics/scripts/vision/` |
+| `vision-router.py` | `~/` | Vision API routing | `~/biomimetics/scripts/vision/` | #bios/mcp_server #bios/mcp_server/tool #bios/copaw #bios/copaw/workflow #bios/personal_assistant #bios/personal_assistant/memory #bios/mcp_server #bios/mcp_server/tool #bios/copaw #bios/copaw/workflow #bios/personal_assistant #bios/personal_assistant/memory #bios/mcp_server #bios/mcp_server/tool #bios/copaw #bios/copaw/workflow #bios/personal_assistant #bios/personal_assistant/memory #bios/mcp_server #bios/mcp_server/tool #bios/copaw #bios/copaw/workflow #bios/personal_assistant #bios/personal_assistant/memory
 
 ### 2.2 Medium Priority - Setup & Deployment
 
@@ -63,7 +63,7 @@ This document provides a complete audit of all project files scattered across th
 | `muninn-*.sh` (3 files) | `~/` | MuninnDB setup scripts | `~/biomimetics/scripts/setup/` |
 | `maintain_mycloud_mount.sh` | `~/` | MyCloud mount watchdog | `~/biomimetics/scripts/` (already exists) |
 | `deploy-github-mcp-sse.sh` | `~/` | GitHub MCP deployment | `~/biomimetics/scripts/deploy/` |
-| `redeploy-github-mcp.sh` | `~/` | GitHub MCP redeployment | `~/biomimetics/scripts/deploy/` |
+| `redeploy-github-mcp.sh` | `~/` | GitHub MCP redeployment | `~/biomimetics/scripts/deploy/` | #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment
 
 ### 2.3 Configuration Files
 
@@ -74,14 +74,14 @@ This document provides a complete audit of all project files scattered across th
 | `notion-approval-db-template.json` | `~/` | Notion database template | Move to `~/biomimetics/notion/` |
 | `notion-webhook-worker.js` | `~/` | Old webhook worker | Archive or merge with cloudflare/ |
 | `openclaw.json` | `~/` | OpenClaw configuration | Review and archive |
-| `package.json` | `~/` | Root package.json | Review necessity |
+| `package.json` | `~/` | Root package.json | Review necessity | #bios/notion #bios/notion/schema #bios/architecture #bios/architecture/config #bios/notion #bios/notion/schema #bios/architecture #bios/architecture/config #bios/notion #bios/notion/schema #bios/architecture #bios/architecture/config #bios/notion #bios/notion/schema #bios/architecture #bios/architecture/config
 
 ### 2.4 Documentation
 
 | File | Current Location | Purpose | Target Location |
 |------|------------------|---------|-----------------|
 | `GITHUB_MCP_SSE_DEPLOYMENT.md` | `~/` | GitHub MCP deployment guide | `~/biomimetics/docs/` |
-| `PHASE[2-7]-WORKFLOW.md` | `~/` | Phase workflows | `~/biomimetics/docs/phases/` |
+| `PHASE[2-7]-WORKFLOW.md` | `~/` | Phase workflows | `~/biomimetics/docs/phases/` | #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config
 
 ---
 
@@ -95,7 +95,7 @@ This document provides a complete audit of all project files scattered across th
 | `~/Documents/VS Code Projects/ARCA/` | Separate project | Keep separate (ARCA is the AI system being managed) |
 | `~/.copaw/` | External tool | Keep separate |
 | `~/.serena/` | External tool | Keep separate |
-| `~/.muninn/` | External tool | Keep separate |
+| `~/.muninn/` | External tool | Keep separate | #bios #bios/architecture #bios/architecture/config #bios/meta #bios/meta/operational #bios #bios/architecture #bios/architecture/config #bios/meta #bios/meta/operational #bios #bios/architecture #bios/architecture/config #bios/meta #bios/meta/operational
 
 ### 3.2 Configuration Directories (Keep in Place)
 
@@ -105,7 +105,7 @@ This document provides a complete audit of all project files scattered across th
 | `~/.cloudflare/` | Cloudflare CLI config | ✅ Yes |
 | `~/.docker/` | Docker configuration | ✅ Yes |
 | `~/.gemini/` | Gemini CLI config | ✅ Yes |
-| `~/.aws/` | AWS CLI config | ✅ Yes |
+| `~/.aws/` | AWS CLI config | ✅ Yes | #bios #bios/architecture #bios/architecture/config #bios #bios/architecture #bios/architecture/config #bios #bios/architecture #bios/architecture/config
 
 ---
 
@@ -118,7 +118,7 @@ This document provides a complete audit of all project files scattered across th
 | Voice Session Logs | Track voice interactions | 📝 Schema defined, needs creation |
 | Voice Tool Registry | Document available tools | 📝 Schema defined, needs creation |
 | Voice Interface Tasks | Development tasks | 📝 Schema defined, needs creation |
-| Voice API Configuration | Config references | 📝 Schema defined, needs creation |
+| Voice API Configuration | Config references | 📝 Schema defined, needs creation | #bios #bios/notion #bios/notion/schema #bios/architecture #bios/architecture/schema #bios #bios/notion #bios/notion/schema #bios/architecture #bios/architecture/schema #bios #bios/notion #bios/notion/schema #bios/architecture #bios/architecture/schema
 
 ### 4.2 Existing Notion Integration
 
@@ -127,7 +127,7 @@ This document provides a complete audit of all project files scattered across th
 | Biomimetic OS DB | ✅ Active | `3284d2d9-fc7c-8111-88de-eeaba9c5f845` |
 | Life OS Triage DB | ✅ Same as Biomimetic OS | `3284d2d9-fc7c-8111-88de-eeaba9c5f845` |
 | Tool Guard DB | ✅ Configured | `3284d2d9-fc7c-8113-bfe-ecca75f4235ece` |
-| GitHub→Notion Worker | ✅ Deployed | Cloudflare Worker |
+| GitHub→Notion Worker | ✅ Deployed | Cloudflare Worker | #bios #bios/architecture #bios/architecture/component #bios/notion #bios/notion/sync #bios #bios/architecture #bios/architecture/component #bios/notion #bios/notion/sync #bios #bios/architecture #bios/architecture/component #bios/notion #bios/notion/sync
 
 ### 4.3 Notion Documentation Gaps
 
@@ -136,7 +136,7 @@ This document provides a complete audit of all project files scattered across th
 - [ ] Create Voice Interface Tasks database
 - [ ] Create Voice API Configuration database
 - [ ] Document existing database schemas
-- [ ] Create Notion integration guide for new users      
+- [ ] Create Notion integration guide for new users       #bios #bios/notion #bios/notion/schema #bios/personal_assistant #bios/personal_assistant/task #bios #bios/notion #bios/notion/schema #bios/personal_assistant #bios/personal_assistant/task #bios #bios/notion #bios/notion/schema #bios/personal_assistant #bios/personal_assistant/task
 
 ---
 
@@ -152,19 +152,19 @@ This document provides a complete audit of all project files scattered across th
 - ✅ Notion MCP Server setup
 - ✅ Gemini Live Voice API implementation
 - ✅ Email sync (ProtonMail 5-account loop)
-- ✅ MyCloud watchdog service
+- ✅ MyCloud watchdog service #bios/architecture #bios/infrastructure #bios/mcp_server/deployment #bios/voice_agent/stt #bios/notion/sync #bios/meta/operational #bios/architecture #bios/infrastructure #bios/mcp_server/deployment #bios/voice_agent/stt #bios/notion/sync #bios/meta/operational #bios/architecture #bios/infrastructure #bios/mcp_server/deployment #bios/voice_agent/stt #bios/notion/sync #bios/meta/operational
 
 #### In Progress:
 - 🔄 Project consolidation and documentation
 - 🔄 Notion database creation for voice interface
-- 🔄 Git repository cleanup (secret scanning issues)
+- 🔄 Git repository cleanup (secret scanning issues) #bios/meta/operational #bios/notion/schema #bios/architecture/config #bios/meta/operational #bios/notion/schema #bios/architecture/config #bios/meta/operational #bios/notion/schema #bios/architecture/config
 
 #### Next Steps:
 1. Complete file consolidation
 2. Create Notion databases from schemas
 3. Test Gemini Live Voice end-to-end
 4. Deploy voice interface to production
-5. Create user documentation
+5. Create user documentation #bios/meta/operational #bios/notion/schema #bios/voice_agent/dialogue #bios/meta/operational #bios/notion/schema #bios/voice_agent/dialogue #bios/meta/operational #bios/notion/schema #bios/voice_agent/dialogue
 
 ---
 
@@ -204,7 +204,7 @@ mv ~/redeploy-*.sh ~/biomimetics/scripts/deploy/
 ### Step 5: Update Documentation References
 - Update all paths in documentation
 - Create migration guide
-- Update README with new structure
+- Update README with new structure #bios/meta/operational #bios/architecture/config #bios/meta/operational #bios/architecture/config #bios/meta/operational #bios/architecture/config
 
 ### Step 6: Git Cleanup
 - Resolve GitHub secret scanning block
@@ -219,19 +219,19 @@ mv ~/redeploy-*.sh ~/biomimetics/scripts/deploy/
 1. **Complete file consolidation** (Steps 1-4 above)
 2. **Create Notion databases** from documented schemas
 3. **Resolve GitHub push block** (allow secret or rewrite history)
-4. **Test all moved scripts** to ensure paths are correct
+4. **Test all moved scripts** to ensure paths are correct #bios/meta/operational #bios/notion/schema #bios/architecture/config #bios/meta/operational #bios/notion/schema #bios/architecture/config #bios/meta/operational #bios/notion/schema #bios/architecture/config
 
 ### Short-term (This Week):
 1. Create comprehensive README for each script directory
 2. Document all environment variables required
 3. Create setup guide for new developers
-4. Test end-to-end voice interface workflow
+4. Test end-to-end voice interface workflow #bios/meta #bios/meta/operational #bios/voice_agent #bios/voice_agent/dialogue #bios/meta #bios/meta/operational #bios/voice_agent #bios/voice_agent/dialogue #bios/meta #bios/meta/operational #bios/voice_agent #bios/voice_agent/dialogue
 
 ### Long-term (This Month):
 1. Create automated testing suite
 2. Set up CI/CD pipeline
 3. Create user-facing documentation
-4. Plan Phase 8 features
+4. Plan Phase 8 features #bios/meta #bios/meta/operational #bios/mcp_server #bios/mcp_server/deployment #bios/meta #bios/meta/operational #bios/mcp_server #bios/mcp_server/deployment #bios/meta #bios/meta/operational #bios/mcp_server #bios/mcp_server/deployment
 
 ---
 
@@ -242,7 +242,7 @@ mv ~/redeploy-*.sh ~/biomimetics/scripts/deploy/
 - Setup Scripts: 13
 - Documentation: 8
 - Configuration: 6
-- Related Directories: 11
+- Related Directories: 11 #bios/meta #bios/meta/operational #bios/architecture #bios/architecture/config #bios/meta #bios/meta/operational #bios/architecture #bios/architecture/config #bios/meta #bios/meta/operational #bios/architecture #bios/architecture/config
 
 ### Estimated Time: **2-3 hours**
 
@@ -251,3 +251,5 @@ mv ~/redeploy-*.sh ~/biomimetics/scripts/deploy/
 **Next Review**: After consolidation complete  
 **Owner**: Serena (Biomimetics Orchestrator)  
 **Status**: Awaiting approval to proceed with consolidation
+
+<!-- LLM_TAGGED -->

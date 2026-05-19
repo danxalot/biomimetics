@@ -22,7 +22,7 @@ The Biomimetics project is a **mature infrastructure automation system** for the
 - ✅ Notion integration operational (6 databases)
 - ✅ Email ingestion pipeline stabilized (Multipart cleansing + staging quarantine)
 - ✅ GCP Memory Gateway deployed (MemU v1.3.1)
-- ✅ GitHub MCP active on Koyeb (Git-based)   
+- ✅ GitHub MCP active on Koyeb (Git-based)    #bios/architecture #bios/architecture/component #bios/meta/operational #bios/notion/sync #bios/mcp_server/deployment #bios/architecture #bios/architecture/component #bios/meta/operational #bios/notion/sync #bios/mcp_server/deployment
 
 ---
 
@@ -101,7 +101,7 @@ The Biomimetics project is a **mature infrastructure automation system** for the
 | **Key Vault** | `arca-mcp-kv-dae2` | eastus | ✅ Active | Backup |
 | **Key Vault** | `arca-consolidated-kv` | eastus | ✅ Active | New consolidated |
 | **Container Instance** | `github-mcp-server` | eastus | ⚠️ Stopped | Needs redeploy |
-| **Container Instance** | `github-mcp-sse` | westus2 | ⚠️ Stopped | Old deployment |
+| **Container Instance** | `github-mcp-sse` | westus2 | ⚠️ Stopped | Old deployment | #bios/architecture #bios/architecture/config #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/mcp_server/deployment
 
 **Secrets Available** (67 total):
 - `github-token` - GitHub PAT
@@ -111,7 +111,7 @@ The Biomimetics project is a **mature infrastructure automation system** for the
 - `gmail-app-password` - Gmail IMAP
 - `proton-bridge-password` - ProtonMail auth
 - `github-webhook-secret` - Webhook validation
-- ...and 57 more   
+- ...and 57 more    #bios/architecture #bios/architecture/config #bios/mcp_server/auth #bios/architecture #bios/architecture/config #bios/mcp_server/auth
 
 **Action Required**: Redeploy GitHub MCP container
 ```bash
@@ -128,7 +128,7 @@ cd ~/biomimetics/azure
 | Service | Name | Location | Status | Notes |
 |---------|------|----------|--------|-------|
 | **Cloud Function** | `memory-orchestrator` | us-central1 | ✅ Active | MuninnDB + MemU |
-| **Service Account** | GCP SA | us-central1 | ✅ Active | Credentials in Key Vault |
+| **Service Account** | GCP SA | us-central1 | ✅ Active | Credentials in Key Vault | #bios/architecture #bios/architecture/component #bios/personal_assistant/memory #bios/architecture #bios/architecture/component #bios/personal_assistant/memory
 
 **Endpoint**: `https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator`
 
@@ -137,7 +137,7 @@ cd ~/biomimetics/azure
 - MemU: Archive memory (v1.3.1, 1536-dim embeddings)
 - Agents: `gemma-4-31b-it` (Personal), `gemma-4-26b-a4b-it` (Technical)
 - Query interface for all agents
-- Admin: `/purge` endpoint for content management   
+- Admin: `/purge` endpoint for content management    #bios/personal_assistant/memory #bios/architecture/component #bios/notion/query #bios/personal_assistant/memory #bios/architecture/component #bios/notion/query
 
 ---
 
@@ -148,7 +148,7 @@ cd ~/biomimetics/azure
 | **Biomimetic OS** | `3284d2d9fc7c811188deeeaba9c5f845` | ✅ Active | Project tracking |
 | **Life OS Triage** | `3284d2d9fc7c81bd9a91e865511e642f` | ✅ Active | Email/webhook triage |
 | **Tool Guard** | `3284d2d9fc7c8113bfecca75f4235ece` | ✅ Active | Security & approvals |
-| **CoPaw Approval** | `3284d2d9fc7c8113bfecca75f4235ece` | ✅ Active | Tool approvals |
+| **CoPaw Approval** | `3284d2d9fc7c8113bfecca75f4235ece` | ✅ Active | Tool approvals | #bios/architecture #bios/architecture/schema #bios/notion #bios/notion/schema #bios/architecture #bios/architecture/schema #bios/notion #bios/notion/schema
 
 **MCP Server**: `@notionhq/notion-mcp-server` (npx)
 - Token: `[NOTION_TOKEN_REDACTED]`
@@ -158,7 +158,7 @@ cd ~/biomimetics/azure
 - Voice Session Logs database
 - Voice Tool Registry database
 - Voice Interface Tasks database
-- Voice API Configuration database
+- Voice API Configuration database #bios/voice_agent #bios/voice_agent/dialogue #bios/notion #bios/notion/query #bios/voice_agent #bios/voice_agent/dialogue #bios/notion #bios/notion/query
 
 ---
 
@@ -166,21 +166,21 @@ cd ~/biomimetics/azure
 
 | Worker | URL | Status | Purpose |
 |--------|-----|--------|---------|
-| **GitHub→Notion Sync** | `https://arca-github-notion-sync.dan-exall.workers.dev` | ✅ Active | Webhook router |
+| **GitHub→Notion Sync** | `https://arca-github-notion-sync.dan-exall.workers.dev` | ✅ Active | Webhook router | #bios/architecture #bios/architecture/component #bios/notion #bios/notion/sync #bios/architecture #bios/architecture/component #bios/notion #bios/notion/sync
 
 **Features** (from `cloudflare/index.js`):
 - GitHub webhooks → Biomimetic OS database
 - Serena agent tasks → Life OS Triage
 - GCP memory insights → Task suggestions
 - CoPaw requests → Tool approval workflow
-- PM-Agent routing  `  `  `  
+- PM-Agent routing  `  `  `   #bios/notion #bios/notion/sync #bios/personal_assistant #bios/personal_assistant/task #bios/copaw #bios/copaw/workflow #bios/notion #bios/notion/sync #bios/personal_assistant #bios/personal_assistant/task #bios/copaw #bios/copaw/workflow
 
 **Routing** (X-Arca-Source header):
 - `GitHub` → GitHub webhook handler
 - `Serena` → Serena task sync
 - `GCP-Memory` → Memory insight processor
 - `CoPaw` → Tool approval router
-- `PM-Agent` → Project manager actions   
+- `PM-Agent` → Project manager actions    #bios/personal_assistant #bios/personal_assistant/routing #bios/copaw #bios/copaw/action #bios/personal_assistant #bios/personal_assistant/routing #bios/copaw #bios/copaw/action
 
 **Secrets** (wrangler.toml):
 ```toml
@@ -202,13 +202,13 @@ GITHUB_TOKEN = "[GITHUB_TOKEN_REDACTED]"
 |-------|----------|--------|-----|
 | `com.arca.omni-sync.plist` | Continuous | ✅ Running | `~/.arca/omni_sync.log` |
 | `com.arca.proton-sync.plist` | Hourly | ✅ Running | `~/.arca/proton_sync.log` |
-| `com.arca.mycloud-watchdog.plist` | 60 seconds | ✅ Running | `~/.arca/mycloud_watchdog.log` |
+| `com.arca.mycloud-watchdog.plist` | 60 seconds | ✅ Running | `~/.arca/mycloud_watchdog.log` | #bios #bios/meta #bios/meta/operational #bios/architecture #bios/architecture/config #bios #bios/meta #bios/meta/operational #bios/architecture #bios/architecture/config
 
 **Scripts**:
 - `scripts/omni_sync.py` - Main sync heartbeat
 - `scripts/backfill_claws.py` - ProtonMail sync
 - `scripts/maintain_mycloud_mount.sh` - NAS mount watchdog
-- `scripts/proton_sync_hourly.sh` - Email sync wrapper
+- `scripts/proton_sync_hourly.sh` - Email sync wrapper #bios #bios/meta #bios/meta/operational #bios/architecture #bios/architecture/component #bios #bios/meta #bios/meta/operational #bios/architecture #bios/architecture/component
 
 ---
 
@@ -222,7 +222,7 @@ GITHUB_TOKEN = "[GITHUB_TOKEN_REDACTED]"
 | **Antigravity** | `~/biomimetics/.antigravity/settings.json` | ✅ Configured | Notion, GitHub, GCP |
 | **CoPaw** | `~/.copaw/config.json` | ✅ Configured | GitHub, Notion |
 | **Claude Desktop** | `~/Library/Application Support/Claude/...` | ✅ Configured | Notion |
-| **Qwen Code** | `~/.qwen/settings.json` | ✅ Configured | Notion |
+| **Qwen Code** | `~/.qwen/settings.json` | ✅ Configured | Notion | #bios #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config
 
 #### MCP Servers
 
@@ -230,7 +230,7 @@ GITHUB_TOKEN = "[GITHUB_TOKEN_REDACTED]"
 |--------|-----------|----------|--------|
 | **Notion MCP** | stdio (npx) | Local | ✅ Ready |
 | **GitHub MCP** | SSE | `https://github-mcp-server-arca-vsa-3c648978.koyeb.app/sse` | ✅ Healthy |
-| **GCP Gateway** | HTTPS | `https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator` | ✅ Active |
+| **GCP Gateway** | HTTPS | `https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator` | ✅ Active | #bios #bios/mcp_server #bios/mcp_server/transport #bios/architecture #bios/architecture/protocol #bios #bios/mcp_server #bios/mcp_server/transport #bios/architecture #bios/architecture/protocol
 
 ---
 
@@ -241,13 +241,13 @@ GITHUB_TOKEN = "[GITHUB_TOKEN_REDACTED]"
 **Required**:
 1. ARCA Projects Notion database ID
 2. ARCA Tasks Notion database ID
-3. ARCA Memory Logs Notion database ID
+3. ARCA Memory Logs Notion database ID #bios #bios/notion #bios/notion/schema #bios/architecture #bios/architecture/schema #bios #bios/notion #bios/notion/schema #bios/architecture #bios/architecture/schema
 
 **Configuration Updates Needed**:
 - `cloudflare/wrangler.toml` - Add ARCA_DB_ID vars
 - `~/.zed/settings.json` - Add ARCA_PM agent
 - `~/biomimetics/.antigravity/settings.json` - Add ARCA namespaces
-- `cloudflare/index.js` - Add ARCA routing (code ready, needs DB IDs)   
+- `cloudflare/index.js` - Add ARCA routing (code ready, needs DB IDs)    #bios/architecture #bios/architecture/config #bios/architecture #bios/architecture/config
 
 ---
 
@@ -265,7 +265,7 @@ GITHUB_TOKEN = "[GITHUB_TOKEN_REDACTED]"
 | `docs/MCP_INTEGRATION.md` | MCP server setup | ✅ Complete |
 | `docs/GEMINI_LIVE_VOICE_PROJECT.md` | Voice interface docs | ✅ Complete |
 | `docs/CONSOLIDATION_COMPLETE.md` | Consolidation report | ✅ Complete |
-| `docs/CURRENT_STATUS.md` | Development status | ✅ Current (2026-05-13) |
+| `docs/CURRENT_STATUS.md` | Development status | ✅ Current (2026-05-13) | #bios/architecture #bios/architecture/schema #bios/meta #bios/meta/operational #bios/architecture #bios/architecture/schema #bios/meta #bios/meta/operational
 
 ### MCP Integration Docs (5 files - created today)
 
@@ -275,7 +275,7 @@ GITHUB_TOKEN = "[GITHUB_TOKEN_REDACTED]"
 | `docs/MCP_INTEGRATION_STATUS.md` | Detailed status | ✅ Created |
 | `docs/MCP_INTEGRATION_SUMMARY.md` | Summary | ✅ Created |
 | `docs/MCP_INTEGRATION_SUMMARY_CORRECTED.md` | Corrected summary | ✅ Created |
-| `docs/ARCA_MCP_INTEGRATION.md` | ARCA integration guide | ✅ Created |
+| `docs/ARCA_MCP_INTEGRATION.md` | ARCA integration guide | ✅ Created | #bios/mcp_server #bios/mcp_server/deployment #bios/mcp_server #bios/mcp_server/deployment
 
 ### Phase Documentation (4 files)
 
@@ -284,7 +284,7 @@ GITHUB_TOKEN = "[GITHUB_TOKEN_REDACTED]"
 | `docs/phases/PHASE4-WORKFLOW.md` | Azure integration | ✅ Complete |
 | `docs/phases/PHASE5-WORKFLOW.md` | Email sync | ✅ Complete |
 | `docs/phases/PHASE6-WORKFLOW.md` | Unified inbox | ✅ Complete |
-| `docs/phases/PHASE7-WORKFLOW.md` | Voice interface | ✅ Complete |
+| `docs/phases/PHASE7-WORKFLOW.md` | Voice interface | ✅ Complete | #bios/copaw #bios/copaw/workflow #bios/copaw #bios/copaw/workflow
 
 ### Azure Documentation (3 files)
 
@@ -293,7 +293,7 @@ GITHUB_TOKEN = "[GITHUB_TOKEN_REDACTED]"
 | `azure/GITHUB_MCP_KEYVAULT_INTEGRATION.md` | GitHub MCP + Key Vault | ✅ Complete |
 | `azure/CONSOLIDATION_GUIDE.md` | Azure consolidation | ✅ Complete |
 | `azure/deploy_github_mcp_eastus.sh` | Deployment script | ✅ Created |
-| `azure/deploy_github_mcp_with_keyvault.sh` | Deployment with KV | ✅ Created |
+| `azure/deploy_github_mcp_with_keyvault.sh` | Deployment with KV | ✅ Created | #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/component #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/component
 
 ### Legacy Documentation (1 file)
 
@@ -313,7 +313,7 @@ GITHUB_TOKEN = "[GITHUB_TOKEN_REDACTED]"
 | **Phase 6** | GitHub→Notion sync | 2026-03-16 | ✅ Complete |
 | **Phase 7** | Gemini Live Voice | 2026-03-17 | ✅ Complete |
 | **Consolidation** | Project organization | 2026-03-18 | ✅ Complete |
-| **MCP Config** | Zed + Antigravity | 2026-03-19 | ✅ Complete |
+| **MCP Config** | Zed + Antigravity | 2026-03-19 | ✅ Complete | #bios/architecture #bios/architecture/config #bios/notion/sync #bios/voice_agent #bios/architecture #bios/architecture/config #bios/notion/sync #bios/voice_agent
 
 ---
 
@@ -446,7 +446,7 @@ Total Configuration: 5+ files
 | **Azure Key Vault** | ~$0 | Within free tier |
 | **GCP Cloud Functions** | ~$0 | Within free tier |
 | **Cloudflare Workers** | $0 | Free tier |
-| **Total** | **~$5/month** | Very cost-effective |
+| **Total** | **~$5/month** | Very cost-effective | #bios/infrastructure #bios/meta/operational #bios/infrastructure #bios/meta/operational
 
 ---
 
@@ -462,4 +462,6 @@ Total Configuration: 5+ files
 **Assessment Date**: 2026-05-13
 **Overall Status**: ✅ **Operational - Architecture Secured**
 **Next Action**: Routine monitoring of staging exclusions
-**ETA to Full Operation**: 0 minutes (System Stabilized)
+**ETA to Full Operation**: 0 minutes (System Stabilized) #bios/meta/operational #bios/architecture #bios/meta/operational #bios/architecture
+
+<!-- LLM_TAGGED -->

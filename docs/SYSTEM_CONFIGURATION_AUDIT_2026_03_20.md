@@ -7,13 +7,13 @@ status: active
 
 **Generated:** 2026-03-20  
 **Scope:** `~/biomimetics` and `/Users/danexall/Documents/VS Code Projects/`  
-**Purpose:** Deep state discovery of operational components, connection endpoints, and LLM assignments
+**Purpose:** Deep state discovery of operational components, connection endpoints, and LLM assignments #bios/architecture #bios/architecture/component #bios/meta #bios/meta/operational #bios/architecture #bios/architecture/component #bios/meta #bios/meta/operational
 
 ---
 
 ## Executive Summary
 
-This audit reveals a **partially integrated system** with functional local execution but **critical disconnections** in the voice→approval→execution pipeline. The Computer Use agent runs unrestricted, CoPaw voice is disabled, and approval decisions are logged but never actioned.   
+This audit reveals a **partially integrated system** with functional local execution but **critical disconnections** in the voice→approval→execution pipeline. The Computer Use agent runs unrestricted, CoPaw voice is disabled, and approval decisions are logged but never actioned.    #bios/architecture #bios/architecture/component #bios/copaw #bios/copaw/workflow #bios/architecture #bios/architecture/component #bios/copaw #bios/copaw/workflow
 
 ---
 
@@ -27,7 +27,7 @@ This audit reveals a **partially integrated system** with functional local execu
 | **Location** | `cloudflare/index.js:routePMAgent()` |
 | **LLM** | **Gemma-3-27b** via Google AI Studio v1beta |
 | **Trigger** | Cron: `0 */6 * * *` (every 6hrs) OR POST with `X-Arca-Source: PM-Agent` |
-| **API Key** | `GEMINI_API_KEY` in `cloudflare/wrangler.toml` |
+| **API Key** | `GEMINI_API_KEY` in `cloudflare/wrangler.toml` | #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment
 
 **Execution Flow:**
 ```
@@ -55,9 +55,9 @@ Return summary
 | **Status** | ⚠️ Partial - Webhooks configured |
 | **Worker Routes** | `issues`, `pull_request`, `push` events |
 | **Endpoint** | `https://arca-github-notion-sync.dan-exall.workers.dev` |
-| **Databases** | Biomimetic OS: `3284d2d9fc7c811188deeeaba9c5f845` |
+| **Databases** | Biomimetic OS: `3284d2d9fc7c811188deeeaba9c5f845` | #bios/notion #bios/notion/sync #bios/notion/schema #bios/notion #bios/notion/sync #bios/notion/schema
 
-**⚠️ DISCONNECTED BRIDGE:** No GitHub workflows found in `~/.github/workflows/`. The PM Agent relies solely on Cloudflare cron triggers, not native GitHub Actions integration.
+**⚠️ DISCONNECTED BRIDGE:** No GitHub workflows found in `~/.github/workflows/`. The PM Agent relies solely on Cloudflare cron triggers, not native GitHub Actions integration. #bios/architecture #bios/architecture/protocol #bios/meta #bios/meta/operational #bios/architecture #bios/architecture/protocol #bios/meta #bios/meta/operational
 
 ---
 
@@ -71,7 +71,7 @@ Return summary
 | **Location** | `gemini-live-voice/src/App.tsx` |
 | **Model** | `gemini-2.5-flash` |
 | **API Key** | User-provided (stored in localStorage) |
-| **Tools** | `query_memory`, `trigger_notion_action` |
+| **Tools** | `query_memory`, `trigger_notion_action` | #bios/architecture #bios/architecture/component #bios/personal_assistant/memory #bios/copaw/action #bios/architecture #bios/architecture/component #bios/personal_assistant/memory #bios/copaw/action
 
 **Tool Endpoints:**
 - `query_memory` → `https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator`
@@ -86,7 +86,7 @@ Return summary
 | **Local MCP** | `127.0.0.1:8088` |
 | **Voice Channel** | `enabled: false` |
 | **LLM Routing** | `enabled: false` (mode: `local_first`) |
-| **Active Tools** | 9 builtin tools enabled |
+| **Active Tools** | 9 builtin tools enabled | #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/transport #bios/personal_assistant/routing #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/transport #bios/personal_assistant/routing
 
 **Enabled Tools:**
 1. `execute_shell_command`
@@ -97,7 +97,7 @@ Return summary
 6. `desktop_screenshot`
 7. `send_file_to_user`
 8. `get_current_time`
-9. `get_token_usage`
+9. `get_token_usage` #bios/mcp_server #bios/mcp_server/tool #bios/mcp_server #bios/mcp_server/tool
 
 **Disabled Channels:**
 - `imessage`: ❌
@@ -105,7 +105,7 @@ Return summary
 - `telegram`: ❌
 - `voice` (Twilio): ❌
 - `matrix`: ❌
-- `mqtt`: ❌
+- `mqtt`: ❌ #bios/voice_agent #bios/voice_agent/dialogue #bios/voice_agent #bios/voice_agent/dialogue
 
 ### CoPaw Tool Guard
 
@@ -114,14 +114,14 @@ Return summary
 | **Status** | ✅ Active |
 | **Location** | `scripts/copaw/copaw-tool-guard.py` |
 | **Approval DB** | `3284d2d9fc7c8113bfecca75f4235ece` (CoPaw Approval) |
-| **High-Risk Patterns** | `git push`, `git commit`, `rm -rf`, `sudo`, `curl|sh`, `serena.execute_shell_command` |
+| **High-Risk Patterns** | `git push`, `git commit`, `rm -rf`, `sudo`, `curl|sh`, `serena.execute_shell_command` | #bios/copaw #bios/copaw/workflow #bios/copaw/action #bios/copaw #bios/copaw/workflow #bios/copaw/action
 
 **⚠️ CRITICAL DISCONNECTS:**
 
 1. **CoPaw voice channel is DISABLED** - No Gemini Live API integration
 2. **CoPaw LLM routing is OFF** - `agents.llm_routing.enabled: false`
 3. **Gemini API key not shared** - CoPaw config has no reference to Gemini credentials
-4. **Twilio voice config empty** - No phone integration configured   
+4. **Twilio voice config empty** - No phone integration configured    #bios/copaw #bios/copaw/workflow #bios/architecture #bios/architecture/config #bios/copaw #bios/copaw/workflow #bios/architecture #bios/architecture/config
 
 ---
 
@@ -136,7 +136,7 @@ Return summary
 | **Script** | `/Users/danexall/computer-use-mcp.py` |
 | **Permissions** | Full screen/mouse/keyboard via `pyautogui` |
 | **Transport** | `stdio_server` - MCP protocol |
-| **Local Model** | Qwen-VL (for screen analysis) |
+| **Local Model** | Qwen-VL (for screen analysis) | #bios/mcp_server #bios/mcp_server/transport #bios/mcp_server/deployment #bios/architecture #bios/architecture/component #bios/mcp_server #bios/mcp_server/transport #bios/mcp_server/deployment #bios/architecture #bios/architecture/component
 
 **Security Configuration:**
 ```python
@@ -149,7 +149,7 @@ pyautogui.PAUSE = 0.5       # 500ms pause between actions
 - `move_mouse` - Move cursor to (x, y)
 - `click` - Mouse click
 - `type_text` - Keyboard input
-- `get_screen_info` - Screen metadata   
+- `get_screen_info` - Screen metadata    #bios/mcp_server #bios/mcp_server/tool #bios/architecture #bios/architecture/component #bios/mcp_server #bios/mcp_server/tool #bios/architecture #bios/architecture/component
 
 ### Serena Memory Sync
 
@@ -160,7 +160,7 @@ pyautogui.PAUSE = 0.5       # 500ms pause between actions
 | **Script** | `/Users/danexall/serena-memory-sync.py` |
 | **Interval** | 300 seconds (5 minutes) |
 | **Source Dir** | `~/.serena/memories/*.md` |
-| **Gateway** | `https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator` |
+| **Gateway** | `https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator` | #bios/notion #bios/notion/sync #bios/personal_assistant #bios/personal_assistant/memory #bios/notion #bios/notion/sync #bios/personal_assistant #bios/personal_assistant/memory
 
 **Sync Flow:**
 ```
@@ -189,7 +189,7 @@ Update state file (~/.arca/serena_sync_state.json)
 |--------|--------|-----------|-----|
 | **Notion Approval → Computer Use** | ❌ **NOT IMPLEMENTED** | Tool Guard creates approval records in Notion, but Computer Use MCP bypasses Tool Guard | No polling/webhook bridges approval decisions to local execution |
 | **Gemini Live → Notion Approval** | ⚠️ **PARTIAL** | `trigger_notion_action` tool can POST to Cloudflare Worker | Worker's `handleApprovalResponse()` is stub-only (logs but doesn't update Notion) |
-| **Cloudflare → Local Execution** | ❌ **NO BRIDGE** | Worker can't reach localhost Computer Use | No reverse tunnel (ngrok/cloudflared) configured |
+| **Cloudflare → Local Execution** | ❌ **NO BRIDGE** | Worker can't reach localhost Computer Use | No reverse tunnel (ngrok/cloudflared) configured | #bios/architecture #bios/architecture/protocol #bios/notion #bios/notion/sync #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/protocol #bios/notion #bios/notion/sync #bios/mcp_server #bios/mcp_server/deployment
 
 ### Intended Approval Flow (Not Working)
 
@@ -214,7 +214,7 @@ Execute Approved Action
 - ✅ Approvals are **logged** to Notion
 - ❌ Approvals are **never actioned** (no listener)
 - ❌ Computer Use runs **unrestricted** (no guard intercept)
-- ⚠️ Gemini Live can **create tasks** but cannot **trigger execution**   
+- ⚠️ Gemini Live can **create tasks** but cannot **trigger execution**    #bios/notion #bios/notion/sync #bios/personal_assistant #bios/personal_assistant/task #bios/copaw #bios/copaw/action #bios/notion #bios/notion/sync #bios/personal_assistant #bios/personal_assistant/task #bios/copaw #bios/copaw/action
 
 ---
 
@@ -226,12 +226,12 @@ Execute Approved Action
 | `com.arca.serena-sync` | 2 | ✅ Running | KeepAlive | `/Users/danexall/serena-memory-sync.py` |
 | `com.arca.omni-sync` | 10683 | ✅ Running | 300s | `/Users/danexall/biomimetics/scripts/omni_sync.py` |
 | `com.arca.proton-sync` | 0 | ⏸️ Idle | 3600s | `/Users/danexall/biomimetics/scripts/proton_sync_hourly.sh` |
-| `com.arca.mycloud-watchdog` | 0 | ⏸️ Idle | 60s | `/Users/danexall/biomimetics/scripts/maintain_mycloud_mount.sh` |
+| `com.arca.mycloud-watchdog` | 0 | ⏸️ Idle | 60s | `/Users/danexall/biomimetics/scripts/maintain_mycloud_mount.sh` | #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment
 
 **Notes:**
 - PID 0 = Agent loaded but not currently executing
 - `proton-sync` idle may indicate email ingestion is broken
-- `mycloud-watchdog` idle suggests mount is stable   
+- `mycloud-watchdog` idle suggests mount is stable    #bios/meta #bios/meta/operational #bios/meta #bios/meta/operational
 
 ---
 
@@ -248,7 +248,7 @@ Execute Approved Action
 | `LIFE_OS_TRIAGE_DB_ID` | `3284d2d9fc7c81bd9a91e865511e642f` | Life OS Triage database |
 | `TOOL_GUARD_DB_ID` | `3284d2d9fc7c8113bfecca75f4235ece` | Tool Guard database |
 | `COPAW_APPROVAL_DB_ID` | `3284d2d9fc7c8113bfecca75f4235ece` | CoPaw approvals database |
-| `GCP_GATEWAY` | `https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator` | Memory gateway URL |
+| `GCP_GATEWAY` | `https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator` | Memory gateway URL | #bios/architecture #bios/architecture/config #bios/notion #bios/notion/schema #bios/architecture #bios/architecture/config #bios/notion #bios/notion/schema
 
 ### Koyeb Deployment
 
@@ -262,7 +262,7 @@ Execute Approved Action
 |---------|-----|--------|
 | GitHub MCP (Koyeb) | `https://github-mcp-server-arca-vsa-3c648978.koyeb.app/sse` | ✅ HEALTHY |
 | Cloudflare Worker | `https://arca-github-notion-sync.dan-exall.workers.dev` | ✅ Active |
-| GCP Memory Gateway | `https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator` | ✅ Active |
+| GCP Memory Gateway | `https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator` | ✅ Active | #bios/mcp_server #bios/mcp_server/transport #bios/architecture #bios/architecture/component #bios/mcp_server #bios/mcp_server/transport #bios/architecture #bios/architecture/component
 
 ---
 
@@ -277,7 +277,7 @@ Execute Approved Action
 | **P1** | Approval→Execution bridge missing | Approvals logged but never actioned | Implement polling service or webhook listener for approval DB changes |
 | **P1** | Cloudflare Worker can't reach localhost | No remote→local command routing | Configure cloudflared tunnel for reverse proxy to localhost:8088 |
 | **P2** | PM Agent uses hardcoded repo (`danxalot/ARCA`) | Won't work for `biomimetics` repo | Update `gatherGitHubContext()` to use configurable owner/repo |
-| **P2** | Proton-sync idle (PID 0) | Email ingestion may be broken | Check logs at `~/.arca/proton_sync.err` and restart agent |
+| **P2** | Proton-sync idle (PID 0) | Email ingestion may be broken | Check logs at `~/.arca/proton_sync.err` and restart agent | #bios/architecture #bios/architecture/config #bios/copaw #bios/copaw/action #bios/mcp_server #bios/mcp_server/tool #bios/personal_assistant #bios/personal_assistant/task #bios/architecture #bios/architecture/config #bios/copaw #bios/copaw/action #bios/mcp_server #bios/mcp_server/tool #bios/personal_assistant #bios/personal_assistant/task
 
 ### Immediate Actions Required
 
@@ -294,7 +294,7 @@ Execute Approved Action
 
 2. **Route Computer Use Through Tool Guard**
    - Modify `computer-use-mcp.py` to import and use `ToolGuard` class
-   - Add approval check before executing high-risk operations
+   - Add approval check before executing high-risk operations #bios/copaw #bios/copaw/action #bios/mcp_server #bios/mcp_server/tool #bios/copaw #bios/copaw/action #bios/mcp_server #bios/mcp_server/tool
 
 3. **Implement Approval Poller**
    ```python
@@ -380,7 +380,7 @@ Execute Approved Action
 | Serena Sync | `~/biomimetics/scripts/memory/serena-memory-sync.py` |
 | Tool Guard | `~/biomimetics/scripts/copaw/copaw-tool-guard.py` |
 | Gemini Live Voice | `~/biomimetics/gemini-live-voice/src/App.tsx` |
-| LaunchAgents | `~/Library/LaunchAgents/com.arca.*.plist` |
+| LaunchAgents | `~/Library/LaunchAgents/com.arca.*.plist` | #bios/architecture #bios/architecture/component #bios/architecture/config #bios/architecture #bios/architecture/component #bios/architecture/config
 
 ---
 
@@ -413,3 +413,5 @@ curl -X POST https://us-central1-arca-471022.cloudfunctions.net/memory-orchestra
 **Document Version:** 1.0  
 **Generated By:** Qwen Code (System Discovery)  
 **Date:** 2026-03-20T00:00:00Z
+
+<!-- LLM_TAGGED -->

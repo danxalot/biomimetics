@@ -184,7 +184,7 @@ const LIVE_CONFIG: LiveConnectConfig = {
 ### Service Worker (via vite-plugin-pwa)
 - Auto-updates on new version
 - Caches static assets
-- Offline support for app shell
+- Offline support for app shell #bios/architecture #bios/architecture/component #bios/architecture/config
 
 ---
 
@@ -266,7 +266,7 @@ User: "What do you see on my screen?"
 | `arca-live-voice/public/manifest.json` | PWA manifest |
 | `arca-live-voice/vite.config.ts` | Vite + PWA config |
 | `arca-live-voice/wrangler.toml` | Cloudflare Pages config |
-| `phase7-setup.sh` | Setup script |
+| `phase7-setup.sh` | Setup script | #bios/architecture #bios/architecture/config
 
 ---
 
@@ -294,7 +294,7 @@ npm run deploy
 ### 4. PWA Install
 - Open deployed URL in Chrome/Safari
 - Click "Add to Home Screen" (iOS) or "Install" (Android)
-- App runs fullscreen
+- App runs fullscreen #bios/architecture #bios/architecture/config
 
 ---
 
@@ -308,7 +308,7 @@ npm run deploy
 | "Add to my Notion..." | `trigger_notion_action` |
 | "Plan the feature for..." | `trigger_notion_action` (plan_feature) |
 | "Review the code in..." | `trigger_notion_action` (review_code) |
-| "What do you see?" | Vision analysis (camera) |
+| "What do you see?" | Vision analysis (camera) | #bios/personal_assistant #bios/personal_assistant/memory #bios/personal_assistant/task #bios/notion #bios/notion/query
 
 ---
 
@@ -349,7 +349,7 @@ npm run deploy
 With local voice processing via Live API:
 - No transcription API calls (built-in)
 - Direct tool execution (no intermediate)
-- Streaming responses (lower latency)
+- Streaming responses (lower latency) #bios/voice_agent #bios/voice_agent/stt #bios/voice_agent/dialogue
 
 **Estimated savings: 40-60% vs traditional request/response**
 
@@ -359,4 +359,6 @@ With local voice processing via Live API:
 Phase 7 voice interface components now leverage the stabilized Phase 8 memory infrastructure.
 - **Enhanced Context:** `query_memory` now utilizes `gemma-4-31b-it` for deeper semantic retrieval.
 - **Secure Retrieval:** Memory queries are strictly bound to the permanent vault, respecting the staging quarantine.
-- **Idempotency:** Integration with state-tracked memory ensures voice-triggered actions do not create duplicate entries.
+- **Idempotency:** Integration with state-tracked memory ensures voice-triggered actions do not create duplicate entries. #bios/architecture #bios/architecture/component #bios/personal_assistant #bios/personal_assistant/memory #bios/voice_agent #bios/voice_agent/dialogue
+
+<!-- LLM_TAGGED -->

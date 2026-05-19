@@ -83,7 +83,7 @@ Request Received
 | Database | ID | Used By |
 |----------|-----|---------|
 | **Biomimetic OS** | `3244d2d9fc7c808b97c3ce78648d77a1` | GitHub webhooks, Serena default |
-| **Life OS Triage** | (from env `LIFE_OS_TRIAGE_DB_ID`) | Serena when `database: "life-os"` |
+| **Life OS Triage** | (from env `LIFE_OS_TRIAGE_DB_ID`) | Serena when `database: "life-os"` | #bios/architecture #bios/architecture/schema #bios/notion #bios/notion/schema #bios/architecture #bios/architecture/schema #bios/notion #bios/notion/schema
 
 ---
 
@@ -152,7 +152,7 @@ curl -X GET "https://arca-github-notion-sync.dan-exall.workers.dev?database=life
 | `LIFE_OS_TRIAGE_DB_ID` | Variable | (set via `wrangler secret put`) |
 | `NOTION_API_KEY` | Secret | Notion integration token |
 | `NOTION_TOKEN` | Secret | Alias for NOTION_API_KEY |
-| `GITHUB_WEBHOOK_SECRET` | Secret | Webhook validation |
+| `GITHUB_WEBHOOK_SECRET` | Secret | Webhook validation | #bios/architecture #bios/architecture/config #bios/notion #bios/notion/sync #bios/architecture #bios/architecture/config #bios/notion #bios/notion/sync
 
 ---
 
@@ -166,7 +166,7 @@ curl -X GET "https://arca-github-notion-sync.dan-exall.workers.dev?database=life
 | `Serena` | POST | CREATE_ENTRY | Biomimetic OS (default) or Life OS |
 | `Serena` | GET | QUERY | Biomimetic OS (default) or Life OS |
 | *(none)* | POST | Legacy GitHub webhook | Biomimetic OS |
-| *(none)* | POST | X-Serena-Action | Biomimetic OS (default) or Life OS |
+| *(none)* | POST | X-Serena-Action | Biomimetic OS (default) or Life OS | #bios/architecture #bios/architecture/protocol #bios/notion #bios/notion/query #bios/architecture #bios/architecture/protocol #bios/notion #bios/notion/query
 
 ---
 
@@ -175,7 +175,7 @@ curl -X GET "https://arca-github-notion-sync.dan-exall.workers.dev?database=life
 - **403 Forbidden**: Requests without recognized headers
 - **401 Unauthorized**: Invalid GitHub webhook signature
 - **400 Bad Request**: Unknown X-Arca-Source value
-- **405 Method Not Allowed**: Non-POST/GET requests   
+- **405 Method Not Allowed**: Non-POST/GET requests    #bios/architecture #bios/architecture/protocol #bios/mcp_server #bios/mcp_server/auth #bios/architecture #bios/architecture/protocol #bios/mcp_server #bios/mcp_server/auth
 
 ---
 
@@ -184,7 +184,7 @@ curl -X GET "https://arca-github-notion-sync.dan-exall.workers.dev?database=life
 | File | Changes |
 |------|---------|
 | `cloudflare/index.js` | Added X-Arca-Source routing, routeGitHubRequest(), routeSerenaRequest(), handleSerenaQuery() |
-| `cloudflare/wrangler.toml` | Already configured with database IDs |
+| `cloudflare/wrangler.toml` | Already configured with database IDs | #bios/architecture #bios/architecture/component #bios/meta #bios/meta/operational #bios/architecture #bios/architecture/component #bios/meta #bios/meta/operational
 
 ---
 
@@ -196,3 +196,5 @@ https://arca-github-notion-sync.dan-exall.workers.dev
 ```
 
 **GitHub webhook settings do NOT need to be updated!**
+
+<!-- LLM_TAGGED -->

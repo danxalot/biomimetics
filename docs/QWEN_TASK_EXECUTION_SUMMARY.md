@@ -24,7 +24,7 @@ status: active
   - `3284d2d9fc7c811188deeeaba9c5f845` (Biomimetic OS)
   - `3284d2d9fc7c81bd9a91e865511e642f` (Life OS Triage / Tool Guard)
   - `3284d2d9fc7c8113bfecca75f4235ece` (CoPaw Approval)
-  - `3244d2d9fc7c808b97c3ce78648d77a1` (Old Biomimetic OS)   
+  - `3244d2d9fc7c808b97c3ce78648d77a1` (Old Biomimetic OS)    #bios/architecture #bios/architecture/schema #bios/notion #bios/notion/query #bios/architecture #bios/architecture/schema #bios/notion #bios/notion/query
 
 - **ARCA Project**: **0 database IDs found** ❌
 
@@ -37,7 +37,7 @@ status: active
 **GitHub MCP Required Secrets**:
 | Secret | File | Value | Status |
 |--------|------|-------|--------|
-| `GITHUB_PERSONAL_ACCESS_TOKEN` | `github_token` | `[GITHUB_TOKEN_REDACTED]` | ✅ Found |
+| `GITHUB_PERSONAL_ACCESS_TOKEN` | `github_token` | `[GITHUB_TOKEN_REDACTED]` | ✅ Found | #bios/mcp_server #bios/mcp_server/auth #bios/mcp_server #bios/mcp_server/auth
 
 **Other Secrets** (60+ files, NOT exposed):
 - `notion_api_key`, `google_api_studio`, `gcp_credentials.json`, etc.
@@ -53,7 +53,7 @@ status: active
 |------|--------|---------|
 | `scripts/deploy/redeploy-github-mcp.sh` | ✅ Updated | Added `$ARCA_SECRETS_DIR`, `$AZURE_RESOURCE_GROUP`, `$AZURE_ACR_NAME` |
 | `scripts/deploy/deploy-github-mcp-sse.sh` | ✅ Updated | Added env var support, error handling |
-| `scripts/memory/migrate_claws_data.py` | ✅ Updated | Updated 3 functions to use `$ARCA_SECRETS_DIR` |
+| `scripts/memory/migrate_claws_data.py` | ✅ Updated | Updated 3 functions to use `$ARCA_SECRETS_DIR` | #bios/mcp_server #bios/mcp_server/deployment #bios/mcp_server #bios/mcp_server/deployment
 
 **All paths now correctly point to**: `/Users/danexall/Documents/VS Code Projects/ARCA/.secrets/`
 
@@ -71,7 +71,7 @@ export ARCA_SECRETS_DIR="/custom/path/.secrets"
 | Script | Purpose | Status |
 |--------|---------|--------|
 | `scripts/migrate/deploy-to-koyeb.sh` | Deploy GitHub MCP to Koyeb free tier | ✅ Ready |
-| `scripts/migrate/azure-teardown.sh` | Delete Azure container safely | ✅ Ready |
+| `scripts/migrate/azure-teardown.sh` | Delete Azure container safely | ✅ Ready | #bios/mcp_server #bios/mcp_server/deployment #bios/mcp_server #bios/mcp_server/deployment
 
 #### ⏸️ Cannot Execute: Requires Authentication
 
@@ -105,12 +105,12 @@ cd ~/biomimetics
 **Required for Notion MCP verification**:
 - `ARCA_PROJECTS_DB_ID` - NOT FOUND
 - `ARCA_TASKS_DB_ID` - NOT FOUND  
-- `ARCA_MEMORY_DB_ID` - NOT FOUND
+- `ARCA_MEMORY_DB_ID` - NOT FOUND #bios/notion #bios/notion/schema #bios/notion #bios/notion/schema
 
 **What WAS verified**:
 - ✅ Biomimetics Notion MCP working (Zed, Antigravity, CoPaw configured)
 - ✅ Notion token valid: `[NOTION_TOKEN_REDACTED]`
-- ✅ GCP Gateway active
+- ✅ GCP Gateway active #bios/notion #bios/notion/sync #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/notion #bios/notion/sync #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config
 
 #### ⏸️ Cannot Update: Documentation
 
@@ -129,14 +129,14 @@ cd ~/biomimetics
 2. **Secrets Mapped**: Identified GitHub MCP required secrets
 3. **Paths Fixed**: Updated 3 files with environment variable support
 4. **Scripts Created**: Koyeb deployment + Azure teardown ready
-5. **Documentation**: 3 new documents created   
+5. **Documentation**: 3 new documents created    #bios/notion #bios/notion/query #bios/mcp_server #bios/mcp_server/deployment #bios/meta #bios/meta/operational #bios/notion #bios/notion/query #bios/mcp_server #bios/mcp_server/deployment #bios/meta #bios/meta/operational
 
 ### ❌ What Could NOT Be Done
 
 1. **ARCA Database IDs**: Not found in codebase - require user input
 2. **Koyeb Deployment**: Cannot execute without CLI authentication
 3. **Azure Teardown**: Cannot execute without Azure login
-4. **Integration Verification**: Blocked by missing database IDs   
+4. **Integration Verification**: Blocked by missing database IDs    #bios/notion #bios/notion/schema #bios/mcp_server #bios/mcp_server/auth #bios/mcp_server/deployment #bios/meta #bios/meta/operational #bios/notion #bios/notion/schema #bios/mcp_server #bios/mcp_server/auth #bios/mcp_server/deployment #bios/meta #bios/meta/operational
 
 ---
 
@@ -150,7 +150,7 @@ cd ~/biomimetics
 | `docs/PROJECT_REALIGNMENT_EXEC_SUMMARY.md` | Executive summary |
 | `docs/PROJECT_REALIGNMENT_EXECUTION_REPORT.md` | Execution report |
 | `scripts/migrate/deploy-to-koyeb.sh` | Koyeb deployment script |
-| `scripts/migrate/azure-teardown.sh` | Azure teardown script |
+| `scripts/migrate/azure-teardown.sh` | Azure teardown script | #bios/meta #bios/meta/operational #bios/architecture #bios/architecture/config #bios/meta #bios/meta/operational #bios/architecture #bios/architecture/config
 
 ### Modified Files (3)
 
@@ -158,7 +158,7 @@ cd ~/biomimetics
 |------|--------|
 | `scripts/deploy/redeploy-github-mcp.sh` | Added env var support |
 | `scripts/deploy/deploy-github-mcp-sse.sh` | Added env var support |
-| `scripts/memory/migrate_claws_data.py` | Updated secret path handling |
+| `scripts/memory/migrate_claws_data.py` | Updated secret path handling | #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config
 
 ---
 
@@ -220,7 +220,7 @@ ARCA_MEMORY_DB_ID = "your-id-here"
 1. **Provide ARCA Database IDs** (5 minutes)
    - Open Notion → ARCA databases
    - Copy database IDs from URLs
-   - Update configuration files
+   - Update configuration files #bios/notion #bios/notion/query #bios/architecture #bios/architecture/config #bios/notion #bios/notion/query #bios/architecture #bios/architecture/config
 
 2. **Resolve Git Secret Block** (2 minutes)
    - Visit: https://github.com/danxalot/biomimetics/security/secret-scanning/unblock-secret/3B4PG0GOqurXoHeMQm8L2SAS1Sr
@@ -248,7 +248,7 @@ ARCA_MEMORY_DB_ID = "your-id-here"
 |---------|--------|-------|---------|
 | Azure ACR | $5/month | $0 | $60/year |
 | GitHub MCP | $0 (stopped) | $0 (Koyeb free) | $0 |
-| **Total** | **$60/year** | **$0** | **$60/year** |
+| **Total** | **$60/year** | **$0** | **$60/year** | #bios/meta #bios/meta/operational #bios/infrastructure #bios/meta #bios/meta/operational #bios/infrastructure
 
 ---
 
@@ -263,11 +263,13 @@ ARCA_MEMORY_DB_ID = "your-id-here"
 | Azure Teardown | ✅ Created | Ready to execute |
 | Koyeb Deployment | ⏸️ Pending | Requires auth |
 | Azure Teardown | ⏸️ Pending | Requires auth |
-| ARCA Integration | ❌ Blocked | Missing database IDs |
+| ARCA Integration | ❌ Blocked | Missing database IDs | #bios/meta #bios/meta/operational #bios/personal_assistant #bios/personal_assistant/task #bios/meta #bios/meta/operational #bios/personal_assistant #bios/personal_assistant/task
 
 ---
 
 **Execution Report Generated**: 2026-03-19  
 **Overall Status**: ✅ 70% Complete  
 **Blocker**: ARCA Notion database IDs not configured in codebase  
-**Next Action**: User to provide ARCA database IDs
+**Next Action**: User to provide ARCA database IDs #bios/meta #bios/meta/operational #bios/architecture #bios/architecture/config #bios/meta #bios/meta/operational #bios/architecture #bios/architecture/config
+
+<!-- LLM_TAGGED -->

@@ -7,7 +7,7 @@ status: active
 
 **Date**: 2026-03-19  
 **Project**: Biomimetics (ARCA Ecosystem)  
-**Scope**: Zed & Antigravity integration with GitHub MCP (Azure) and Notion MCP (GCP) ` 
+**Scope**: Zed & Antigravity integration with GitHub MCP (Azure) and Notion MCP (GCP) `  #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/notion #bios/notion/sync #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/notion #bios/notion/sync
 
 ---
 
@@ -21,7 +21,7 @@ status: active
 | **Antigravity** | ✅ Configured | ⚠️ Needs ARCA DBs | **Ready** |
 | **GitHub MCP (Azure)** | ⚠️ Previously Deployed | ⚠️ Previously Deployed | **Needs Redeployment** |
 | **Notion MCP (GCP)** | ✅ Configured | ⚠️ Needs ARCA DBs | **Ready** |
-| **GCP Server** | ✅ Active (Memory Gateway) | ⚠️ Shared Access | **Ready** |
+| **GCP Server** | ✅ Active (Memory Gateway) | ⚠️ Shared Access | **Ready** | #bios/architecture #bios/architecture/component #bios/mcp_server #bios/mcp_server/deployment #bios/notion #bios/notion/schema #bios/architecture #bios/architecture/component #bios/mcp_server #bios/mcp_server/deployment #bios/notion #bios/notion/schema
 
 ### Key Findings
 
@@ -31,13 +31,13 @@ status: active
 - Notion MCP server configured and operational (token: `ntn_2071...`)
 - GCP Memory Gateway active and routing
 - Cloudflare Worker multi-system integration hub deployed
-- Notion databases exist: `3284d2d9fc7c811188deeeaba9c5f845` (Biomimetic OS)   
+- Notion databases exist: `3284d2d9fc7c811188deeeaba9c5f845` (Biomimetic OS)    #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/transport #bios/notion #bios/notion/sync #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/transport #bios/notion #bios/notion/sync
 
 **⚠️ What Needs Attention**:
 - **GitHub MCP container not running** - Previously deployed to `arca-consolidated` RG, but container was deleted/stopped
 - **Azure resources still exist**: Container Registry (`arcamcpconsolidated`), Key Vault (`arca-mcp-kv-dae`)
 - **ARCA project Notion databases** - Need to be created or identified
-- **Configuration needs endpoint update** - Once GitHub MCP is redeployed   
+- **Configuration needs endpoint update** - Once GitHub MCP is redeployed    #bios/mcp_server #bios/mcp_server/deployment #bios/notion #bios/notion/schema #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/notion #bios/notion/schema #bios/architecture #bios/architecture/config
 
 **📋 Azure Resource Status**:
 ```
@@ -53,7 +53,7 @@ Resource Group: arca-rg (eastus)
 **🔧 Previous Deployment Info** (from docs):
 - **Old SSE Endpoint**: `http://github-mcp-sse.westus2.azurecontainer.io:8080/sse` (not found)
 - **Old MCP Endpoint**: `http://github-mcp-server.eastus.azurecontainer.io:8080/mcp` (not found)
-- **Deployment Script**: `azure/deploy_github_mcp_eastus.sh` or `azure/deploy_github_mcp_with_keyvault.sh`   
+- **Deployment Script**: `azure/deploy_github_mcp_eastus.sh` or `azure/deploy_github_mcp_with_keyvault.sh`    #bios/mcp_server #bios/mcp_server/deployment #bios/mcp_server/transport #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/mcp_server/transport #bios/architecture #bios/architecture/config
 
 ---
 
@@ -93,12 +93,12 @@ Resource Group: arca-rg (eastus)
 **✅ Working**:
 - Notion MCP server configured
 - BiOS_PM agent server configured with GCP Gateway
-- Direct Notion access enabled
+- Direct Notion access enabled #bios/architecture #bios/mcp_server #bios/mcp_server/tool #bios/notion #bios/notion/sync #bios/architecture #bios/mcp_server #bios/mcp_server/tool #bios/notion #bios/notion/sync
 
 **❌ Missing**:
 - GitHub MCP server not configured in Zed
 - No ARCA project-specific configuration
-- No GCP server integration for ARCA project
+- No GCP server integration for ARCA project #bios/architecture #bios/mcp_server #bios/mcp_server/deployment #bios/architecture/config #bios/architecture #bios/mcp_server #bios/mcp_server/deployment #bios/architecture/config
 
 #### Required Actions
 
@@ -171,7 +171,7 @@ Resource Group: arca-rg (eastus)
 
 1. Create `~/.antigravity/settings.json` with above configuration
 2. Ensure Antigravity has access to both Notion databases
-3. Configure GCP Gateway access for both projects
+3. Configure GCP Gateway access for both projects #bios/architecture #bios/architecture/config #bios/notion #bios/notion/query #bios/architecture #bios/architecture/config #bios/notion #bios/notion/query
 
 ---
 
@@ -215,7 +215,7 @@ Resource Group: arca-rg (eastus)
 - **Resource Group**: `arca-mcp-services`
 - **Location**: westus2
 - **CPU**: 2 cores, **Memory**: 2 GB
-- **Cost**: ~$35/month
+- **Cost**: ~$35/month #bios/architecture #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/mcp_server #bios/mcp_server/deployment
 
 #### Integration Status
 
@@ -225,14 +225,14 @@ Resource Group: arca-rg (eastus)
 | **Zed** | ❌ Not Configured | - |
 | **Antigravity** | ❌ Not Configured | - |
 | **Biomimetics** | ⚠️ Via Cloudflare Worker | `cloudflare/index.js` |
-| **ARCA Project** | ❌ Not Connected | - |
+| **ARCA Project** | ❌ Not Connected | - | #bios/architecture #bios/architecture/config #bios/copaw #bios/copaw/workflow #bios/architecture #bios/architecture/config #bios/copaw #bios/copaw/workflow
 
 #### Required Actions
 
 1. Add GitHub MCP to Zed config (see section 1)
 2. Add GitHub MCP to Antigravity config (see section 2)
 3. Configure ARCA project to use same GitHub MCP endpoint
-4. Update CoPaw config if endpoint changed   
+4. Update CoPaw config if endpoint changed    #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/copaw #bios/copaw/workflow #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/copaw #bios/copaw/workflow
 
 ---
 
@@ -263,7 +263,7 @@ Resource Group: arca-rg (eastus)
 | **Biomimetic OS** | `3284d2d9fc7c811188deeeaba9c5f845` | Project tracking |
 | **Life OS Triage** | `3284d2d9fc7c81bd9a91e865511e642f` | Email/webhook triage |
 | **Tool Guard** | `3284d2d9fc7c8113bfecca75f4235ece` | Security & approvals |
-| **CoPaw Approval** | `3284d2d9fc7c8113bfecca75f4235ece` | Tool approvals |
+| **CoPaw Approval** | `3284d2d9fc7c8113bfecca75f4235ece` | Tool approvals | #bios/notion #bios/notion/schema #bios/notion #bios/notion/schema
 
 #### Integration Status
 
@@ -273,14 +273,14 @@ Resource Group: arca-rg (eastus)
 | **Qwen Code** | ✅ Configured | `~/.qwen/settings.json` |
 | **Zed** | ✅ Configured | `~/.zed/settings.json` |
 | **Antigravity** | ❌ Not Configured | - |
-| **ARCA Project** | ❌ Not Configured | - |
+| **ARCA Project** | ❌ Not Configured | - | #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment
 
 #### Required Actions
 
 1. Add Notion MCP to Antigravity config
 2. Create ARCA project Notion databases (if not existing)
 3. Configure ARCA project to use Notion MCP
-4. Share databases with Notion integration   
+4. Share databases with Notion integration    #bios/notion #bios/notion/sync #bios/notion/schema #bios/mcp_server #bios/mcp_server/deployment #bios/notion #bios/notion/sync #bios/notion/schema #bios/mcp_server #bios/mcp_server/deployment
 
 ---
 
@@ -294,7 +294,7 @@ Resource Group: arca-rg (eastus)
 
 **Projects Using**:
 - ✅ **Biomimetics**: Full integration via Cloudflare Worker
-- ⚠️ **ARCA Project**: Shared access, needs dedicated config `. ` ` ` 
+- ⚠️ **ARCA Project**: Shared access, needs dedicated config `. ` ` `  #bios/architecture #bios/architecture/component #bios/infrastructure #bios/architecture #bios/architecture/component #bios/infrastructure
 
 #### Architecture
 
@@ -335,7 +335,7 @@ GCP_GATEWAY = "https://us-central1-arca-471022.cloudfunctions.net/memory-orchest
 **Cloudflare Worker** (`cloudflare/index.js`):
 - Routes requests via `X-Arca-Source` header
 - Supports: GitHub, Serena, GCP-Memory, CoPaw, PM-Agent
-- Forwards to GCP Gateway for memory operations
+- Forwards to GCP Gateway for memory operations #bios/architecture #bios/architecture/component #bios/architecture/protocol #bios/architecture #bios/architecture/component #bios/architecture/protocol
 
 #### Required Actions for ARCA Project
 
@@ -370,7 +370,7 @@ case 'ARCA':
 1. Update `~/.zed/settings.json` with GitHub MCP
 2. Test GitHub MCP connection from Zed
 3. Test Notion MCP from Zed
-4. Verify GCP Gateway access   
+4. Verify GCP Gateway access    #bios/personal_assistant #bios/personal_assistant/task #bios/mcp_server #bios/mcp_server/tool #bios/notion #bios/notion/query #bios/personal_assistant #bios/personal_assistant/task #bios/mcp_server #bios/mcp_server/tool #bios/notion #bios/notion/query
 
 **Estimated Time**: 30 minutes
 
@@ -385,7 +385,7 @@ case 'ARCA':
 2. Configure Notion MCP server
 3. Configure GitHub MCP server (Azure SSE)
 4. Configure GCP Gateway access
-5. Test all integrations   
+5. Test all integrations    #bios/personal_assistant #bios/personal_assistant/task #bios/mcp_server #bios/mcp_server/config #bios/notion #bios/notion/sync #bios/personal_assistant #bios/personal_assistant/task #bios/mcp_server #bios/notion #bios/notion/sync
 
 **Estimated Time**: 45 minutes
 
@@ -401,7 +401,7 @@ case 'ARCA':
 3. Update Cloudflare Worker for ARCA routing
 4. Create ARCA project Zed config
 5. Create ARCA project Antigravity config
-6. Test end-to-end integration   
+6. Test end-to-end integration    #bios/architecture #bios/architecture/config #bios/notion #bios/notion/schema #bios/personal_assistant #bios/personal_assistant/task #bios/architecture #bios/architecture/config #bios/notion #bios/notion/schema #bios/personal_assistant #bios/personal_assistant/task
 
 **Estimated Time**: 2-3 hours
 
@@ -418,7 +418,7 @@ case 'ARCA':
 1. Update `MCP_INTEGRATION.md` with complete configs
 2. Create integration test script
 3. Document troubleshooting steps
-4. Create architecture diagram
+4. Create architecture diagram #bios/meta #bios/meta/operational #bios/architecture #bios/architecture/component #bios/meta #bios/meta/operational #bios/architecture #bios/architecture/component
 
 **Estimated Time**: 1-2 hours
 
@@ -439,7 +439,7 @@ case 'ARCA':
 - [ ] GitHub MCP: List issues
 - [ ] GitHub MCP: Create issue
 - [ ] GCP Gateway: Query memory
-- [ ] BiOS_PM Agent: Execute task   
+- [ ] BiOS_PM Agent: Execute task    #bios/notion #bios/notion/query #bios/mcp_server #bios/mcp_server/tool #bios/personal_assistant #bios/personal_assistant/task #bios/notion #bios/notion/query #bios/mcp_server #bios/mcp_server/tool #bios/personal_assistant #bios/personal_assistant/task
 
 ---
 
@@ -451,7 +451,7 @@ case 'ARCA':
 - [ ] GitHub MCP: List repositories
 - [ ] GitHub MCP: Create issue
 - [ ] GCP Gateway: Query memory
-- [ ] Cross-project sync: Biomimetics ↔ ARCA   
+- [ ] Cross-project sync: Biomimetics ↔ ARCA    #bios/notion #bios/notion/query #bios/mcp_server #bios/mcp_server/tool #bios/personal_assistant #bios/personal_assistant/memory #bios/notion #bios/notion/query #bios/mcp_server #bios/mcp_server/tool #bios/personal_assistant #bios/personal_assistant/memory
 
 ---
 
@@ -461,7 +461,7 @@ case 'ARCA':
 - [ ] GCP memory namespace working
 - [ ] Cloudflare Worker routing correct
 - [ ] GitHub MCP access working
-- [ ] Cross-project memory sharing `
+- [ ] Cross-project memory sharing ` #bios/notion #bios/notion/sync #bios/architecture #bios/architecture/config #bios/personal_assistant #bios/personal_assistant/memory #bios/notion #bios/notion/sync #bios/architecture #bios/architecture/config #bios/personal_assistant #bios/personal_assistant/memory
 
 ---
 
@@ -483,7 +483,7 @@ az container logs -g arca-mcp-services -n github-mcp-sse
 **Common Issues**:
 - Container stopped: `az container restart -g arca-mcp-services -n github-mcp-sse`
 - Wrong URL: Verify endpoint in config matches Azure deployment
-- Network issues: Check Azure firewall rules   
+- Network issues: Check Azure firewall rules    #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/meta #bios/meta/operational #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/meta #bios/meta/operational
 
 ---
 
@@ -503,7 +503,7 @@ az keyvault secret show --vault-name arca-mcp-kv-dae --name notion-api-key
 **Common Issues**:
 - Token expired: Run `python3 azure/azure_secrets_init.py --refresh`
 - Database not shared: Share database with integration in Notion
-- Wrong database ID: Verify IDs in config match Notion   
+- Wrong database ID: Verify IDs in config match Notion    #bios/mcp_server #bios/mcp_server/auth #bios/notion #bios/notion/schema #bios/architecture #bios/architecture/config #bios/meta #bios/meta/operational #bios/mcp_server #bios/mcp_server/auth #bios/notion #bios/notion/schema #bios/architecture #bios/architecture/config #bios/meta #bios/meta/operational
 
 ---
 
@@ -525,7 +525,7 @@ grep GCP_GATEWAY cloudflare/wrangler.toml
 **Common Issues**:
 - Wrong URL: Check `wrangler.toml` and update
 - Auth failure: Refresh GCP service account credentials
-- Function not deployed: Redeploy GCP Cloud Function   
+- Function not deployed: Redeploy GCP Cloud Function    #bios/mcp_server #bios/mcp_server/auth #bios/mcp_server/deployment #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/auth #bios/mcp_server/deployment #bios/architecture #bios/architecture/config
 
 ---
 
@@ -614,24 +614,26 @@ grep GCP_GATEWAY cloudflare/wrangler.toml
 - **GitHub MCP**: Deployed on Azure ACI (SSE endpoint)
 - **GCP Gateway**: Active and routing memory requests
 - **Cloudflare Worker**: Multi-system integration hub
-- **CoPaw**: Full integration with all MCP servers `
+- **CoPaw**: Full integration with all MCP servers ` #bios/mcp_server #bios/mcp_server/transport #bios/mcp_server/deployment #bios/copaw #bios/copaw/workflow #bios/architecture #bios/architecture/component #bios/mcp_server #bios/mcp_server/transport #bios/mcp_server/deployment #bios/copaw #bios/copaw/workflow #bios/architecture #bios/architecture/component
 
 ### What Needs Work ⚠️
 
 - **Zed Editor**: Missing GitHub MCP config
 - **Antigravity**: No configuration exists
 - **ARCA Project**: Not integrated with any MCP servers
-- **Cross-project sync**: Not configured   
+- **Cross-project sync**: Not configured    #bios/mcp_server #bios/mcp_server/tool #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/tool #bios/architecture #bios/architecture/config
 
 ### Next Steps 🎯
 
 1. **Immediate** (30 min): Update Zed config with GitHub MCP
 2. **Today** (45 min): Create Antigravity config
 3. **This Week** (2-3 hrs): Integrate ARCA project
-4. **Documentation** (1-2 hrs): Update all docs   
+4. **Documentation** (1-2 hrs): Update all docs    #bios/personal_assistant #bios/personal_assistant/task #bios/meta #bios/meta/operational #bios/personal_assistant #bios/personal_assistant/task #bios/meta #bios/meta/operational
 
 ---
 
 **Contact**: Claws <claws@arca-vsa.tech>  
 **Repository**: https://github.com/danxalot/biomimetics  
 **Last Updated**: 2026-03-19
+
+<!-- LLM_TAGGED -->

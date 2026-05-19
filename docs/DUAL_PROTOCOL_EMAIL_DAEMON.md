@@ -14,7 +14,7 @@ status: active
 
 Successfully implemented dual-protocol IMAP support in the email ingestion daemon, enabling simultaneous polling of:
 - **ProtonMail** (5 accounts) via STARTTLS on port 1143 (SMTP on port 1025)
-- **Gmail** (1 account) via IMAP4_SSL on port 993 (SMTP STARTTLS on port 587)   
+- **Gmail** (1 account) via IMAP4_SSL on port 993 (SMTP STARTTLS on port 587)    #bios/architecture #bios/architecture/protocol #bios/architecture/component #bios/architecture #bios/architecture/protocol #bios/architecture/component #bios/architecture #bios/architecture/protocol #bios/architecture/component
 
 Both pipelines route fetched emails through the existing processing flow to the GCP Gateway.
 
@@ -128,7 +128,7 @@ def poll_all_accounts(state: EmailState, lookback_minutes: int = 5):
 |------|---------|
 | `scripts/email/email-ingestion-daemon.py` | Complete refactor with dual-protocol support |
 | `config/omni_sync_config.json` | Updated Gmail user email |
-| `scripts/sync/obsidian-sync-skill.py` | Fixed vault path: `/Volumes/danexall/Obsidian` |
+| `scripts/sync/obsidian-sync-skill.py` | Fixed vault path: `/Volumes/danexall/Obsidian` | #bios/architecture #bios/architecture/config #bios/meta #bios/meta/operational #bios/architecture #bios/architecture/config #bios/meta #bios/meta/operational #bios/architecture #bios/architecture/config #bios/meta #bios/meta/operational
 
 ---
 
@@ -176,7 +176,7 @@ Accounts:
 | ProtonMail Bridge | IMAP4 → STARTTLS | 1143 | Self-signed (verify=False) |
 | ProtonMail Bridge | SMTP → STARTTLS | 1025 | Self-signed (verify=False) |
 | Gmail | IMAP4_SSL (implicit) | 993 | Standard CA validation |
-| Gmail | SMTP → STARTTLS | 587 | Standard CA validation |
+| Gmail | SMTP → STARTTLS | 587 | Standard CA validation | #bios/architecture #bios/architecture/protocol #bios/architecture/schema #bios/architecture #bios/architecture/protocol #bios/architecture/schema #bios/architecture #bios/architecture/protocol #bios/architecture/schema
 
 ---
 
@@ -185,12 +185,12 @@ Accounts:
 ### Ingestion Daemon (`email-ingestion-daemon.py`)
 *   **Format**: Plain Text (UTF-8).
 *   **Logic**: Prefers `text/plain` parts of multipart messages. If unavailable, falls back to `text/html` and strips tags via `re.sub(r"<[^>]+>", "", body)`.
-*   **Routing**: Sends full body as JSON to the GCP Gateway (`memory-orchestrator`).
+*   **Routing**: Sends full body as JSON to the GCP Gateway (`memory-orchestrator`). #bios/architecture #bios/architecture/component #bios/personal_assistant #bios/personal_assistant/routing #bios/architecture #bios/architecture/component #bios/personal_assistant #bios/personal_assistant/routing #bios/architecture #bios/architecture/component #bios/personal_assistant #bios/personal_assistant/routing
 
 ### MCP Server (`mcp_email_server.py`)
 *   **Format**: Formatted String.
 *   **Logic**: Same extraction logic as daemon.
-*   **Limit**: Returns a **200-character snippet** of the body for tool-use efficiency, while preserving full Subject, From, and Date headers.
+*   **Limit**: Returns a **200-character snippet** of the body for tool-use efficiency, while preserving full Subject, From, and Date headers. #bios/mcp_server #bios/mcp_server/tool #bios/architecture #bios/architecture/component #bios/mcp_server #bios/mcp_server/tool #bios/architecture #bios/architecture/component #bios/mcp_server #bios/mcp_server/tool #bios/architecture #bios/architecture/component
 
 ---
 
@@ -228,7 +228,7 @@ python3 scripts/sync/obsidian-sync-skill.py --json
 2. **Generate App Password:**
    - Google Account → Security → 2-Step Verification → App passwords
    - Select "Mail" and your device
-   - Copy 16-character password   
+   - Copy 16-character password    #bios/mcp_server #bios/mcp_server/auth #bios/mcp_server #bios/mcp_server/auth #bios/mcp_server #bios/mcp_server/auth
 
 3. **Update Config:**
    ```json
@@ -245,7 +245,7 @@ python3 scripts/sync/obsidian-sync-skill.py --json
 **Solution:** Gmail's SSL certificate should validate automatically. If issues persist:
 - Check system time/date
 - Update CA certificates: `pip install --upgrade certifi`
-- Firewall/proxy may be intercepting SSL   
+- Firewall/proxy may be intercepting SSL    #bios/mcp_server #bios/mcp_server/transport #bios/mcp_server #bios/mcp_server/transport #bios/mcp_server #bios/mcp_server/transport
 
 ---
 
@@ -272,13 +272,13 @@ tail -f ~/.arca/email-ingest.log
 ### Immediate:
 1. ✅ Daemon tested and working
 2. ⚠️ Update Gmail password if different from config
-3. ⚠️ Verify claws/arca/info ProtonMail Bridge passwords
+3. ⚠️ Verify claws/arca/info ProtonMail Bridge passwords #bios/meta #bios/meta/operational #bios/mcp_server #bios/mcp_server/auth #bios/meta #bios/meta/operational #bios/mcp_server #bios/mcp_server/auth #bios/meta #bios/meta/operational #bios/mcp_server #bios/mcp_server/auth
 
 ### Optional Enhancements:
 1. Add Qwen3.5 local LLM significance filtering (as per task brief)
 2. Add Gmail label synchronization
 3. Add email attachment handling
-4. Implement backoff retry for failed connections
+4. Implement backoff retry for failed connections #bios/personal_assistant #bios/personal_assistant/task #bios/notion #bios/notion/sync #bios/personal_assistant #bios/personal_assistant/task #bios/notion #bios/notion/sync #bios/personal_assistant #bios/personal_assistant/task #bios/notion #bios/notion/sync
 
 ---
 
@@ -332,3 +332,5 @@ tail -f ~/.arca/email-ingest.log
 ---
 
 **Status:** ✅ **DUAL-PROTOCOL EMAIL DAEMON OPERATIONAL**
+
+<!-- LLM_TAGGED -->

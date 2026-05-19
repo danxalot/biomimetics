@@ -46,7 +46,7 @@ CREDENTIALS_API_KEY_FILE = Path("/Users/danexall/biomimetics/secrets/credentials
 NOTION_TRIAGE_DB_ID = "3284d2d9-fc7c-81bd-9a91-e865511e642f"
 
 STAGING_DIR = Path.home() / "biomimetics" / "docs" / "personal" / "emails" / "staging"
-VAULT_DIR = Path.home() / "biomimetics" / "docs" / "personal" / "emails" / "vault"
+VAULT_DIR = Path("/Users/danexall/Google Drive/My Drive/Obsidian-life/Personal/Emails/Vault")
 
 def get_credentials_api_key():
     if CREDENTIALS_API_KEY_FILE.exists():

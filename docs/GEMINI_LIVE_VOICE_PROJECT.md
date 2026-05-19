@@ -10,7 +10,7 @@ status: active
 **Name**: ARCA Live Voice Interface (Gemini Live API Implementation)
 **Location**: `~/biomimetics/gemini-live-voice`
 **Status**: ✅ Operational - Ready for deployment
-**Version**: 1.0.0
+**Version**: 1.0.0 #bios/architecture #bios/architecture/component #bios/meta/operational #bios/architecture #bios/architecture/component #bios/meta #bios/meta/operational
 
 ---
 
@@ -73,7 +73,7 @@ status: active
 | `Notion Actions` | Rich text | Notion actions triggered |
 | `Transcript` | Rich text | Full conversation transcript |
 | `Status` | Select | Success / Error / Incomplete |
-| `API Cost` | Number | Token usage/cost for session |
+| `API Cost` | Number | Token usage/cost for session | #bios/architecture #bios/architecture/schema #bios/notion #bios/notion/schema #bios/architecture #bios/architecture/schema #bios/notion #bios/notion/schema
 
 **Database ID**: `[To be created]`
 
@@ -92,7 +92,7 @@ status: active
 | `Last Used` | Date | Last time tool was invoked |
 | `Success Rate` | Percent | Historical success rate |
 | `Avg Response Time` | Number | Average response time in ms |
-| `Owner` | Select | Team member responsible |
+| `Owner` | Select | Team member responsible | #bios/architecture #bios/architecture/schema #bios/mcp_server #bios/mcp_server/tool #bios/architecture #bios/architecture/schema #bios/mcp_server #bios/mcp_server/tool
 
 **Database ID**: `[To be created]`
 
@@ -112,7 +112,7 @@ status: active
 | `Session Link` | Relation | Link to Session Logs |
 | `Github Issue` | URL | Link to GitHub issue |
 | `Description` | Rich text | Task details |
-| `Tags` | Multi-select | Feature / Bug / Enhancement / Docs |
+| `Tags` | Multi-select | Feature / Bug / Enhancement / Docs | #bios/personal_assistant #bios/personal_assistant/task #bios/personal_assistant #bios/personal_assistant/task
 
 **Database ID**: `[To be created]`
 
@@ -131,7 +131,7 @@ status: active
 | `Cloudflare Worker URL` | URL | Notion webhook router |
 | `Last Updated` | Date | When config was last modified |
 | `Updated By` | Person | Who made the last update |
-| `Status` | Select | Active / Deprecated |
+| `Status` | Select | Active / Deprecated | #bios/architecture #bios/architecture/config #bios/architecture #bios/architecture/config
 
 **Database ID**: `[To be created]`
 
@@ -147,14 +147,14 @@ status: active
 | `App.tsx` | Main application component with Live API integration |
 | `index.css` | Styling |
 | `main.tsx` | React entry point |
-| `vite-env.d.ts` | Vite type definitions |
+| `vite-env.d.ts` | Vite type definitions | #bios/architecture #bios/architecture/component #bios/architecture #bios/architecture/component
 
 **Key Features**:
 - Real-time voice input/output
 - Camera support for vision input
 - Tool calling visualization
 - Session management
-- PWA support (offline capable)
+- PWA support (offline capable) #bios/voice_agent #bios/voice_agent/stt #bios/voice_agent/tts #bios/voice_agent #bios/voice_agent/stt #bios/voice_agent/tts
 
 ---
 
@@ -258,7 +258,7 @@ npm run lint
 |--------|---------|-------|
 | `GEMINI_API_KEY` | User input (localStorage) | Gemini Live API authentication |
 | `CLOUDFLARE_WORKER_URL` | Environment variable | Notion webhook router |
-| `GCP_GATEWAY_URL` | wrangler.toml (public) | Memory orchestrator endpoint |
+| `GCP_GATEWAY_URL` | wrangler.toml (public) | Memory orchestrator endpoint | #bios/mcp_server #bios/mcp_server/auth #bios/notion #bios/notion/sync #bios/personal_assistant #bios/personal_assistant/memory #bios/mcp_server #bios/mcp_server/auth #bios/notion #bios/notion/sync #bios/personal_assistant #bios/personal_assistant/memory
 
 ### Environment Variables
 
@@ -276,7 +276,7 @@ GCP_GATEWAY_URL = "https://us-central1-arca-471022.cloudfunctions.net/memory-orc
 |-------------|-----|--------|
 | **Development** | `http://localhost:3000` | ✅ Local |
 | **Cloudflare Pages** | `https://arca-live-voice.<subdomain>.pages.dev` | ⏳ Ready to deploy |
-| **Production** | `https://voice.biomimetics.arca-vsa.tech` | ⏳ Pending domain setup |
+| **Production** | `https://voice.biomimetics.arca-vsa.tech` | ⏳ Pending domain setup | #bios/mcp_server #bios/mcp_server/deployment #bios/infrastructure #bios/mcp_server #bios/mcp_server/deployment #bios/infrastructure
 
 ---
 
@@ -285,19 +285,19 @@ GCP_GATEWAY_URL = "https://us-central1-arca-471022.cloudfunctions.net/memory-orc
 ### 1. **GCP Memory Gateway**
 - **Service**: Cloud Functions (memory-orchestrator)
 - **Purpose**: Unified query interface for MuninnDB + MemU
-- **Status**: ✅ Operational
+- **Status**: ✅ Operational #bios/personal_assistant #bios/personal_assistant/memory #bios/meta #bios/meta/operational #bios/personal_assistant #bios/personal_assistant/memory #bios/meta #bios/meta/operational
 
 ### 2. **Cloudflare Worker (Notion Webhook Router)**
 - **Service**: Cloudflare Workers
 - **Purpose**: Route voice commands to Notion API
 - **Worker URL**: `https://arca-github-notion-sync.dan-exall.workers.dev`
-- **Status**: ✅ Operational (needs voice action handlers)
+- **Status**: ✅ Operational (needs voice action handlers) #bios/architecture #bios/architecture/component #bios/notion #bios/notion/sync #bios/meta #bios/meta/operational #bios/architecture #bios/architecture/component #bios/notion #bios/notion/sync #bios/meta #bios/meta/operational
 
 ### 3. **Notion Databases**
 - **Biomimetic OS**: `3284d2d9-fc7c-8111-88de-eeaba9c5f845`
 - **Life OS Triage**: `3284d2d9-fc7c-8111-88de-eeaba9c5f845`
 - **Tool Guard**: `3284d2d9-fc7c-8113-bfe-ecca75f4235ece`
-- **Status**: ⏳ Voice Session Logs DB needs creation
+- **Status**: ⏳ Voice Session Logs DB needs creation #bios/architecture #bios/architecture/schema #bios/notion #bios/notion/schema #bios/architecture #bios/architecture/schema #bios/notion #bios/notion/schema
 
 ---
 
@@ -339,19 +339,19 @@ npm run deploy
 - [ ] Create Notion "Voice Session Logs" database
 - [ ] Add error handling for offline scenarios
 - [ ] Implement session persistence across page reloads
-- [ ] Add user authentication (Firebase Auth)
+- [ ] Add user authentication (Firebase Auth) #bios/personal_assistant #bios/personal_assistant/task #bios/mcp_server #bios/mcp_server/auth #bios/personal_assistant #bios/personal_assistant/task #bios/mcp_server #bios/mcp_server/auth
 
 ### Medium Priority
 - [ ] Add screen sharing capability
 - [ ] Implement voice activity detection (VAD)
 - [ ] Add conversation history in UI
-- [ ] Implement cost tracking dashboard
+- [ ] Implement cost tracking dashboard #bios/voice_agent #bios/voice_agent/stt #bios/personal_assistant #bios/personal_assistant/memory #bios/voice_agent #bios/voice_agent/stt #bios/personal_assistant #bios/personal_assistant/memory
 
 ### Low Priority
 - [ ] Add custom wake word detection
 - [ ] Implement multi-user support
 - [ ] Add voice customization (pitch, speed)
-- [ ] Create mobile app wrapper (React Native)
+- [ ] Create mobile app wrapper (React Native) #bios/voice_agent #bios/voice_agent/tts #bios/personal_assistant #bios/personal_assistant/routing #bios/voice_agent #bios/voice_agent/tts #bios/personal_assistant #bios/personal_assistant/routing
 
 ---
 
@@ -362,7 +362,7 @@ npm run deploy
 | System Architecture | `~/biomimetics/docs/SYSTEM_ARCHITECTURE.md` |
 | MCP Integration | `~/biomimetics/docs/MCP_INTEGRATION.md` |
 | Azure Secrets | `~/biomimetics/docs/AZURE_SECRETS.md` |
-| GitHub Webhook | `~/biomimetics/docs/GITHUB_WEBHOOK_SETUP.md` |
+| GitHub Webhook | `~/biomimetics/docs/GITHUB_WEBHOOK_SETUP.md` | #bios/architecture #bios/architecture/schema #bios/mcp_server #bios/mcp_server/deployment #bios/architecture #bios/architecture/schema #bios/mcp_server #bios/mcp_server/deployment
 
 ---
 
@@ -373,7 +373,7 @@ npm run deploy
 | **Project Lead** | Dan | Architecture, deployment |
 | **Frontend Dev** | [TBD] | UI/UX, React components |
 | **Backend Dev** | [TBD] | Tool implementations, API integration |
-| **DevOps** | [TBD] | Cloudflare deployment, monitoring |
+| **DevOps** | [TBD] | Cloudflare deployment, monitoring | #bios/architecture #bios/architecture/component #bios/mcp_server #bios/mcp_server/tool #bios/mcp_server/deployment #bios/architecture #bios/architecture/component #bios/mcp_server #bios/mcp_server/tool #bios/mcp_server/deployment
 
 ---
 
@@ -385,10 +385,12 @@ npm run deploy
 | Avg Response Time | <2s | TBD |
 | Tool Call Accuracy | >90% | TBD |
 | Monthly Active Users | 100+ | TBD |
-| API Cost per Session | <$0.01 | TBD |
+| API Cost per Session | <$0.01 | TBD | #bios/meta #bios/meta/operational #bios/meta #bios/meta/operational
 
 ---
 
 **Last Updated**: 2026-03-18
 **Document Owner**: Serena (Biomimetics Orchestrator)
 **Next Review**: 2026-03-25
+
+<!-- LLM_TAGGED -->

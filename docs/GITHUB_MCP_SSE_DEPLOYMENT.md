@@ -14,7 +14,7 @@ tags: ["#bios/architecture", "#bios/infrastructure", "#pythia/ebm", "#pythia/rea
 ## Summary
 
 The GitHub MCP server is now deployed on Azure Container Instances with Supergateway, exposing the MCP server over SSE (Server-Sent Events) for 24/7 remote access. ` ` `
-#bios/architecture #bios/infrastructure #pythia/vsa #pythia/reasoningbank
+#bios/architecture #bios/infrastructure #pythia/vsa #pythia/reasoningbank #bios/architecture #bios/infrastructure #pythia/vsa #pythia/inference/reasoningbank #bios/architecture #bios/infrastructure #pythia/vsa #pythia/geometry/vsa #pythia/inference/reasoningbank #bios/architecture #bios/infrastructure #pythia/vsa #pythia/geometry/vsa #pythia/inference/reasoningbank
 
 ---
 
@@ -27,7 +27,7 @@ The GitHub MCP server is now deployed on Azure Container Instances with Supergat
 - **Status:** Running
 - **CPU:** 2 cores
 - **Memory:** 2 GB
-#bios/infrastructure #bios/architecture #pythia/vsa #pythia/reasoningbank
+#bios/infrastructure #bios/architecture #pythia/vsa #pythia/reasoningbank #bios/infrastructure #bios/architecture #pythia/vsa #pythia/inference/reasoningbank #bios/infrastructure #bios/architecture #pythia/vsa #pythia/geometry/vsa #pythia/inference/reasoningbank #bios/infrastructure #bios/architecture #pythia/vsa #pythia/geometry/vsa #pythia/inference/reasoningbank
 
 ### Endpoints
 - **SSE Endpoint:** `http://github-mcp-sse.westus2.azurecontainer.io:8080/sse`
@@ -38,7 +38,7 @@ The GitHub MCP server is now deployed on Azure Container Instances with Supergat
 - **Image:** `github-mcp-sse:latest`
 - **Based on:** Node.js 20 Alpine
 - **Supergateway:** Wraps stdio MCP server with SSE transport
-#bios/architecture #bios/infrastructure #pythia/vsa #pythia/reasoningbank
+#bios/architecture #bios/infrastructure #pythia/vsa #pythia/reasoningbank #bios/architecture #bios/infrastructure #pythia/vsa #pythia/inference/reasoningbank #bios/architecture #bios/infrastructure #pythia/vsa #pythia/geometry/vsa #pythia/inference/reasoningbank #bios/architecture #bios/infrastructure #pythia/vsa #pythia/geometry/vsa #pythia/inference/reasoningbank
 
 ---
 
@@ -105,7 +105,7 @@ Updated `~/.copaw/config.json`:
 | **Life OS Fit** | Fragments the "Brain" | ✅ Unified: Serena can use it too |
 | **Access** | Local only | ✅ Any device, anywhere |
 | **Cost** | Free | ~$30/month (2 core ACI) |
-#bios/infrastructure #pythia/vsa #pythia/ebm #pythia/reasoningbank
+#bios/infrastructure #pythia/vsa #pythia/ebm #pythia/reasoningbank #bios/infrastructure #pythia/geometry/vsa #pythia/geometry/ebm #pythia/inference/reasoningbank #bios/infrastructure #pythia/vsa #pythia/geometry/vsa #pythia/geometry/ebm #pythia/inference/reasoningbank #bios/infrastructure #pythia/vsa #pythia/geometry/vsa #pythia/geometry/ebm #pythia/inference/reasoningbank
 
 ---
 
@@ -179,14 +179,14 @@ az container delete \
 2. **No SSL/TLS** - traffic is unencrypted (HTTP only)
 3. **Public endpoint** - anyone with URL can connect
 4. **Recommendation:** Add custom domain with SSL certificate for production :   : : :  : : #pythia/
-#bios/infrastructure #pythia/vsa #pythia/ebm #pythia/reasoningbank
+#bios/infrastructure #pythia/vsa #pythia/ebm #pythia/reasoningbank #bios/infrastructure #pythia/geometry/vsa #pythia/geometry/ebm #pythia/inference/reasoningbank #pythia/meta/uncategorized #bios/infrastructure #pythia/vsa #pythia/geometry/vsa #pythia/geometry/ebm #pythia/inference/reasoningbank #pythia/meta/uncategorized #bios/infrastructure #pythia/vsa #pythia/geometry/vsa #pythia/geometry/ebm #pythia/inference/reasoningbank #pythia/meta/uncategorized
 
 ### To Add SSL (Optional)
 1. Purchase domain (e.g., `mcp.arca.tech`)
 2. Point DNS to ACI IP
 3. Deploy nginx/traefik reverse proxy with Let's Encrypt
 4. Update Copaw config with HTTPS URL
-#bios/infrastructure #bios/architecture #pythia/vsa #pythia/reasoningbank
+#bios/infrastructure #bios/architecture #pythia/vsa #pythia/reasoningbank #bios/infrastructure #bios/architecture #pythia/geometry/vsa #pythia/inference/reasoningbank #bios/infrastructure #bios/architecture #pythia/geometry/vsa #pythia/inference/reasoningbank #bios/infrastructure #bios/architecture #pythia/geometry/vsa #pythia/inference/reasoningbank
 
 ---
 
@@ -197,7 +197,7 @@ az container delete \
 | ACI (2 core, 2GB) | ~$30 USD |
 | ACR (Basic) | ~$5 USD |
 | **Total** | **~$35 USD/month** |
-#bios/infrastructure #pythia/vsa #pythia/ebm #pythia/reasoningbank
+#bios/infrastructure #pythia/vsa #pythia/ebm #pythia/reasoningbank #bios/infrastructure #pythia/geometry/vsa #pythia/geometry/ebm #pythia/inference/reasoningbank #bios/infrastructure #pythia/geometry/vsa #pythia/geometry/ebm #pythia/inference/reasoningbank #bios/infrastructure #pythia/geometry/vsa #pythia/geometry/ebm #pythia/inference/reasoningbank
 
 ---
 
@@ -207,7 +207,7 @@ az container delete \
 2. **Monitor Usage** - Check ACI metrics for usage patterns
 3. **Consider SSL** - Add custom domain with HTTPS if needed
 4. **Document for Team** - Share endpoint URL with team members       #pythia/
-#bios/infrastructure #pythia/vsa #pythia/ebm #pythia/reasoningbank
+#bios/infrastructure #pythia/vsa #pythia/ebm #pythia/reasoningbank #bios/infrastructure #pythia/geometry/vsa #pythia/geometry/ebm #pythia/inference/reasoningbank #pythia/meta/uncategorized #bios/infrastructure #pythia/geometry/vsa #pythia/geometry/ebm #pythia/inference/reasoningbank #pythia/meta/uncategorized #bios/infrastructure #pythia/geometry/vsa #pythia/geometry/ebm #pythia/inference/reasoningbank #pythia/meta/uncategorized
 
 ---
 
@@ -253,9 +253,11 @@ az container restart \
 | `/Users/danexall/deploy-github-mcp-sse.sh` | Deployment script |
 | `/Users/danexall/.copaw/config.json` | Updated Copaw config |
 | `GITHUB_MCP_SSE_DEPLOYMENT.md` | This documentation |
-#bios/infrastructure #bios/architecture #pythia/vsa #pythia/reasoningbank
+#bios/infrastructure #bios/architecture #pythia/vsa #pythia/reasoningbank #bios/infrastructure #bios/architecture #pythia/geometry/vsa #pythia/inference/reasoningbank #bios/infrastructure #bios/architecture #pythia/geometry/vsa #pythia/inference/reasoningbank #bios/infrastructure #bios/architecture #pythia/geometry/vsa #pythia/inference/reasoningbank
 
 ---
 
 **Deployment Complete!** The GitHub MCP server is now accessible 24/7 via SSE at:
 `http://github-mcp-sse.westus2.azurecontainer.io:8080/sse`
+
+<!-- LLM_TAGGED -->

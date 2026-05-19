@@ -266,7 +266,7 @@ export GCP_GATEWAY_URL=https://us-central1-arca-471022.cloudfunctions.net/memory
 | `serena-memory-sync.py` | Serena → MemU sync daemon |
 | `copaw-tool-guard.py` | Approval workflow handler |
 | `~/.copaw/config-phase4.json` | Copaw configuration |
-| `notion-approval-db-template.json` | Notion database template |
+| `notion-approval-db-template.json` | Notion database template | #bios/architecture #bios/architecture/config #bios/mcp_server #bios/mcp_server/deployment #bios/copaw #bios/copaw/workflow #bios/notion #bios/notion/schema
 
 ---
 
@@ -300,4 +300,6 @@ curl -X POST https://us-central1-arca-471022.cloudfunctions.net/memory-orchestra
 Phase 4 logic has been formally stabilized in Phase 8 to ensure reliable, pollution-free data handling.
 - **Staging Quarantine:** Recursive scan exclusions implemented in `vault_memory_sync.py` and `semantic_llm_tagger.py`.
 - **Model Upgrade:** Primary reasoning and tagging shifted to `gemma-4-31b-it`.
-- **SOP 001:** Formalized the end-to-end ingestion pipeline in `docs/architecture/001-memory-pipeline.md`.
+- **SOP 001:** Formalized the end-to-end ingestion pipeline in `docs/architecture/001-memory-pipeline.md`. #bios/architecture #bios/architecture/component #bios/personal_assistant #bios/personal_assistant/memory #bios/meta #bios/meta/operational
+
+<!-- LLM_TAGGED -->

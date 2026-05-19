@@ -24,12 +24,12 @@ tags: ["#bios/architecture", "#bios/infrastructure", "#pythia/ebm", "#pythia/rea
   - Added organization token support
   - All koyeb commands now use `--token` flag
   - Ready for automated deployment
-#bios/infrastructure #bios/architecture #pythia/vsa #pythia/reasoningbank
+#bios/infrastructure #bios/architecture #pythia/vsa #pythia/reasoningbank #bios/infrastructure #bios/architecture #pythia/geometry/vsa #pythia/inference/reasoningbank #bios/infrastructure #bios/architecture #pythia/geometry/vsa #pythia/inference/reasoningbank #bios/infrastructure #bios/architecture #pythia/geometry/vsa #pythia/inference/reasoningbank #bios/infrastructure #bios/architecture #pythia/geometry/vsa #pythia/inference/reasoningbank
 
 ### 3. Notion Cleanup Script Created ✅
 - **File**: `scripts/maintenance/cleanup_notion_duplicates.py`
 - **Purpose**: Archive duplicate "Life OS Triage" and "Tool Guard" databases
-- **Usage**:
+- **Usage**: #pythia/meta/uncategorized #pythia/meta/uncategorized #pythia/meta/uncategorized #pythia/meta/uncategorized
   ```bash
   # Dry run (default)
   python3 scripts/maintenance/cleanup_notion_duplicates.py
@@ -43,7 +43,7 @@ tags: ["#bios/architecture", "#bios/infrastructure", "#pythia/ebm", "#pythia/rea
 - **Result**: NO ARCA-specific Notion database IDs found in codebase
 - **Searched**: All files in `~/biomimetics/` and `~/Documents/VS Code Projects/ARCA/`
 - **Conclusion**: ARCA databases either don't exist or aren't configured in code
-#bios/architecture #pythia/vsa #pythia/ebm #pythia/reasoningbank
+#bios/architecture #pythia/vsa #pythia/ebm #pythia/reasoningbank #bios/architecture #pythia/geometry/vsa #pythia/geometry/ebm #pythia/inference/reasoningbank #bios/architecture #pythia/geometry/vsa #pythia/geometry/ebm #pythia/inference/reasoningbank #bios/architecture #pythia/geometry/vsa #pythia/geometry/ebm #pythia/inference/reasoningbank #bios/architecture #pythia/geometry/vsa #pythia/geometry/ebm #pythia/inference/reasoningbank
 
 ---
 
@@ -88,7 +88,7 @@ cd ~/biomimetics
 - Deletes `github-mcp-server` container from `arca-consolidated` RG
 - Preserves ACR and Key Vault
 - Stops all billing for GitHub MCP
-#bios/infrastructure #bios/architecture #pythia/vsa #pythia/reasoningbank
+#bios/infrastructure #bios/architecture #pythia/vsa #pythia/reasoningbank #bios/infrastructure #bios/architecture #pythia/geometry/vsa #pythia/inference/reasoningbank #bios/infrastructure #bios/architecture #pythia/geometry/vsa #pythia/inference/reasoningbank #bios/infrastructure #bios/architecture #pythia/geometry/vsa #pythia/inference/reasoningbank #bios/infrastructure #bios/architecture #pythia/geometry/vsa #pythia/inference/reasoningbank
 
 **Can run now**: Yes, no prerequisites
 
@@ -111,7 +111,7 @@ python3 scripts/maintenance/cleanup_notion_duplicates.py --execute
 2. Searches all Notion databases
 3. Finds duplicates of "Life OS Triage" and "Tool Guard"
 4. Archives duplicates (not protected ones)      #pythia/
-#bios/infrastructure #bios/architecture #pythia/vsa #pythia/reasoningbank
+#bios/infrastructure #bios/architecture #pythia/vsa #pythia/reasoningbank #bios/infrastructure #bios/architecture #pythia/geometry/vsa #pythia/inference/reasoningbank #bios/infrastructure #bios/architecture #pythia/geometry/vsa #pythia/inference/reasoningbank #bios/infrastructure #bios/architecture #pythia/geometry/vsa #pythia/inference/reasoningbank #bios/infrastructure #bios/architecture #pythia/geometry/vsa #pythia/inference/reasoningbank
 
 **Warning**: This will permanently archive databases. Review dry-run output first.
 
@@ -128,7 +128,7 @@ python3 scripts/maintenance/cleanup_notion_duplicates.py --execute
 | Koyeb deployment | ⏸️ Blocked | Waiting for Docker |
 | Azure teardown | ✅ Ready | Can run now |
 | Notion cleanup | ✅ Ready | Can run now |
-#bios/infrastructure #bios/architecture #pythia/vsa #pythia/reasoningbank
+#bios/infrastructure #bios/architecture #pythia/vsa #pythia/reasoningbank #bios/infrastructure #bios/architecture #pythia/vsa #pythia/reasoningbank #pythia/meta/uncategorized #bios/infrastructure #bios/architecture #pythia/vsa #pythia/reasoningbank #pythia/meta/uncategorized #bios/infrastructure #bios/architecture #pythia/geometry/vsa #pythia/inference/reasoningbank #pythia/meta/uncategorized #bios/infrastructure #bios/architecture #pythia/geometry/vsa #pythia/inference/reasoningbank #pythia/meta/uncategorized
 
 ---
 
@@ -187,3 +187,5 @@ python3 scripts/maintenance/cleanup_notion_duplicates.py --execute
 **Report Generated**: 2026-03-19  
 **Blocker**: Docker Hub authentication  
 **Action Required**: User must run `docker login` and create repository
+
+<!-- LLM_TAGGED -->

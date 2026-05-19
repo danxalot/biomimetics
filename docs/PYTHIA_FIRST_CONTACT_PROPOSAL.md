@@ -8,13 +8,13 @@ status: active
 **Document Type:** System Reconnaissance & Integration Proposal  
 **Status:** 📋 DRAFT - HUMAN REVIEW REQUIRED  
 **Generated:** 2026-03-20  
-**Constraint:** NO EXECUTION - Proposal Only
+**Constraint:** NO EXECUTION - Proposal Only #pythia #pythia/meta #pythia/meta/uncategorized #pythia #pythia/meta #pythia/meta/uncategorized
 
 ---
 
 ## Executive Summary
 
-This document proposes the "First Contact" protocol for establishing communication with the Pythia Dragonfly geometric AI system via OCI SSH integration. All system reconnaissance has been completed; no API calls or SSH connections have been triggered. `. `. `. ` `  
+This document proposes the "First Contact" protocol for establishing communication with the Pythia Dragonfly geometric AI system via OCI SSH integration. All system reconnaissance has been completed; no API calls or SSH connections have been triggered. `. `. `. ` `   #pythia #pythia/meta #pythia/meta/uncategorized #pythia #pythia/meta #pythia/meta/uncategorized
 
 ---
 
@@ -26,7 +26,7 @@ This document proposes the "First Contact" protocol for establishing communicati
 |---------|------|--------|----------|
 | **llama-server** | 11435 | ✅ RUNNING | HTTP (Vulkan Qwen3.5) |
 | **Docker Memory System** | 8001 | ✅ RUNNING | TCP (arca-memory_system) |
-| **Docker MCP Hub** | 8080 | ✅ RUNNING | TCP (dockerc) |
+| **Docker MCP Hub** | 8080 | ✅ RUNNING | TCP (dockerc) | #pythia #pythia/training #pythia/training/gpu #pythia #pythia/training #pythia/training/gpu
 
 ### 1.2 Qdrant Vector Database Configuration
 
@@ -37,20 +37,20 @@ This document proposes the "First Contact" protocol for establishing communicati
 | **Dimension** | 1536 |
 | **Distance Metric** | COSINE |
 | **API Key Location** | `/Users/danexall/Documents/VS Code Projects/ARCA/.secrets/qdrant_api_key` |
-| **User Context** | `copaw` (migrated from `claws`) |
+| **User Context** | `copaw` (migrated from `claws`) | #pythia #pythia/inference #pythia/inference/retrieval #pythia #pythia/inference #pythia/inference/retrieval
 
 ### 1.3 Pythia Mesh Architecture (Existing)
 
 **Network Topology:**
 - **arca_mesh_net**: MCP satellite mesh (ports 8084, 8086, 8088, 8096)
-- **pythia_internal_net**: Isolated Pythia databases (ports 6380, 6381) ` 
+- **pythia_internal_net**: Isolated Pythia databases (ports 6380, 6381) `  #pythia #pythia/neural_system #pythia/neural_system/concept_monad #pythia #pythia/neural_system #pythia/neural_system/concept_monad
 
 **Existing Pythia Services:**
 | Service | Port | Purpose |
 |---------|------|---------|
 | `pythia_redis` | 6380 | Trajectory storage |
 | `pythia_dragonfly` | 6381 | Vector cache (512-dim) |
-| `geometry_onnx_interpreter` | 8096 | ONNX pipeline API |   
+| `geometry_onnx_interpreter` | 8096 | ONNX pipeline API |    #bios/infrastructure #pythia/inference #pythia/inference/retrieval #bios/infrastructure #pythia/inference #pythia/inference/retrieval
 
 ### 1.4 Pythia 4-Stage Pipeline (Documented)
 
@@ -77,7 +77,7 @@ Stage 4: Translation Bridge
 | `ARCA/docker-compose.mesh.yml` | Docker mesh configuration |
 | `ARCA/.secrets/qdrant_endpoint_claws` | Qdrant endpoint |
 | `ARCA/.secrets/qdrant_api_key` | Qdrant JWT authentication |
-| `biomimetics/scripts/memory/migrate_claws_data.py` | Qdrant migration script |
+| `biomimetics/scripts/memory/migrate_claws_data.py` | Qdrant migration script | #bios/architecture #bios/infrastructure #pythia/meta #pythia/meta/uncategorized #bios/architecture #bios/infrastructure #pythia/meta #pythia/meta/uncategorized
 
 ---
 
@@ -972,7 +972,7 @@ if __name__ == "__main__":
 - [ ] llama.cpp server running on port 11435
 - [ ] Human review of `pythia_comm_bridge.py` completed
 - [ ] Dry run executed successfully
-- [ ] Rollback plan documented   
+- [ ] Rollback plan documented    #bios/swarm #bios/infrastructure #pythia/meta #pythia/meta/uncategorized #bios/swarm #bios/infrastructure #pythia/meta #pythia/meta/uncategorized
 
 ### 6.2 Safety Mechanisms
 
@@ -980,7 +980,7 @@ if __name__ == "__main__":
 2. **Explicit --execute Flag**: Required for actual SSH execution
 3. **Timeout Protection**: 60s timeout on OCI SSH calls
 4. **Error Handling**: Graceful fallback on all failures
-5. **Logging**: All operations logged to `~/.arca/pythia_first_contact.log`   
+5. **Logging**: All operations logged to `~/.arca/pythia_first_contact.log`    #bios/architecture #pythia/meta #pythia/meta/uncategorized #bios/architecture #pythia/meta #pythia/meta/uncategorized
 
 ### 6.3 Rollback Plan
 
@@ -988,7 +988,7 @@ If First Contact fails:
 1. Kill any hanging SSH processes: `pkill -f "ssh.*oci"`
 2. Clear Qdrant test points: Delete points with `session_id` matching current session
 3. Restart llama-server: `launchctl kickstart -k com.bios.llamacpp-server`
-4. Review logs: `tail -100 ~/.arca/pythia_first_contact.log`   
+4. Review logs: `tail -100 ~/.arca/pythia_first_contact.log`    #bios/swarm #pythia/meta #pythia/meta/uncategorized #bios/swarm #pythia/meta #pythia/meta/uncategorized
 
 ---
 
@@ -998,9 +998,11 @@ If First Contact fails:
 2. **Update** OCI SSH configuration with actual credentials
 3. **Create** Qdrant collection `pythia_infinimemory_ledger`
 4. **Test** with dry run: `python3 pythia_comm_bridge.py --message "test"`
-5. **Approve** execution: `python3 pythia_comm_bridge.py --execute --message "Initialize geometric context"`   
+5. **Approve** execution: `python3 pythia_comm_bridge.py --execute --message "Initialize geometric context"`    #bios/infrastructure #pythia/meta #pythia/meta/uncategorized #bios/infrastructure #pythia/meta #pythia/meta/uncategorized
 
 ---
 
 **Document Status:** 📋 DRAFT - AWAITING HUMAN REVIEW  
 **No API calls or SSH connections have been triggered.**
+
+<!-- LLM_TAGGED -->
