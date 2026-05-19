@@ -1,4 +1,4 @@
-from numpy_stack import VersorMemMambaStackNP
+from .numpy_stack import VersorMemMambaStackNP
 
 def load_v3_student(npz_path):
     """Entry point for neural_system to load the V3 student stack."""

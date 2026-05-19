@@ -44,11 +44,11 @@ def get_json(url):
 def get_coupling_strength(energy: float) -> float:
     """Modulate injection strength based on metabolic energy (Allostasis)."""
     if energy < 1.0:
-        return 0.40  # Hypometabolic: Push harder to wake up (damping reduced by 50%)
+        return 1.00  # Hypometabolic: Wake up aggressively
     elif energy > 4.0:
-        return 0.04  # Hypermetabolic: Back off to let system cool (damping reduced by 50%)
+        return 0.08  # Hypermetabolic: Back off to cool down
     else:
-        return 0.20  # Stable Target Range (damping reduced by 50%)
+        return 0.80  # Stable Target Range (80% coupling strength to minimize damping)
 
 def start_watchdog():
     logger.info(f"[*] Awakening Autonomic Watchdog (urllib variant)...")

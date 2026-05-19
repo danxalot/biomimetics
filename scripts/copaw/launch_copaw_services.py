@@ -50,7 +50,9 @@ def check_dependencies():
     missing = []
     for pkg in required:
         try:
-            __import__(pkg.replace("-", "_"))
+            # Special case for google-genai which uses google.genai
+            import_name = "google.genai" if pkg == "google-genai" else pkg.replace("-", "_")
+            __import__(import_name)
         except ImportError:
             missing.append(pkg)
     

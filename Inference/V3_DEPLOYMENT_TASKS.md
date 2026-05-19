@@ -17,7 +17,7 @@ Make the C2.5 45k Mamba-3 student (`/Users/danexall/biomimetics/pythia/Gold_Stan
   `numba` is allowed (JIT for the scan loop); a NEON C extension is allowed if
   numba is insufficient.
 - **CPU only.** OCI Ampere A1 ARM64. No inference GPU exists.
-- **Reference available.** [/Users/danexall/biomimetics/pythia/Gold_Standard_Archive/Data/c2.6_data] data from wandb mc-jepa completed run. Correctness is established by internal
+- **no reference available.**  Correctness is established by internal
   consistency checks (Section 5), not by comparing to a trusted run.
 - Modules mount as read-only volumes — no container rebuild to iterate on `.py`.
 
@@ -48,20 +48,19 @@ Internal: `d_inner = 2*768 = 1536`, `n_internal_heads = 1536/64 = 24`.
 
 npz keys (per layer):
 ```
-layers.N.mamba.in_proj.weight    (3784, 768)   no bias
-layers.N.mamba.conv1d.*          (vendor source: depthwise causal, d_conv=4)
-layers.N.mamba.dt_bias           (24,)
-layers.N.mamba.A_log  or  A      (24,)          per-head decay
-layers.N.mamba.D                 (24,)          skip connection
-layers.N.mamba.B_bias            (24, 1, 256)
-layers.N.mamba.C_bias            (24, 1, 256)
+layers.N.norm.{weight,bias}      (768,)         LayerNorm before Mamba
+layers.N.mamba.in_proj.weight    (3784, 768)    [z, x, B, C, dt, A, trap, angle]
+layers.N.mamba.out_proj.weight   (768, 1536)    no bias
+layers.N.mamba.D                 (24,)          per-head skip
+layers.N.mamba.dt_bias           (24,)          per-head dt bias
+layers.N.mamba.B_bias            (24, 1, 256)   per-head B bias
+layers.N.mamba.C_bias            (24, 1, 256)   per-head C bias
 layers.N.mamba.B_norm.weight     (256,)         RMSNorm on B
 layers.N.mamba.C_norm.weight     (256,)         RMSNorm on C
-layers.N.mamba.norm.*            (gated RMSNorm before out_proj)
-layers.N.mamba.out_proj.weight   (768, 1536)    no bias
+layers.N.A_log                   (12,)          VESTIGIAL
+layers.N.dt_bias                 (12,)          VESTIGIAL
 ```
-**The exact `in_proj` output split (3784 = z + xBC + dt + ...) MUST be read
-from the reference source (Section 3) — never inferred by arithmetic.**
+**The exact `in_proj` output split (3784 = 1536 + 1536 + 256 + 256 + 24 + 24 + 24 + 128) MUST be implemented exactly as per the reference source.**
 
 ## 3. T1 — Obtain the reference source (read-only, no execution)
 

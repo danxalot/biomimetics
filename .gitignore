@@ -124,3 +124,10 @@ actions_logs/
 **/clevrer_raw/
 **/clevrer_extracted/
 
+# Gold Standard Datasets and IDE Ignores
+pythia/Gold_Standard_Archive/Data/
+pythia/Gold_Standard_Archive/kinematics/
+.claude/
+.swarm_halt
+
+

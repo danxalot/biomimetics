@@ -60,9 +60,18 @@ from .neural_predictor import HDCNeuralPredictor
 from .poincare_kernel import PoincareKernel
 from .quaternion_dynamics import QDC, QuaternionDynamics
 from .relational_tensor import RelationalTensor
+try:
+    from services.physics_engine.v3_student.numpy_stack import VersorMemMambaStackNP
+except ImportError:
+    try:
+        from Inference.v3_student.numpy_stack import VersorMemMambaStackNP
+    except ImportError:
+        VersorMemMambaStackNP = None
+
 from services.physics_engine.cga_lift import CGALift, get_cga_lift, conformal_lift_numpy
 from services.physics_engine.cl41_math import sandwich_product
 from services.physics_engine.numpy_mamba import NumpyNoumenalEngine
+
 
 logger = logging.getLogger(__name__)
 
@@ -308,20 +317,63 @@ class OnnxRotorPredictor:
         }
 
 
-class NumpyPythiaManifold:
+class AlgebraicRegistry:
     """
-    Pure-NumPy Akasha 2 Hamiltonian MoE wrapper around NoumenalEngine.
-    Replaces ONNX RotorPredictor - NO torch, NO ONNX.
-    
-    Wraps NoumenalEngine from app.noumenal_engine for full MoE support.
-    Loads model weights from /models/pythia_manifold_23k_mature.npz
+    Manages dynamic N-dimensional Geometric Algebras (Cl(4,1), Cl(5,1)...).
+    Projects varying geometric dimensions into the fixed 768D Aether of Mamba-3.
     """
-    
-    def __init__(self, weights_path: Optional[str] = None):
-        # Default to the 23k-step GOLD STANDARD manifold (verified stable)
-        self.weights_path = weights_path or str(_PROJECT_ROOT / "models" / "pythia_manifold_23k_gold_standard.npz")
+    def __init__(self, base_dim=32, aether_dim=768):
+        self.active_dim = base_dim
+        self.locked_dim = base_dim
+        self.aether_dim = aether_dim
         
-        # Redis connection for pre-calculated energy values
+        # The Holographic Projector: Maps Geometry -> Mamba Frequencies
+        self.projector = np.zeros((aether_dim, aether_dim), dtype=np.float32)
+        np.fill_diagonal(self.projector, 1.0) # Base identity mapping for physical dims
+
+    def expand(self, add_dims=32):
+        if self.active_dim + add_dims <= self.aether_dim:
+            self.active_dim += add_dims
+            # Initialize the new ghost channel with harmonic noise
+            noise = np.random.randn(add_dims, self.aether_dim).astype(np.float32) * 0.01
+            self.projector[self.active_dim-add_dims:self.active_dim, :] = noise
+            logger.info(f"🌌 Algebra Expanded: Cl({(self.active_dim//16)+2},1) -> {self.active_dim}D Active")
+
+    def contract(self):
+        if self.active_dim > self.locked_dim:
+            logger.info(f"🌫️ Ghost Dimension Evaporated. Reverting to {self.locked_dim}D.")
+            self.active_dim = self.locked_dim
+
+    def lock_current(self):
+        logger.info(f"🔒 Harmonic Synchronicity Achieved! {self.active_dim}D locked as permanent reality.")
+        self.locked_dim = self.active_dim
+
+    def project_to_aether(self, cga_vector: np.ndarray) -> np.ndarray:
+        """Projects the active N-Dimensional geometry into the 768D Mamba Aether."""
+        vec_padded = np.zeros(self.aether_dim, dtype=np.float32)
+        dim = min(len(cga_vector), self.active_dim)
+        vec_padded[:dim] = cga_vector[:dim]
+        return vec_padded @ self.projector
+
+
+class NumpyPythiaManifold:
+    """Wraps NumpyNoumenalEngine / V3 Student with Holographic Registration"""
+    def __init__(self, weights_path: Optional[str] = None):
+        # Default to the 45k trainer heads student model as requested by the user
+        default_path = "/app/models/student_with_heads_45k.npz"
+        if not os.path.exists(default_path):
+            default_path = "/home/ubuntu/ARCA/models/student_with_heads_45k.npz"
+        if not os.path.exists(default_path):
+            default_path = str(_PROJECT_ROOT / "models" / "student_with_heads_45k.npz")
+        if not os.path.exists(default_path):
+            default_path = str(_PROJECT_ROOT / "models" / "c2.5_Akasha_Mamba_v3_45k.npz")
+        if not os.path.exists(default_path):
+            default_path = str(_PROJECT_ROOT / "pythia" / "Gold_Standard_Archive" / "checkpoints" / "c2.5_Akasha_Mamba_v3_45k.npz")
+            
+        self.weights_path = weights_path or default_path
+        self.registry = AlgebraicRegistry(base_dim=32, aether_dim=768)
+        self.heads = {}
+        
         try:
             import redis
             redis_url = os.getenv("REDIS_URL", "redis://pythia_redis:6379/0")
@@ -337,129 +389,107 @@ class NumpyPythiaManifold:
             return
             
         try:
-            weights = dict(np.load(self.weights_path, allow_pickle=False))
-            # Model configuration matching 23k Gold Standard (128-state Mamba, 4-experts SMoE-HE)
-            config = {
-                'embed_dim': 256,
-                'mv_dim': 32,
-                'n_layers': 6,
-                'n_heads': 8,
-                'n_experts': 4
-            }
-            # Recover NoteBlock state pools from Redis
-            initial_pools = {}
-            if self.redis:
-                try:
-                    # We need a binary-capable client for the numpy arrays
-                    redis_url = os.getenv("REDIS_URL", "redis://pythia_redis:6379/0")
-                    r_bin = redis.from_url(redis_url, decode_responses=False)
-                    for i in range(config['n_layers']):
-                        raw = r_bin.get(f"noteblock:state_pool:{i}")
-                        if raw:
-                            # 64 pools of 256-dim embeddings (Gold Standard config)
-                            arr = np.frombuffer(raw, dtype=np.float32).reshape(64, 256)
-                            initial_pools[i] = arr
-                except Exception as e:
-                    logger.debug(f"NoteBlock pool recovery failed: {e}")
+            from services.physics_engine.v3_student.loader import load_v3_student
+            self.engine = load_v3_student(self.weights_path)
+            self.engine._passthrough = False
+            logger.info(f"NumpyPythiaManifold: Initialized load_v3_student from services: {self.weights_path}")
+        except ImportError:
+            try:
+                from Inference.v3_student.loader import load_v3_student
+                self.engine = load_v3_student(self.weights_path)
+                self.engine._passthrough = False
+                logger.info(f"NumpyPythiaManifold: Initialized load_v3_student from Inference: {self.weights_path}")
+            except Exception as e:
+                logger.error(f"Failed to load V3 Student NumPy weights: {e}")
+                self.engine = None
 
-            self.engine = NumpyNoumenalEngine(weights, config, initial_pools=initial_pools)
-            logger.info(f"NumPyPythiaManifold initialized with full-fidelity engine: {self.weights_path}")
-            
-        except Exception as e:
-            logger.error(f"Failed to load full-fidelity NumPy weights: {e}")
-            self.engine = None
-
-    def _load_weights(self):
-        """Deprecated: Logic moved to __init__."""
-        pass
+        # Load prediction heads if present
+        if os.path.isfile(self.weights_path):
+            try:
+                data = np.load(self.weights_path)
+                if "rotor_head.weight" in data:
+                    self.heads["rotor_w"] = data["rotor_head.weight"].astype(np.float32)
+                    self.heads["rotor_b"] = data["rotor_head.bias"].astype(np.float32)
+                    self.heads["phase_w"] = data["phase_head.weight"].astype(np.float32)
+                    self.heads["phase_b"] = data["phase_head.bias"].astype(np.float32)
+                    logger.info("NumpyPythiaManifold: Successfully loaded distilled prediction heads from NPZ")
+            except Exception as e:
+                logger.warning(f"Failed to load prediction heads: {e}")
             
     @property
     def is_ready(self) -> bool:
-        return hasattr(self, 'engine') and self.engine is not None
+        return self.engine is not None
     
-    def predict(self, cga_32d: np.ndarray) -> Dict[str, Any]:
+    def calibrate_vacuum(self):
+        if not self.is_ready: return
+        zero_input = np.zeros((1, 1, 768), dtype=np.float32)
+        if hasattr(self.engine, "forward_multiscale"):
+            res = self.engine.forward_multiscale(zero_input, stride_scale=1)
+        else:
+            self.engine.forward(zero_input)
+            res = {"q": np.zeros((1, 1, 128))}
+        self.vacuum_offset = res.get("q", np.zeros((1, 1, 128)))
+
+    def predict(self, cga_vector: np.ndarray, stride_scale: int = 1) -> Dict[str, Any]:
         """
-        Run the 32-dim CGA input through NoumenalEngine (Akasha 2 MoE).
-        
-        Args:
-            cga_32d: shape (32,) or (1, 32)
-            
-        Returns:
-            dict with 'predicted_rotor' (32,), 'hamiltonian' float, 'hopfield_energy' float
+        Dynamically maps N-Dimensional vectors (32D, 64D) into the 768D Aether 
+        before passing through the Mamba-3 Core.
         """
         if not self.is_ready:
-            # Identity passthrough if engine not loaded
-            predicted_rotor = normalize_rotor_numpy(cga_32d.flatten().astype(np.float32))
-            return {
-                "predicted_rotor": predicted_rotor,
-                "hamiltonian": 0.0,
-                "hopfield_energy": 0.0,
-            }
+            return {"predicted_rotor": normalize_rotor_numpy(cga_vector.flatten()[:32].astype(np.float32)), "hamiltonian": 0.0}
         
-        try:
-            # NoumenalEngine expects [B, T, 32] - add batch and time dims
-            cga = cga_32d.flatten().astype(np.float32)
-            engine_input = cga[np.newaxis, np.newaxis, :]  # [1, 1, 32]
-            
-            # Forward pass through NoumenalEngine (Akasha 2 MoE)
-            result = self.engine.forward(engine_input)
-            
-            # Fetch pre-calculated Hopfield energy from Redis
-            hopfield_energy = 0.0
-            if self.redis:
-                try:
-                    val = self.redis.get("hopfield:global_energy")
-                    if val is not None:
-                        hopfield_energy = float(val)
-                except Exception as e:
-                    logger.debug(f"Redis fetch failed: {e}")
+        cga_flat = cga_vector.flatten().astype(np.float32)
+        
+        # [HOLOGRAPHIC MAPPING]: Map active dimension -> 768D Mamba Aether
+        aether_state = self.registry.project_to_aether(cga_flat)
+        
+        engine_input = np.zeros((1, 1, 768), dtype=np.float32)
+        engine_input[0, 0, :] = aether_state
+        
+        if hasattr(self.engine, "forward_multiscale"):
+            out_tensor = self.engine.forward_multiscale(engine_input, stride_scale=stride_scale)
+        elif hasattr(self.engine, "forward"):
+            out_tensor = self.engine.forward(engine_input)
+        else:
+            out_tensor = np.zeros((1, 1, 768), dtype=np.float32)
+        
+        # Map 768D Aether back down to physical rotor representation
+        if "rotor_w" in self.heads:
+            pred_rotor = self.heads["rotor_w"] @ out_tensor[0, 0, :] + self.heads["rotor_b"]
+            pred_rotor = normalize_rotor_numpy(pred_rotor)
+        else:
+            pred_rotor = normalize_rotor_numpy(out_tensor[0, 0, :32])
+        
+        hopfield_energy = 0.0
+        if self.redis:
+            try: hopfield_energy = float(self.redis.get("hopfield:global_energy") or 0.0)
+            except Exception: pass
 
-            # Persist updated NoteBlock state pools to Redis (on every prediction)
-                try:
-                    import redis
-                    redis_url = os.getenv("REDIS_URL", "redis://pythia_redis:6379/0")
-                    r_bin = redis.from_url(redis_url, decode_responses=False)
-                    pools = self.engine.get_state_pools()
-                    for i, pool in pools.items():
-                        r_bin.set(f"noteblock:state_pool:{i}", pool.tobytes())
-                except Exception as e:
-                    logger.debug(f"NoteBlock pool persistence failed: {e}")
+        return {
+            "predicted_rotor": pred_rotor,
+            "hamiltonian": float(np.sum(out_tensor**2) / 1000.0), # Local energy proxy
+            "hopfield_energy": hopfield_energy,
+            "aether_state": aether_state # Used for Hopfield saving in C5
+        }
 
-            return {
-                "predicted_rotor": result["predicted_rotor"],
-                "hamiltonian": result.get("hamiltonian", 0.0),
-                "hopfield_energy": hopfield_energy,
-            }
-            
-        except Exception as e:
-            import traceback
-            logger.warning(f"NoumenalEngine forward pass failed: {e}. Using identity passthrough.")
-            logger.warning(f"  Traceback: {traceback.format_exc()}")
-            predicted_rotor = normalize_rotor_numpy(cga_32d.flatten().astype(np.float32))
-            return {
-                "predicted_rotor": predicted_rotor,
-                "hamiltonian": 0.0,
-                "hopfield_energy": 0.0,
-            }
-    
     def get_mamba_states(self) -> Dict[int, np.ndarray]:
         """Return current Mamba hidden states for state extraction."""
-        # NoumenalEngine stores states in self.engine.blocks
-        if hasattr(self.engine, 'blocks'):
-            return {i: block.get_state() for i, block in enumerate(self.engine.blocks)}
+        if self.is_ready and hasattr(self.engine, 'layers'):
+            return {i: layer['mamba'].h_state for i, layer in enumerate(self.engine.layers) if hasattr(layer['mamba'], 'h_state') and layer['mamba'].h_state is not None}
         return {}
 
     def absorb_pulse(self, pulse: np.ndarray, coupling: float = 0.2):
         """Distribute resonance pulse to the underlying engine."""
-        if self.is_ready:
+        if self.is_ready and hasattr(self.engine, 'absorb_pulse'):
             self.engine.absorb_pulse(pulse, coupling)
     
     def reset_mamba_states(self):
         """Reset Mamba hidden states (useful for fresh start)."""
-        if hasattr(self.engine, 'blocks'):
-            for block in self.engine.blocks:
-                if hasattr(block, 'reset_state'):
-                    block.reset_state()
+        if self.is_ready and hasattr(self.engine, 'layers'):
+            for layer in self.engine.layers:
+                mamba = layer['mamba']
+                if hasattr(mamba, 'reset_state'):
+                    mamba.reset_state()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -518,9 +548,12 @@ class PhenomenologicalCore:
         self.hdc_bridge = NumpyCliffordHDCBridge(hdc_dim=10000)
 
         # NumPy Pythia Manifold (replaces ONNX - pure NumPy forward pass)
-        # Use 23k-step GOLD STANDARD manifold (verified stable)
-        gold_path = str(_PROJECT_ROOT / "models" / "pythia_manifold_23k_gold_standard.npz")
-        self.rotor_predictor = NumpyPythiaManifold(weights_path=gold_path)
+        # Use the 45k-step V3 NPZ model (verified stable and requested by user)
+        self.rotor_predictor = NumpyPythiaManifold()
+        self.rotor_predictor.calibrate_vacuum()
+        self.redis = getattr(self.rotor_predictor, 'redis', None)
+        # Initialize anomaly tracking list
+        self.unresolved_anomalies = []
 
         try:
             import redis
@@ -650,7 +683,7 @@ class PhenomenologicalCore:
     # The Heartbeat
     # ─────────────────────────────────────────────────────────────────────────
 
-    def tick(self):
+    def tick(self, stride_scale: int = 1):
         """
         The Fundamental 'Heartbeat' of ARCA.
         """
@@ -689,6 +722,7 @@ class PhenomenologicalCore:
         cga_input = self.kinematic_bridge.physics_to_cga(physics_state)  # (1, 32)
 
         engine_result = self.rotor_predictor.predict(cga_input[0])
+        self.last_engine_result = engine_result
         predicted_rotor = engine_result["predicted_rotor"]  # (32,)
 
         # [COGNITIVE SUTURE]: Apply the Geometric Rotor to the Poincaré Attention Manifold
@@ -696,13 +730,31 @@ class PhenomenologicalCore:
             focus_target = self.focus_monads[0]  # List[str], first element
             # Amplitudes boosted to 0.65 to overcome 6-block signal attenuation
             if hasattr(self.poincare, 'apply_rotor_modulation'):
-                self.poincare.apply_rotor_modulation(
-                    rotor=predicted_rotor,
-                    source_monad="ARCA",
-                    target_monad=focus_target,
-                    strength=0.65
-                )
-                logger.info(f"[*] Rotor Modulation Applied: {focus_target} (Strength: 0.65)")
+                import inspect
+                sig = inspect.signature(self.poincare.apply_rotor_modulation)
+                kwargs = {}
+                if 'rotor_32d' in sig.parameters:
+                    kwargs['rotor_32d'] = predicted_rotor
+                else:
+                    kwargs['rotor'] = predicted_rotor
+                    
+                if 'source' in sig.parameters:
+                    kwargs['source'] = "ARCA"
+                else:
+                    kwargs['source_monad'] = "ARCA"
+                    
+                if 'target' in sig.parameters:
+                    kwargs['target'] = focus_target
+                else:
+                    kwargs['target_monad'] = focus_target
+                    
+                kwargs['strength'] = 0.65
+                
+                try:
+                    self.poincare.apply_rotor_modulation(**kwargs)
+                    logger.info(f"[*] Rotor Modulation Applied to {focus_target} with {kwargs}")
+                except Exception as e:
+                    logger.warning(f"[*] Rotor Modulation call failed: {e}")
 
         # ── TRACK B: Apply rotor to concept HDC signatures (memory payload) ──
         # ── TRACK B: Apply rotor to monads → capture transformed concept ──
@@ -715,28 +767,30 @@ class PhenomenologicalCore:
         #     except Exception as e:
         #         logger.warning(f"Daemon injection failed: {e}")
 
-        # 3. Compute Energy (Feeling)
-        base_energy = self.energy_service.compute_system_energy(
-            list(self.field.monads.values())
-        )
-        total_energy = base_energy + rot_energy
+        # ENERGY DEFICIT CHECK (Detecting Anomalies for C5)
+        hamiltonian = engine_result.get("hamiltonian", 0.0)
+        if hamiltonian > 10.0 and self.tick_count % 10 == 0:
+            logger.warning(f"⚡ Energy Deficit Detected (E={hamiltonian:.2f}). Storing Anomaly for C5 Dreaming.")
+            self.unresolved_anomalies.append({
+                "cga": cga_input[0].copy(),
+                "energy": hamiltonian
+            })
 
-        energy_state = {
-            "total": total_energy,
-            "potential_sync": 0,
-            "rotational": rot_energy,
-            "hamiltonian": engine_result["hamiltonian"],
-            "hopfield_energy": engine_result.get("hopfield_energy", 0.0),
-        }
+        total_energy = (0.3 * float(QuaternionDynamics.compute_rotational_energy(self.current_qdc.omega)) + 
+                        0.25 * float(engine_result.get("hopfield_energy") or 0.0) + 
+                        0.2 * hamiltonian + 0.25 * self.energy_service.compute_system_energy(list(self.field.monads.values())))
 
-        # 4. Check for Spontaneous Transitions (Phase Change)
-        if energy_state["potential_sync"] > 50.0:
-            self._cognitive_breath()
-
-        # 5. Dream Check (idle processing)
-        #    If energy is low (boredom) and coherence is high (stagnation), Dream.
-        if energy_state["total"] < 1.0 and coherence > 0.9:
-            self._enter_dream_state()
+        # DREAM TRIGGER LOGIC
+        if total_energy < 1.0 and coherence > 0.9:
+            if len(self.unresolved_anomalies) > 0:
+                self._dimensional_dream_state() # Enter C5
+            else:
+                self._enter_dream_state() # Standard C4
+        else:
+            try:
+                void_states = self.curiosity_engine.get_high_void_states(threshold=0.65)
+                if void_states: self._enter_dream_state(seed_state=void_states[0].get("state"))
+            except Exception: pass
 
         # 6. Relational Discovery Check (Evolution)
         if self.tick_count % 100 == 0:
@@ -754,9 +808,9 @@ class PhenomenologicalCore:
         return {
             "tick": self.tick_count,
             "coherence": coherence,
-            "energy": energy_state["total"],
-            "hamiltonian": energy_state["hamiltonian"],
-"hopfield_energy": energy_state.get("hopfield_energy", 0.0),
+            "energy": total_energy,
+            "hamiltonian": hamiltonian,
+            "hopfield_energy": float(engine_result.get("hopfield_energy") or 0.0),
         }
 
     # ─────────────────────────────────────────────────────────────────
@@ -957,7 +1011,12 @@ class PhenomenologicalCore:
 
         # 3. Tell the Kuramoto field to rebuild its K_ij execution matrix
         if hasattr(self.field, "recalculate_coupling_matrix"):
-            self.field.recalculate_coupling_matrix()
+            import inspect
+            sig = inspect.signature(self.field.recalculate_coupling_matrix)
+            if "coupling_dict" in sig.parameters:
+                self.field.recalculate_coupling_matrix(transient_cga)
+            else:
+                self.field.recalculate_coupling_matrix()
 
         # Return transformed CGA for daemon injection
         return transient_cga
@@ -1013,83 +1072,96 @@ class PhenomenologicalCore:
         logger.info("Emitted Thought Signal: %s / %s", tone, confidence)
         return signal
 
-    def extract_focus_gestalt(self) -> Dict[str, Any]:
+    # ─────────────────────────────────────────────────────────────────────────
+    # C5: DIMENSIONAL DREAMING (HOLOGRAPHIC SYNCHRONICITY)
+    # ─────────────────────────────────────────────────────────────────────────
+
+    def _dimensional_dream_state(self):
         """
-        Aggregate phase-locked and focused monads into a single 10,000D super-vector.
+        Phase C5: Evaluates anomalies by expanding the algebra and hunting for 
+        Harmonic Ratios (Nature's Ratios: Octaves, Golden Ratio) in the Kuramoto Field.
+        """
+        if not self.unresolved_anomalies or self.is_dreaming: return
+        self.is_dreaming = True
         
-        Logic:
-        1. Select monads with phase-lock coherence R > 0.8 (resonant with BG3)
-        2. Select monads with Poincare center-proximity r < 0.5 (focused attention)
-        3. Superimpose their 10,000D HDC signatures
-        4. Normalize the resulting gestalt vector
-        """
+        anomaly = self.unresolved_anomalies.pop(0)
+        base_cga = anomaly["cga"]
+        
+        logger.info("🌌 Entering C5 Dimensional Dream State...")
+        
+        # 1. Expand the Algebraic Registry (32D -> 64D -> ...)
+        self.rotor_predictor.registry.expand(32)
+        expanded_dim = self.rotor_predictor.registry.active_dim
+        
+        # 2. Cast anomaly into higher dimension (Injecting the Whittaker Scalar Wave / Ghost Vector)
+        ghost_cga = np.zeros(expanded_dim, dtype=np.float32)
+        ghost_cga[:len(base_cga)] = base_cga
+        ghost_cga[len(base_cga):] = np.random.randn(expanded_dim - len(base_cga)) * 0.5
+        
+        # 3. Simulate forward in expanded space
+        dream_res = self.rotor_predictor.predict(ghost_cga)
+        
+        # 4. Check for Cymatic Resonance (Nature's Ratios) in the Kuramoto Field
+        phases = self.field.phases
+        harmonic_score = self._compute_harmonic_resonance(phases)
+        
+        logger.info(f"🎶 Harmonic Resonance Score: {harmonic_score:.3f}")
+        
+        if harmonic_score > 0.8: # Cymatic Resonance Achieved!
+            self.rotor_predictor.registry.lock_current()
+            
+            # Compress the stable Aether State to the Hopfield Attractor Memory
+            if self.redis and hasattr(self.rotor_predictor.engine, 'hopfield'):
+                try:
+                    aether = dream_res["aether_state"]
+                    self.rotor_predictor.engine.hopfield.store_patterns(aether[np.newaxis, :])
+                    logger.info("🧠 Saved 768D Aether Attractor to Hopfield Memory.")
+                except Exception as e: pass
+        else:
+            self.rotor_predictor.registry.contract()
+        
+        self.is_dreaming = False
+
+    def _compute_harmonic_resonance(self, phases: np.ndarray) -> float:
+        """Evaluates Nature's Ratios: Octaves (1:2, 2:3) and the Golden Ratio (Phi)."""
+        if len(phases) < 2: return 0.0
+        phi = (1.0 + np.sqrt(5.0)) / 2.0
+        target_ratios = [2.0, 1.5, phi, 1.0/phi, 0.5] # Octave, Perfect Fifth, Golden Ratios
+        
+        score, pairs = 0.0, 0
+        for i in range(len(phases)):
+            for j in range(i+1, len(phases)):
+                p1, p2 = phases[i], max(phases[j], 1e-5)
+                ratio = (p1 / p2) % 2.0 # Fold into fundamental octave
+                
+                # Exponential reward for proximity to perfect harmonics
+                min_dist = min([abs(ratio - r) for r in target_ratios])
+                score += np.exp(-min_dist * 5.0)
+                pairs += 1
+                
+        return float(score / max(1, pairs))
+
+    def extract_focus_gestalt(self) -> Dict[str, Any]:
         gestalt_sum = np.zeros(10000, dtype=np.float32)
         included_monads = []
-        
-        # Target phase for BG3 resonance (Golden Angle)
-        # Using self.field.PHI if available, else standard Golden Ratio
         phi = getattr(self.field, 'PHI', (1 + np.sqrt(5)) / 2)
         target_phase = (2 * np.pi / phi) % (2 * np.pi)
         
-        # Iterate through known monad objects
         for name, monad in self.field.monads.items():
-            # Get phase from field dynamics
             idx = getattr(self.field, 'name_to_idx', {}).get(name)
-            if idx is None:
-                continue
-            
+            if idx is None: continue
             phase = self.field.phases[idx]
-            
-            # 1. Check Coherence (R > 0.8)
-            # R = exp(-|phase - target|) where target is BG3
-            deviation = abs(phase - target_phase)
-            deviation = min(deviation, 2 * np.pi - deviation)
+            deviation = min(abs(phase - target_phase), 2 * np.pi - abs(phase - target_phase))
             coherence = float(np.exp(-deviation))
             
-            # 2. Check Attention (r < 0.5)
-            # Use the "outer" Poincare kernel for system attention (Working Memory focus)
             structure = self.poincare.structures.get(name)
-            if not structure:
-                # Fallback to field's internal poincare if outer doesn't have it
-                if hasattr(self.field, 'poincare'):
-                    structure = self.field.poincare.structures.get(name)
-            
-            if not structure:
-                continue
-            
+            if not structure: continue
             radius = float(np.linalg.norm(structure.position))
             
-            # Thresholding for Gestalt Inclusion
-            if coherence > 0.8 and radius < 0.5:
-                # Check for HDC signature
-                hv = getattr(monad, 'hv_signature', None)
-                if hv is not None:
-                    # Ensure it's numpy and float for sum
-                    hv_array = np.array(hv, dtype=np.float32)
-                    
-                    # Weight by combination of resonance and focus
-                    weight = coherence * (1.0 - radius)
-                    gestalt_sum += hv_array * weight
-                    
-                    included_monads.append({
-                        "id": name,
-                        "coherence": round(coherence, 4),
-                        "radius": round(radius, 4),
-                        "weight": round(weight, 4)
-                    })
+            if coherence > 0.8 and radius < 0.5 and getattr(monad, 'hv_signature', None) is not None:
+                weight = coherence * (1.0 - radius)
+                gestalt_sum += np.array(monad.hv_signature, dtype=np.float32) * weight
+                included_monads.append({"id": name, "coherence": round(coherence, 4), "weight": round(weight, 4)})
         
-        # Final Normalization of the super-vector
-        gestalt_norm = np.linalg.norm(gestalt_sum)
-        if gestalt_norm > 1e-9:
-            gestalt_sum /= gestalt_norm
-            
-        return {
-            "gestalt": gestalt_sum.tolist(),
-            "monads": included_monads,
-            "metrics": {
-                "count": len(included_monads),
-                "total_energy": self.energy_service.compute_total_energy() if self.energy_service else 0.0,
-                "global_coherence": self.field.compute_global_coherence() if hasattr(self.field, 'compute_global_coherence') else 0.0,
-                "timestamp": time.time()
-            }
-        }
+        if np.linalg.norm(gestalt_sum) > 1e-9: gestalt_sum /= np.linalg.norm(gestalt_sum)
+        return {"gestalt": gestalt_sum.tolist(), "metrics": {"count": len(included_monads)}}

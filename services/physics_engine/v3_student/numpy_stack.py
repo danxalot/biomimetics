@@ -1,6 +1,6 @@
 import numpy as np
 import os
-from numpy_mamba3 import Mamba3NP
+from .numpy_mamba3 import Mamba3NP
 
 def layer_norm(x, weight, bias, eps=1e-5):
     """Standard LayerNorm in NumPy."""

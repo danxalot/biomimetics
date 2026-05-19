@@ -1,0 +1,68 @@
+[
+    {
+        "action": "hard_refuse",
+        "subject_contains": "that you follow published a new idea",
+        "reason": "Hard Refuse",
+        "description": "Hard refuse emails with a specific phrase in the subject."
+    },
+    {
+        "action": "pass",
+        "sender_domain_in": [
+            "nhs.net",
+            "nhs.uk",
+            "gov.uk",
+            "police.uk",
+            "lgo.org.uk"
+        ],
+        "reason": "Institutional",
+        "description": "Pass emails from institutional domains."
+    },
+    {
+        "action": "pass",
+        "sender_keyword_in": [
+            "citizens advice",
+            "solicitor",
+            "lawyer",
+            "legal",
+            "constabulary",
+            "police"
+        ],
+        "reason": "Institutional",
+        "description": "Pass emails with institutional keywords in the sender."
+    },
+    {
+        "action": "review",
+        "sender_domain_in": [
+            "gitguardian.com"
+        ],
+        "reason": "Security Review",
+        "description": "Flag GitGuardian emails for agent review in daily briefing."
+    },
+    {
+        "action": "review",
+        "subject_contains": "of residence information required",
+        "reason": "Living Situation Review",
+        "description": "Flag residence information requests for agent review."
+    },
+    {
+        "action": "review",
+        "sender_keyword_in": [
+            "Octopus Energy",
+            "Scottish Power"
+        ],
+        "reason": "Utility Review",
+        "description": "Flag utility company emails for agent review."
+    },
+    {
+        "action": "reject",
+        "has_list_unsubscribe": true,
+        "reason": "Newsletter",
+        "description": "Reject emails that have a 'List-Unsubscribe' header."
+    },
+    {
+        "action": "pass",
+        "subject_or_sender_matches_regex": "invoice|receipt|you sent|payment|vultr|azure|ticket|order|document|citizens advice|cab|debt|arrears|collection|bailiff|stepchange|credit|complaint|appeal|ombudsman|watchdog|legal|solicitor|police|council|security alert|breach|pwned|unauthorized|login",
+        "reason": "Legacy Filter",
+        "description": "Pass emails that match the legacy keyword filter (removed octopus as it's now in review)."
+    }
+]
