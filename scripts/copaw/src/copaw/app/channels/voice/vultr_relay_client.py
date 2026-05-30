@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
 INPUT_RATE = 16000
-OUTPUT_RATE = 16000
+OUTPUT_RATE = 24000
 CHUNK = 480  # 30ms @ 16kHz
 VAD_MODE = 3  # Most aggressive filtering
 
