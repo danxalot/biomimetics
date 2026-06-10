@@ -190,21 +190,46 @@ class VultrRelayClient:
             return
         for line in iter(self.audio_process.stderr.readline, b''):
             if line:
-                logger.debug(f"[Swift] {line.decode('utf-8', errors='replace').strip()}")
+                text = line.decode('utf-8', errors='replace').strip()
+                if not text:
+                    continue
+                # Surface engine failures so a dead mic pipeline is never silent.
+                if "error" in text.lower() or "unavailable" in text.lower():
+                    logger.error(f"[AudioEngine] {text}")
+                else:
+                    logger.info(f"[AudioEngine] {text}")
 
     def _setup_audio(self):
-        """Initialize macOS native CoreAudio VPIO via Swift subprocess."""
+        """Initialize macOS native CoreAudio VPIO via Swift subprocess.
+
+        Runs the PREBUILT binary (scripts/sys/bios_audio_engine), NOT
+        `swift <source>`. The .swift source uses iOS-only AVAudioSession APIs
+        and fails to compile on macOS, which would silently hang the mic
+        pipeline. The compiled binary is the macOS-correct build.
+        """
         logger.info("Starting BiOS CoreAudio Engine (AEC Enabled)...")
-        engine_path = "/Users/danexall/biomimetics/scripts/sys/bios_audio_engine.swift"
+        engine_dir = "/Users/danexall/biomimetics/scripts/sys"
+        engine_bin = f"{engine_dir}/bios_audio_engine"
+        engine_src = f"{engine_dir}/bios_audio_engine.swift"
         try:
-            logger.info("Starting BiOS CoreAudio Engine (AEC Enabled)...")
             env = os.environ.copy()
             if os.environ.get("BIOS_TEST_MODE") == "1":
                 env["BIOS_AEC_ENABLED"] = "0"
                 logger.info("TEST MODE: Native AEC disabled for E2E acoustic testing.")
-                
+
+            if os.path.exists(engine_bin) and os.access(engine_bin, os.X_OK):
+                cmd = [engine_bin]
+            else:
+                # Fallback: interpret the source (slow cold compile; may fail on macOS).
+                logger.warning(
+                    "Prebuilt audio engine binary missing at %s — falling back to "
+                    "`swift <source>` (slow, and the source may not compile on macOS).",
+                    engine_bin,
+                )
+                cmd = ["swift", engine_src]
+
             self.audio_process = subprocess.Popen(
-                ["swift", "/Users/danexall/biomimetics/scripts/sys/bios_audio_engine.swift"],
+                cmd,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,  # Capture stderr for logging
