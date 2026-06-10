@@ -97,6 +97,11 @@ unrelated (cache layer; live KV lookups work regardless).
 **Follow-up:** running ARCA containers keep the old baked-in URL until next
 `docker compose up` — harmless (old target was the now-gone impostor).
 
+📖 **Canonical reference for all services/agents:** `ARCA/docs/CREDENTIALS_SERVER.md`
+— how to reach the server (host vs container URL), the `X-API-Key` header, endpoints,
+the `_`↔`-` name normalization, and a "404 but it exists" troubleshooting checklist.
+Point any new service at that doc instead of re-deriving the wiring.
+
 ## Verified-working as of 2026-06-10
 
 - `omni_mcp` serena proxy → ARCA `:8086/mcp` `serena_chat` returns correctly.
