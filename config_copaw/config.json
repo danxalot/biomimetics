@@ -239,18 +239,6 @@
         },
         "cwd": "/Users/danexall/biomimetics/scripts/copaw"
       },
-      "arca_mcp": {
-        "name": "arca_mcp",
-        "description": "ARCA Ecosystem Tools (Serena, Knowledge, Infra)",
-        "enabled": true,
-        "transport": "sse",
-        "url": "http://localhost:8086/sse",
-        "headers": {},
-        "command": "",
-        "args": [],
-        "env": {},
-        "cwd": ""
-      },
       "computer_use": {
         "name": "computer_use",
         "description": "OS Interaction (Screenshots, Mouse, Keyboard)",
@@ -263,6 +251,22 @@
           "/Users/danexall/biomimetics/scripts/copaw/computer_use_mcp.py"
         ],
         "env": {},
+        "cwd": "/Users/danexall/biomimetics/scripts/copaw"
+      },
+      "serena_opencode": {
+        "name": "serena_opencode",
+        "description": "Serena code agent: dispatch tasks to OpenCode models and read/write/list files (controls opencode agents)",
+        "enabled": true,
+        "transport": "stdio",
+        "url": "",
+        "headers": {},
+        "command": "python3",
+        "args": [
+          "/Users/danexall/biomimetics/scripts/copaw/serena_mcp_server.py"
+        ],
+        "env": {
+          "PYTHONPATH": "/Users/danexall/biomimetics"
+        },
         "cwd": "/Users/danexall/biomimetics/scripts/copaw"
       }
     }

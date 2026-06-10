@@ -5,6 +5,7 @@ Provides tools for telemetry-driven model selection and OpenCode execution.
 
 import os
 import json
+import asyncio
 import httpx
 from mcp.server.fastmcp import FastMCP
 

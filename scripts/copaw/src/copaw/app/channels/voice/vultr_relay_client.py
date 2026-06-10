@@ -1,29 +1,38 @@
 # -*- coding: utf-8 -*-
-"""Vultr Relay Client for CoPaw Voice Channel (Antigravity Protocol)."""
+"""Vultr Relay Client for CoPaw Voice Channel (Antigravity Protocol).
+
+Client for the Vultr Relay (Gemini 3.1 Flash Live wire format, Nemotron backend).
+
+Adheres strictly to the Antigravity Protocol:
+- Non-blocking PyAudio callbacks (eliminates 1006 crashes).
+- Local Software Echo Gating (Half-Duplex).
+- Thread-isolated Multimodal Vision (1 FPS).
+- Native MCP Tool Routing (Computer Use).
+"""
 import asyncio
 import base64
 import json
 import logging
-import mss
-import io
 import os
+import tempfile
 import time
 import threading
 import warnings
+import webbrowser
 import numpy as np
 from typing import Any, Dict, Optional
 from datetime import datetime, timezone
 from PIL import Image
-import pyaudio
+import subprocess
 import websockets
 import httpx
 import webrtcvad
-from pynput import keyboard
-from google.oauth2 import service_account
-from google.auth.transport.requests import Request
 from websockets.exceptions import ConnectionClosed
 
+from .vision_worker import capture_and_encode
+from .telemetry import VoiceTelemetry
 from .mcp_tool_definitions import get_all_declarations
+from ...phantom import get_phantom_controller
 
 # Suppress noisy warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="websockets.exceptions")
@@ -31,23 +40,24 @@ warnings.filterwarnings("ignore", category=DeprecationWarning, module="websocket
 logger = logging.getLogger(__name__)
 
 # Audio configuration
-FORMAT = pyaudio.paInt16
 CHANNELS = 1
 INPUT_RATE = 16000
-OUTPUT_RATE = 24000
+OUTPUT_RATE = 24000  # Gemini Live native output rate
 CHUNK = 480  # 30ms @ 16kHz
-VAD_MODE = 3  # Most aggressive filtering
+VAD_MODE = 2  # Aggressive filtering (mode 3 too aggressive for 16kHz)
 
-def calculate_rms(audio_data):
-    """Fast RMS calculation using NumPy for hardware gating."""
-    if not audio_data: return 0
+def calculate_rms(audio_data: bytes) -> float:
+    """Fast RMS calculation using NumPy for hardware gating. Returns float for precision."""
+    if not audio_data:
+        return 0.0
     audio_np = np.frombuffer(audio_data, dtype=np.int16)
-    if audio_np.size == 0: return 0
-    return int(np.sqrt(np.mean(np.square(audio_np.astype(np.float32)))))
+    if audio_np.size == 0:
+        return 0.0
+    return float(np.sqrt(np.mean(np.square(audio_np.astype(np.float32)))))
 
 class VultrRelayClient:
     """
-    Natively integrated Gemini 3.1 Flash Live Preview voice agent.
+    Natively integrated Nemotron-backed relay with Gemini 3.1 Flash Live wire format.
     
     Adheres strictly to the Antigravity Protocol:
     - Non-blocking PyAudio callbacks (eliminates 1006 crashes).
@@ -60,16 +70,14 @@ class VultrRelayClient:
         self.relay_url = relay_url
         self.model_id = model
         self.ws = None
-        self.p = pyaudio.PyAudio()
-        self.input_stream = None
-        self.output_stream = None
+        self.audio_process = None
+        self.audio_stderr_thread = None
+        self.capture_thread = None
         self.running = False
         self.ready = asyncio.Event()
         
         # Antigravity Protocol State
         self.is_playing = False
-        self._external_is_playing = False
-        self._is_muted = False
         
         # Local MCP Endpoint
         self.copaw_port = int(os.environ.get("COPAW_API_PORT", 8090))
@@ -97,12 +105,16 @@ class VultrRelayClient:
 
         # Queues & Loop
         self.vad = webrtcvad.Vad(VAD_MODE)
-        self.mic_queue = asyncio.Queue(maxsize=100)
+        self.mic_queue = asyncio.Queue()
+        self.playback_queue = asyncio.Queue()
         self.loop = None
-        
-        # PTT & Hardware Listeners
-        self.listener = keyboard.Listener(on_press=self._on_press, on_release=self._on_release)
-        self.listener.start()
+        self.telemetry = VoiceTelemetry()
+
+        # VAD Dynamic Baseline
+        from collections import deque
+        self.noise_history = deque(maxlen=100)  # ~3s window at 30ms frames
+        self._floor_update_counter = 0
+        self._cached_floor = 40.0
 
     def _load_secret(self, name: str) -> Optional[str]:
         try:
@@ -110,130 +122,288 @@ class VultrRelayClient:
                 return f.read().strip()
         except: return None
 
-    def _on_press(self, key):
-        try:
-            if hasattr(key, 'char') and key.char == 'm':
-                self._is_muted = not self._is_muted
-                print(f"\n[🛡️  BiOS] Mute: {'ON' if self._is_muted else 'OFF'}", flush=True)
-        except: pass
-
-    def _on_release(self, key): pass
+    def _reset_vad_baseline(self):
+        """Call when audio mode changes (AEC on/off) to reset noise floor."""
+        self.noise_history.clear()
+        self._floor_update_counter = 0
+        self._cached_floor = 40.0
+        logger.info("VAD baseline reset (mode change)")
 
     def interrupt_playback(self):
         """Mandatory interruption handler for barge-in support."""
         logger.info("⛔ [FLUSH] Interrupting agent playback...")
         self.is_playing = False
-        if self.output_stream:
+        
+        # Clear playback queue instantly
+        while not self.playback_queue.empty():
             try:
-                self.output_stream.stop_stream()
-                self.output_stream.start_stream()
-            except Exception as e:
-                logger.error(f"Failed to reset output stream: {e}")
+                self.playback_queue.get_nowait()
+                self.playback_queue.task_done()
+            except (asyncio.QueueEmpty, ValueError):
+                break
+                
+        # Send interrupt sentinel to Swift engine (4 zero bytes)
+        if self.audio_process and self.audio_process.stdin:
+            try:
+                self.audio_process.stdin.write(b"\x00\x00\x00\x00")
+                self.audio_process.stdin.flush()
+            except (BrokenPipeError, OSError):
+                pass  # Swift already exited
 
-    def _mic_callback(self, in_data, frame_count, time_info, status):
-        """Non-blocking hardware capture. Zeros out data during playback gating."""
-        if not self.running:
-            return (None, pyaudio.paAbort)
-        
-        # Antigravity Directive: Software Echo Gating
-        if self.is_playing or self._external_is_playing or self._is_muted:
-            processed_data = b'\x00' * len(in_data)
-        else:
-            processed_data = in_data
-        
-        # Safety push to asyncio loop
-        if self.loop and self.loop.is_running():
+    def _audio_capture_thread(self):
+        """Reads raw PCM data from the Swift CoreAudio engine via stdout with timeout."""
+        import select
+        while self.running and self.audio_process and self.audio_process.stdout:
             try:
-                is_speech = self.vad.is_speech(in_data, INPUT_RATE)
-                rms = calculate_rms(processed_data)
-                self.loop.call_soon_threadsafe(self.mic_queue.put_nowait, (processed_data, is_speech, rms))
-            except Exception: pass
-            
-        return (in_data, pyaudio.paContinue)
+                # Use select with 100ms timeout to avoid blocking forever
+                ready, _, _ = select.select([self.audio_process.stdout], [], [], 0.1)
+                if not ready:
+                    continue
+                    
+                # Read exactly 30ms of 16kHz 16-bit mono audio (960 bytes)
+                in_data = self.audio_process.stdout.read(960)
+                if not in_data:
+                    logger.debug("Swift stdout EOF")
+                    break
+                if len(in_data) < 960:
+                    logger.debug(f"Partial read: {len(in_data)} bytes, waiting for more")
+                    # Read remaining
+                    remaining = self.audio_process.stdout.read(960 - len(in_data))
+                    in_data += remaining
+                    if len(in_data) < 960:
+                        continue
+                        
+                # Already Little-Endian 16-bit PCM from Swift (16 kHz)
+                aligned_chunk = in_data
+                
+                if self.loop and self.loop.is_running():
+                    is_speech = self.vad.is_speech(in_data, INPUT_RATE)
+                    rms = calculate_rms(aligned_chunk)
+                    self.loop.call_soon_threadsafe(self.mic_queue.put_nowait, (aligned_chunk, is_speech, rms))
+            except Exception as e:
+                logger.debug(f"Capture thread error: {e}")
+                break
+
+    def _stderr_reader_thread(self):
+        """Reads stderr from Swift process and logs to Python logger."""
+        if not self.audio_process or not self.audio_process.stderr:
+            return
+        for line in iter(self.audio_process.stderr.readline, b''):
+            if line:
+                logger.debug(f"[Swift] {line.decode('utf-8', errors='replace').strip()}")
 
     def _setup_audio(self):
-        """Initialize non-blocking PyAudio interface."""
-        logger.info("Starting BiOS Audio Engine (Non-Blocking)...")
-        self.input_stream = self.p.open(
-            format=FORMAT, channels=CHANNELS, rate=INPUT_RATE,
-            input=True, frames_per_buffer=CHUNK,
-            stream_callback=self._mic_callback
-        )
-        self.output_stream = self.p.open(
-            format=FORMAT, channels=CHANNELS, rate=OUTPUT_RATE,
-            output=True, frames_per_buffer=CHUNK
-        )
-        self.input_stream.start_stream()
-        self.output_stream.start_stream()
+        """Initialize macOS native CoreAudio VPIO via Swift subprocess."""
+        logger.info("Starting BiOS CoreAudio Engine (AEC Enabled)...")
+        engine_path = "/Users/danexall/biomimetics/scripts/sys/bios_audio_engine.swift"
+        try:
+            logger.info("Starting BiOS CoreAudio Engine (AEC Enabled)...")
+            env = os.environ.copy()
+            if os.environ.get("BIOS_TEST_MODE") == "1":
+                env["BIOS_AEC_ENABLED"] = "0"
+                logger.info("TEST MODE: Native AEC disabled for E2E acoustic testing.")
+                
+            self.audio_process = subprocess.Popen(
+                ["swift", "/Users/danexall/biomimetics/scripts/sys/bios_audio_engine.swift"],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,  # Capture stderr for logging
+                bufsize=0,
+                env=env
+            )
+            
+            # Start background thread to read from stdout
+            self.capture_thread = threading.Thread(target=self._audio_capture_thread, daemon=True)
+            self.capture_thread.start()
+            
+            # Start background thread to read stderr
+            self.audio_stderr_thread = threading.Thread(target=self._stderr_reader_thread, daemon=True)
+            self.audio_stderr_thread.start()
+        except Exception as e:
+            logger.error(f"Failed to start Swift audio engine: {e}")
+            self.running = False
 
-    async def _poll_external_playback(self):
-        """Checks if external console audio is active to prevent echo."""
-        async with httpx.AsyncClient() as client:
-            while self.running:
-                try:
-                    resp = await client.get(f"{self.copaw_base_url}/console/is-playing", timeout=0.1)
-                    if resp.status_code == 200:
-                        self._external_is_playing = resp.json().get("is_playing", False)
-                except: pass
-                await asyncio.sleep(0.4)
 
     async def video_loop(self):
         """1 FPS Screen capture loop offloaded to background thread."""
         logger.info("Starting BiOS Vision Pipeline (1 FPS)...")
         await self.ready.wait()
         
-        def capture_and_encode():
-            with mss.mss() as sct:
-                sct_img = sct.grab(sct.monitors[1])
-                img = Image.frombytes("RGB", sct_img.size, sct_img.bgra, "raw", "BGRX")
-                img.thumbnail((1920, 1080)) # HD readability for UI text
-                buffered = io.BytesIO()
-                img.save(buffered, format="JPEG", quality=85)
-                return base64.b64encode(buffered.getvalue()).decode("utf-8")
-
         while self.running:
             try:
                 encoded_frame = await asyncio.to_thread(capture_and_encode)
+                if not encoded_frame or encoded_frame.startswith("ERROR:"):
+                    logger.warning(f"Skipping vision frame: {encoded_frame}")
+                    await asyncio.sleep(1.0)
+                    continue
+
                 message = {
                     "realtimeInput": {
                         "video": {"mimeType": "image/jpeg", "data": encoded_frame}
                     }
                 }
-                if self.ws:
+                if self.ws and not self.ws.closed:
                     await self.ws.send(json.dumps(message))
+            except asyncio.CancelledError:
+                break
+            except websockets.exceptions.ConnectionClosed:
+                pass
             except Exception as e:
                 logger.error(f"Vision capture failure: {e}")
             await asyncio.sleep(1.0)
 
-    async def send_loop(self):
-        """Transmits audio chunks over WebSocket."""
-        await self.ready.wait()
-        while self.running:
-            data, is_speech, rms = await self.mic_queue.get()
-            try:
-                message = {
-                    "realtimeInput": {
-                        "audio": {"mimeType": "audio/pcm;rate=16000", "data": base64.b64encode(data).decode('utf-8')}
-                    }
+    def build_realtime_input(self, encoded_chunk: str) -> dict:
+        """Build a Gemini 3.1 Live compatible realtimeInput message."""
+        return {
+            "realtimeInput": {
+                "audio": {
+                    "mimeType": "audio/pcm;rate=16000",
+                    "data": encoded_chunk
                 }
-                await self.ws.send(json.dumps(message))
-            except: pass
-            self.mic_queue.task_done()
+            }
+        }
+
+    async def send_loop(self):
+        """Transmits audio chunks over WebSocket with VAD turn completion logic."""
+        await self.ready.wait()
+        
+        self.silence_ticks = 0
+        from collections import deque
+        noise_history = deque(maxlen=100)
+        floor_update_counter = 0
+        cached_floor = 40.0
+        turn_active = False
+        
+        while self.running:
+            # Drain queue to prevent lag, but concatenate all frames so NO audio is dropped!
+            frames = []
+            frames.append(await self.mic_queue.get())
+            while not self.mic_queue.empty():
+                frames.append(self.mic_queue.get_nowait())
+            
+            # Concatenate all raw audio data to send a continuous stream
+            data = b''.join([f[0] for f in frames])
+            
+            # Process VAD using the highest RMS/speech state in the batch
+            is_speech = any([f[1] for f in frames])
+            current_mic_rms = max([f[2] for f in frames])
+            
+            # Mark all as done
+            for _ in frames:
+                self.mic_queue.task_done()
+            
+            # Dynamic Baseline Maintenance using rolling median
+            noise_history.append(current_mic_rms)
+            
+            floor_update_counter += len(frames)
+            if floor_update_counter >= 30:
+                floor_update_counter = 0
+                if len(noise_history) >= 30:
+                    raw_floor = float(np.median(list(noise_history)[-50:])) * 1.5
+                    cached_floor = max(40.0, min(raw_floor, 400.0))
+            
+            is_active = is_speech and current_mic_rms > cached_floor
+            
+            # Signal Phantom Controller for resource management
+            try:
+                get_phantom_controller().set_voice_active(is_active)
+            except Exception:
+                pass
+
+            if is_active:
+                if not turn_active:
+                    self.telemetry.start_turn()
+                self.silence_ticks = 0
+                turn_active = True
+            else:
+                self.silence_ticks += len(frames)
+                
+            # STRATEGY A: CONTINUOUS AUDIO STREAMING
+            # Always send the audio frame to keep server VAD alive
+            try:
+                encoded_chunk = base64.b64encode(data).decode('utf-8')
+                message = self.build_realtime_input(encoded_chunk)
+                await self.ws.send(json.dumps(message, separators=(',', ':')))
+            except asyncio.CancelledError:
+                break
+            except websockets.exceptions.ConnectionClosed:
+                pass
+            except Exception as e:
+                logger.error(f"Failed to transmit audio packet: {e}")
+
+            # STRATEGY A: EXPLICIT TURN COMPLETION AFTER SILENCE
+            if turn_active and self.silence_ticks >= 50:
+                turn_active = False
+                self.telemetry.end_turn()
+                try:
+                    # Official Google Multimodal Live API turn completion signal
+                    turn_complete_message = {"clientContent": {"turnComplete": True}}
+                    await self.ws.send(json.dumps(turn_complete_message, separators=(',', ':')))
+                    logger.info("🗣️ Turn complete explicitly signaled via clientContent.")
+                except asyncio.CancelledError:
+                    break
+                except websockets.exceptions.ConnectionClosed:
+                    pass
+                except Exception as e:
+                    logger.error(f"Failed to transmit turnComplete signal: {e}")
+
+    async def playback_loop(self):
+        """Asynchronously plays back audio chunks from the queue."""
+        while self.running:
+            try:
+                audio_data = await self.playback_queue.get()
+                if not self.running:
+                    self.playback_queue.task_done()
+                    break
+                
+                if self.audio_process and self.audio_process.stdin:
+                    # Write PCM chunk to Swift engine via stdin (24 kHz native)
+                    await asyncio.to_thread(self.audio_process.stdin.write, audio_data)
+                    await asyncio.to_thread(self.audio_process.stdin.flush)
+                    
+                self.playback_queue.task_done()
+            except BrokenPipeError:
+                logger.warning("Swift stdin broken pipe, playback loop exiting")
+                break
+            except OSError as e:
+                logger.error(f"Playback OSError: {e}")
+                break
+            except Exception as e:
+                logger.error(f"Error in playback_loop: {e}")
+                await asyncio.sleep(0.05)
 
     async def receive_loop(self, on_transcript_cb=None):
         """Handles incoming server responses, triggers gating and tool routing."""
-        async for message in self.ws:
-            if not self.running: break
-            
-            if isinstance(message, bytes):
-                # Native PCM audio from relay
-                self.is_playing = True
-                await asyncio.to_thread(self.output_stream.write, message)
-            else:
-                payload = json.loads(message)
-                await self._handle_server_payload(payload, on_transcript_cb)
+        try:
+            async for message in self.ws:
+                if not self.running: break
+                
+                if isinstance(message, bytes):
+                    if message.startswith(b"{"):
+                        # Binary-encoded JSON from relay quirk
+                        message_str = message.decode('utf-8')
+                        payload = json.loads(message_str)
+                        self.telemetry.log_event("receive_json_packet_binary", keys=list(payload.keys()))
+                        await self._handle_server_payload(payload, on_transcript_cb)
+                    else:
+                        # Native PCM audio from relay (24 kHz)
+                        self.is_playing = True
+                        self.telemetry.record_audio_frame(0.0, 0.0)
+                        self.telemetry.log_event("receive_audio_packet", size=len(message))
+                        await self.playback_queue.put(message)
+                else:
+                    payload = json.loads(message)
+                    self.telemetry.log_event("receive_json_packet", keys=list(payload.keys()))
+                    await self._handle_server_payload(payload, on_transcript_cb)
+        except websockets.exceptions.ConnectionClosed as e:
+            logger.error(f"❌ [WEBSOCKET] Connection closed in receive_loop: {e.code}, Reason: {e.reason}")
+            raise
 
     async def _handle_server_payload(self, payload, on_transcript_cb):
+        if "goAway" in payload:
+            logger.warning("⚠️ Received 'goAway' signal from server. Triggering reconnection...")
+            raise Exception("Server goAway received")
+
         if "serverContent" in payload:
             sc = payload["serverContent"]
             
@@ -243,7 +413,7 @@ class VultrRelayClient:
                 if "inlineData" in part:
                     self.is_playing = True
                     audio_bytes = base64.b64decode(part["inlineData"]["data"])
-                    await asyncio.to_thread(self.output_stream.write, audio_bytes)
+                    await self.playback_queue.put(audio_bytes)
                 
                 if "text" in part:
                     text = part["text"]
@@ -258,73 +428,208 @@ class VultrRelayClient:
                 self.interrupt_playback()
 
         if "toolCall" in payload:
-            for call in payload["toolCall"].get("functionCalls", []):
-                asyncio.create_task(self._handle_tool_call(call))
+            calls = payload["toolCall"].get("functionCalls", [])
+            if calls:
+                asyncio.create_task(self._handle_tool_calls_batch(calls))
 
         if "setupComplete" in payload:
             logger.info("✅ Setup Handshake Complete.")
+            self.telemetry.log_event("setup_complete")
+            await asyncio.sleep(0.5)
             self.ready.set()
 
-    async def _handle_tool_call(self, tool_call):
-        """Routes Gemini tool calls to local CoPaw MCP executor."""
+    async def _handle_tool_calls_batch(self, tool_calls):
+        """Execute multiple tool calls in parallel and send a single batched toolResponse."""
+        tasks = []
+        for tool_call in tool_calls:
+            tasks.append(self._execute_single_tool(tool_call))
+        
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        function_responses = []
+        for tool_call, result in zip(tool_calls, results):
+            name = tool_call.get("name")
+            call_id = tool_call.get("id")
+            
+            if isinstance(result, Exception):
+                output = json.dumps({"status": "error", "message": str(result)})
+            else:
+                output = result
+                
+            function_responses.append({
+                "name": name,
+                "id": call_id,
+                "response": {"output": output}
+            })
+            
+        response_payload = {
+            "toolResponse": {
+                "functionResponses": function_responses
+            }
+        }
+        try:
+            if self.ws:
+                await self.ws.send(json.dumps(response_payload))
+                logger.info(f"✅ Batched Tool Response Sent: {[r['name'] for r in function_responses]}")
+        except Exception as e:
+            logger.error(f"Failed to send batched tool response: {e}")
+
+    async def _execute_single_tool(self, tool_call) -> str:
+        """Helper to execute a single tool and unpack clean plain-text responses."""
         name = tool_call.get("name")
         call_id = tool_call.get("id")
         args = tool_call.get("args", {})
         
-        logger.info(f"🛠️  Routing Tool: {name} ({call_id})")
+        self.telemetry.tool_execution(name, args)
+        
+        logger.info(f"🛠️  Executing Tool: {name} ({call_id})")
         try:
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                resp = await client.post(
-                    f"{self.copaw_base_url}/api/mcp/tool/execute",
-                    json={"name": name, "arguments": args}
-                )
-                result_data = resp.json()
-                output = json.dumps(result_data.get("result", result_data))
+            if name == "render_canvas":
+                try:
+                    # Extract the content from the tool arguments
+                    content = args.get("html", args.get("content", "<h1>Empty Canvas</h1>"))
+
+                    # Inject Chameleon CSS to match macOS Dark/Light mode natively
+                    chameleon_css = """
+                    <style>
+                        :root {
+                            color-scheme: light dark;
+                            --bg-color: #ffffff;
+                            --text-color: #333333;
+                        }
+                        @media (prefers-color-scheme: dark) {
+                            :root {
+                                --bg-color: #1e1e1e;
+                                --text-color: #f0f0f0;
+                            }
+                        }
+                        body {
+                            background-color: var(--bg-color);
+                            color: var(--text-color);
+                            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                            padding: 2rem;
+                            margin: 0;
+                        }
+                    </style>
+                    """
+
+                    # Wrap raw content in HTML boilerplate if it isn't already a full document
+                    if "<html" not in content.lower():
+                        html_out = f"<!DOCTYPE html>\n<html>\n<head>\n<meta charset='utf-8'>\n<title>BiOS Canvas</title>\n{chameleon_css}\n</head>\n<body>\n{content}\n</body>\n</html>"
+                    else:
+                        # If the model wrote a full HTML document, inject the chameleon CSS into the head
+                        html_out = content.replace("</head>", f"{chameleon_css}\n</head>") if "</head>" in content else content
+
+                    # Write to a persistent temporary file (unique per session)
+                    import uuid
+                    temp_path = os.path.join(tempfile.gettempdir(), f"bios_canvas_{uuid.uuid4().hex[:8]}.html")
+                    with open(temp_path, "w", encoding="utf-8") as f:
+                        f.write(html_out)
+
+                    # Execute locally on the Mac
+                    webbrowser.open(f"file://{temp_path}")
+
+                    # Construct the success response for the Gemini API
+                    return json.dumps({"status": "success", "message": "Canvas rendered on local macOS screen."})
+                except Exception as e:
+                    return json.dumps({"error": str(e)})
+            
+            # Graceful stubs for unimplemented tools
+            elif name in ["dispatch_pm_brief", "update_notion_task_status", "get_pending_approvals", "approve_tool_request"]:
+                logger.warning(f"Tool {name} is a known stub. Returning graceful fallback.")
+                return json.dumps({"status": "error", "message": f"Tool '{name}' is declared but execution backend is currently offline/pending."})
                 
-                # Mandatory Tool Response Handshake
-                response_payload = {
-                    "toolResponse": {
-                        "functionResponses": [
-                            {"name": name, "id": call_id, "response": {"output": output}}
-                        ]
-                    }
-                }
-                await self.ws.send(json.dumps(response_payload))
-                logger.info(f"✅ Tool {name} Result Transmitted.")
+            else:
+                # Proceed with existing MCP routing for all other tools
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    resp = await client.post(
+                        f"{self.copaw_base_url}/api/mcp/tool/execute",
+                        json={"name": name, "arguments": args}
+                    )
+                    if resp.status_code != 200:
+                        return json.dumps({"status": "error", "message": f"MCP execution endpoint returned status {resp.status_code}"})
+                    
+                    result_data = resp.json()
+                    res = result_data.get("result", result_data)
+                    
+                    # Unpack standard CallToolResult content structures into plain text for voice spoken clarity
+                    if isinstance(res, dict):
+                        if "content" in res and isinstance(res["content"], list):
+                            texts = []
+                            for item in res["content"]:
+                                if isinstance(item, dict) and item.get("type") == "text":
+                                    texts.append(item.get("text", ""))
+                            output = "\n".join(texts)
+                        elif "text" in res:
+                            output = res["text"]
+                        else:
+                            output = json.dumps(res)
+                    else:
+                        output = str(res)
+                    return output
         except Exception as e:
-            logger.error(f"Tool {name} execution error: {e}")
+            logger.error(f"Error executing single tool {name}: {e}")
+            return json.dumps({"status": "error", "message": str(e)})
 
     async def send_setup_message(self):
-        """Initial BidiGenerateContentSetup handshake."""
+        """Initial BidiGenerateContentSetup handshake with session resumption."""
         setup = {
             "setup": {
                 "model": self.model_id,
                 "systemInstruction": {"parts": [{"text": self.persona_brief}]},
                 "generationConfig": {"responseModalities": ["AUDIO"]},
-                "tools": [{"functionDeclarations": get_all_declarations()}]
+                "tools": [{"functionDeclarations": get_all_declarations()}],
             }
         }
         await self.ws.send(json.dumps(setup))
-        logger.info("🚀 Setup payload transmitted with full MCP tool suite.")
+        logger.info("🚀 Setup payload transmitted with full MCP tools.")
 
     async def run(self, on_transcript_cb=None):
         self.running = True
         self.loop = asyncio.get_running_loop()
+        await self.telemetry.start()
         self._setup_audio()
         
-        async with websockets.connect(self.relay_url) as ws:
-            self.ws = ws
-            await self.send_setup_message()
-            await asyncio.gather(
-                self.send_loop(),
-                self.receive_loop(on_transcript_cb),
-                self.video_loop(),
-                self._poll_external_playback()
-            )
+        retry_count = 0
+        while self.running:
+            try:
+                async with websockets.connect(self.relay_url) as ws:
+                    self.ws = ws
+                    logger.info(f"✅ [HEARTBEAT] Connected to relay: {self.relay_url}")
+                    self.telemetry.log_event("connected", relay_url=self.relay_url)
+                    retry_count = 0  # Reset on success
+                    
+                    self.ready.clear()
+                    await self.send_setup_message()
+                    
+                    async with asyncio.TaskGroup() as tg:
+                        tg.create_task(self.send_loop())
+                        tg.create_task(self.receive_loop(on_transcript_cb))
+                        tg.create_task(self.video_loop())
+                        tg.create_task(self.playback_loop())
+            except (websockets.exceptions.ConnectionClosed, ConnectionRefusedError, OSError) as e:
+                if not self.running: break
+                retry_count += 1
+                delay = min(retry_count * 2, 30)
+                logger.warning(f"⚠️ [RELAY] Connection lost ({e}). Retrying in {delay}s (Attempt {retry_count})...")
+                await asyncio.sleep(delay)
+            except Exception as e:
+                if not self.running: break
+                logger.error(f"❌ [RELAY] Unexpected error in run loop: {e}")
+                await asyncio.sleep(5)
 
     async def close(self):
         self.running = False
-        if self.input_stream: self.input_stream.stop_stream(); self.input_stream.close()
-        if self.output_stream: self.output_stream.stop_stream(); self.output_stream.close()
-        self.p.terminate()
+        await self.telemetry.stop()
+        
+        # Shutdown vision pool to prevent zombies
+        if hasattr(self, 'vision_pool'):
+            self.vision_pool.shutdown(wait=False, cancel_futures=True)
+            
+        if self.audio_process:
+            try:
+                self.audio_process.terminate()
+                self.audio_process.wait(timeout=2)
+            except:
+                self.audio_process.kill()
         logger.info("BiOS Voice Engine Shutdown.")

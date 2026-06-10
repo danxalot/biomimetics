@@ -221,6 +221,31 @@ ARCA_TOOLS = [
     }
 ]
 
+OPENCODE_TOOLS = [
+    {
+        "name": "execute_opencode_task",
+        "description": "Dispatch a coding or technical task to an OpenCode agent (the local Serena code agent runs it on a free OpenCode model). Use this to control opencode agents: write code, refactor, plan, or reason over the codebase. Returns the agent's response.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "target_model": {
+                    "type": "STRING",
+                    "description": "OpenCode model to run the task. Verified working: 'deepseek-v4-pro'. Also available: 'kimi-2.6'. Default to 'deepseek-v4-pro' if unsure."
+                },
+                "task_brief": {
+                    "type": "STRING",
+                    "description": "Clear, self-contained description of the task for the opencode agent to execute."
+                },
+                "technical_context": {
+                    "type": "STRING",
+                    "description": "Optional supporting context (file paths, constraints, prior decisions)."
+                }
+            },
+            "required": ["target_model", "task_brief"]
+        }
+    }
+]
+
 CORE_RELAY_TOOLS = [
     {
         "name": "render_canvas",
@@ -385,12 +410,13 @@ COMPUTER_USE_TOOLS = [
 def get_all_declarations():
     """Return all active function declarations for the Gemini setup message."""
     return (
-        EMAIL_TOOLS + 
-        GDRIVE_TOOLS + 
+        EMAIL_TOOLS +
+        GDRIVE_TOOLS +
         WHATSAPP_TOOLS +
         ARCA_TOOLS +
-        CORE_RELAY_TOOLS + 
-        PROJECT_MGMT_TOOLS + 
+        OPENCODE_TOOLS +
+        CORE_RELAY_TOOLS +
+        PROJECT_MGMT_TOOLS +
         HITL_TOOLS +
         COMPUTER_USE_TOOLS
     )
