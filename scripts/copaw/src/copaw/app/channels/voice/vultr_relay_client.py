@@ -344,7 +344,18 @@ class VultrRelayClient:
                     cached_floor = max(40.0, min(raw_floor, 400.0))
             
             is_active = is_speech and current_mic_rms > cached_floor
-            
+
+            # TEMP DIAGNOSTIC: log VAD/turn gating ~1x/sec so we can see WHY turns
+            # do/don't fire (is_speech, RMS vs floor). Remove once tuned.
+            self._diag_tick = getattr(self, "_diag_tick", 0) + len(frames)
+            if self._diag_tick >= 33:
+                self._diag_tick = 0
+                logger.info(
+                    f"[VAD DIAG] is_speech={is_speech} rms={current_mic_rms:.0f} "
+                    f"floor={cached_floor:.0f} -> active={is_active} "
+                    f"turn_active={turn_active} silence_ticks={self.silence_ticks}"
+                )
+
             # Signal Phantom Controller for resource management
             try:
                 get_phantom_controller().set_voice_active(is_active)
