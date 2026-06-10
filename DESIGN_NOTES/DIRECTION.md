@@ -103,19 +103,22 @@ The browser React app `gemini-live-voice/` was an orphan (referenced by nothing)
 **End-to-end VERIFIED earlier (22:25 run):** mic → turn detection → `execute_opencode_task`
 → `200 OK` → tool response to Gemini. The voice agent CAN control opencode agents.
 
-**OPEN BLOCKER — voice agent does not respond.** Connects, mic flows, but no turn ever
-completes (no `🗣️ Turn complete`, no model audio back) across multiple runs incl. an 11s
-direct test. The pitch fix is therefore unconfirmed (it can't speak yet).
-Turn gate in `send_loop`: `is_active = is_speech AND mic_rms > cached_floor`, then 50 silence
-ticks → `clientContent.turnComplete`. If the gate never opens, no turn fires. Suspects: VPIO/AEC
-suppressing mic level below the dynamic noise floor, or webrtcvad not detecting speech.
-Added a TEMP `[VAD DIAG]` log (~1x/sec) printing `is_speech / rms / floor / active / turn_active`.
-**Next:** run twice and read `[VAD DIAG]` — (a) `bash scripts/sys/bios-voice.sh` (AEC on),
-(b) `BIOS_TEST_MODE=1 bash scripts/sys/bios-voice.sh` (AEC off, via `BIOS_AEC_ENABLED=0`).
-If AEC-off works but AEC-on doesn't → VPIO is killing the mic. If `is_speech=True` but
-`rms<floor` → floor too high (clamp/lower it). If `is_speech=False` always → VAD/mic format.
-NOTE the earlier 22:25 run DID produce turns + tool calls within ~1s of mic flowing (possibly
-noise-triggered), so the wire path works; the gate tuning is the issue.
+**No-response blocker — ROOT-CAUSED & FIXED 2026-06-10 (23:xx).** `[VAD DIAG]` showed
+`is_speech=False rms=0` for *every* frame across a full 28s run — not low RMS, exactly **zero**.
+The pipe moved data (silence_ticks climbed normally) but every PCM sample was 0. Bisected with
+standalone Swift probes (from the same shell, so TCC/VPIO ruled out — probe captured maxAbs 0.99):
+the mic, VPIO, permission, and arch were all fine. **Real cause:** this Mac's built-in mic
+presents a **multichannel** input (3ch raw / **6ch with VPIO**) at **96 kHz**. The engine tapped
+the raw multichannel `hwFormat` and asked a single `AVAudioConverter(from: hwFormat, to: mono16k)`
+to downmix **and** resample — that combo **silently emits all-zero output, no error**. Probe proof:
+raw tap maxAbs=0.99, converted maxAbs=0.0.
+**Fix (in `bios_audio_engine.swift`):** added `hwMonoFormat` (mono @ hw rate); the tap now uses
+`hwMonoFormat` so CoreAudio reduces channels, and the converter only resamples mono→mono.
+Rebuilt the prebuilt binary. Verified end-to-end: **70,575 nonzero bytes / 96KB**, full range.
+The `[VAD DIAG]` log is still in `send_loop` — **next run** should show non-zero `rms` +
+`is_speech=True` on speech; once confirmed by ear (this also confirms the pitch fix), remove the
+TEMP `[VAD DIAG]` block. Two earlier red herrings chased and cleared: pitch (already fixed),
+VPIO/AEC suppression (AEC actually gives the *strongest* signal).
 BiOS only replies when addressed as **"BiOS"** (persona directive in `vultr_relay_client.py`).
 The relay sends `goAway` after ~9 min idle (normal); the client auto-reconnects.
 

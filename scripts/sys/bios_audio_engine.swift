@@ -59,7 +59,19 @@ func runAudioEngine(useAEC: Bool) -> Bool {
 
     // Hardware format (from input device)
     let hwFormat = inputNode.outputFormat(forBus: 0)
-    
+
+    // Mono view of the hardware format. The built-in mic (esp. with VPIO/AEC)
+    // presents a MULTI-channel input (e.g. 3ch raw, 6ch with VPIO). Feeding a
+    // multichannel buffer straight into AVAudioConverter(from: hwFormat,
+    // to: mono16k) silently produces ZERO output — no error, just silence
+    // (this was the RMS=0 / no-response bug). Tapping with an explicit MONO
+    // format lets CoreAudio reduce channels for us; the converter then only has
+    // to resample mono->mono, which is reliable.
+    guard let hwMonoFormat = AVAudioFormat(standardFormatWithSampleRate: hwFormat.sampleRate, channels: 1) else {
+        fputs("Failed to create mono hardware format\n", stderr)
+        return false
+    }
+
     // Standard format for mic capture (16 kHz mono for VAD efficiency)
     guard let micFormat = AVAudioFormat(standardFormatWithSampleRate: 16000.0, channels: 1) else {
         fputs("Failed to create mic format\n", stderr)
@@ -72,7 +84,9 @@ func runAudioEngine(useAEC: Bool) -> Bool {
         return false
     }
 
-    guard let micConverter = AVAudioConverter(from: hwFormat, to: micFormat) else {
+    // Converter only resamples mono@hwRate -> mono@16k (no channel mixing —
+    // CoreAudio already reduced channels via the mono tap below).
+    guard let micConverter = AVAudioConverter(from: hwMonoFormat, to: micFormat) else {
         fputs("Failed to create mic converter\n", stderr)
         return false
     }
@@ -91,8 +105,11 @@ func runAudioEngine(useAEC: Bool) -> Bool {
     // hardware-rate samples would be clocked out at 24 kHz -> deep/slow audio.
     engine.connect(playerNode, to: engine.outputNode, format: hwFormat)
 
-    // Setup Capture (Mic -> stdout) - 16 kHz for VAD
-    inputNode.installTap(onBus: 0, bufferSize: AVAudioFrameCount(hwFormat.sampleRate * 0.1), format: hwFormat) { (buffer, time) in
+    // Setup Capture (Mic -> stdout) - 16 kHz for VAD.
+    // Tap with hwMonoFormat (NOT hwFormat): CoreAudio downmixes the device's
+    // multichannel input to mono. Tapping the raw multichannel format and
+    // relying on the converter to downmix yields silence on this hardware.
+    inputNode.installTap(onBus: 0, bufferSize: AVAudioFrameCount(hwFormat.sampleRate * 0.1), format: hwMonoFormat) { (buffer, time) in
         let convertedFrameCapacity = AVAudioFrameCount((Double(buffer.frameLength) / hwFormat.sampleRate) * 16000.0)
         guard let convertedBuffer = AVAudioPCMBuffer(pcmFormat: micFormat, frameCapacity: convertedFrameCapacity) else { return }
         
@@ -234,6 +251,10 @@ func handleInterruptSignal() {
 signal(SIGTERM) { _ in handleInterruptSignal() }
 signal(SIGINT) { _ in handleInterruptSignal() }
 
+// NB: this device's built-in mic presents a multichannel input (3ch raw /
+// 6ch with VPIO) at 96 kHz. Capture MUST tap a mono format (see hwMonoFormat)
+// — converting a multichannel buffer to mono via AVAudioConverter yields
+// silence with no error. Verified: mono tap -> nonzero PCM end to end.
 let aecEnv = ProcessInfo.processInfo.environment["BIOS_AEC_ENABLED"] ?? "1"
 if aecEnv == "1" {
     if !runAudioEngine(useAEC: true) {
