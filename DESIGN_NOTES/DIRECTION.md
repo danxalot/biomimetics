@@ -68,6 +68,35 @@ that happens to be the first project BiOS manages.**
 - How much non-system ARCA context (episodic/graph beyond `get_universal_context`) BiOS actually
   needs — unknown at this stage; add proxies on demand rather than speculatively.
 
+## Credentials Server — single authoritative instance (fixed 2026-06-10)
+
+**Symptom:** email tools (`read_recent_emails`) returned empty — Credentials Server
+404'd `gmail-app-password` / `proton-bridge-password` even though both exist in Azure
+Key Vault (`arca-mcp-kv-dae`).
+
+**Root cause:** TWO servers fought over host port 8089. (1) The real KV-backed launchd
+Python server `scripts/secret_manager/credentials_server.py` (v3.0.0-strict, SP-auth, no
+fallback) bound **127.0.0.1 only**. (2) An ARCA-compose container `bios_credentials_server`
+ran the `arca-mcp_server:mount` image with **no Azure creds**, bound `[::]:8089` (IPv6 all
+interfaces), and — because macOS resolves `localhost`→`::1` first — **shadowed** the real
+server, 404ing any secret it didn't trivially have. The SP itself could read the secrets
+fine (verified 200 direct to KV); the impostor was the problem.
+
+**Fix (canonical = the host launchd Python server):**
+1. Bind it `0.0.0.0:8089` (was 127.0.0.1) so Docker-network agents reach it via
+   `host.docker.internal:8089`. (BiOS commit `0a338a4`.)
+2. `docker stop/rm bios_credentials_server` — removed the no-Azure impostor.
+3. ARCA `docker-compose.local.yml`: repoint both `CREDENTIALS_SERVER_URL` to
+   `http://host.docker.internal:8089`, add `host.docker.internal:host-gateway` to
+   `extra_hosts`, delete the dead `bios_credentials_server` service. (ARCA commit `9af62f2`.)
+
+**Verified:** `localhost:8089/secrets/{gmail-app-password,proton-bridge-password}` → 200
+(23/19 chars, matching local files); a running ARCA container reaches
+`host.docker.internal:8089/health` → 200. Note `redis_connected:false` on the server is
+unrelated (cache layer; live KV lookups work regardless).
+**Follow-up:** running ARCA containers keep the old baked-in URL until next
+`docker compose up` — harmless (old target was the now-gone impostor).
+
 ## Verified-working as of 2026-06-10
 
 - `omni_mcp` serena proxy → ARCA `:8086/mcp` `serena_chat` returns correctly.
