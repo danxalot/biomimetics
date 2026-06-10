@@ -151,37 +151,51 @@ class VultrRelayClient:
                 pass  # Swift already exited
 
     def _audio_capture_thread(self):
-        """Reads raw PCM data from the Swift CoreAudio engine via stdout with timeout."""
-        import select
-        while self.running and self.audio_process and self.audio_process.stdout:
+        """Reads raw PCM data from the Swift CoreAudio engine via stdout.
+
+        Blocking read-exact loop. The Swift VPIO/AEC engine takes ~4-5s to warm
+        up before it emits the first frame (this is the apparent "hang at
+        AudioEngine Started"); after that it streams a steady 16 kHz mono PCM
+        at 32 kB/s. We must drain it promptly — slow draining backs up the pipe
+        and stalls the CoreAudio render thread.
+
+        The previous implementation used select() + read(960) with single-shot
+        partial-read handling; on a bufsize=0 raw pipe that returns short reads
+        and DROPPED chunks, degrading throughput to ~1/5 and making a working
+        engine look dead.
+        """
+        stdout = self.audio_process.stdout
+        first_frame_logged = False
+
+        def _read_exact(n: int) -> Optional[bytes]:
+            buf = bytearray()
+            while len(buf) < n:
+                if not (self.running and self.audio_process):
+                    return None
+                chunk = stdout.read(n - len(buf))
+                if not chunk:
+                    return None  # EOF / closed
+                buf.extend(chunk)
+            return bytes(buf)
+
+        while self.running and self.audio_process and stdout:
             try:
-                # Use select with 100ms timeout to avoid blocking forever
-                ready, _, _ = select.select([self.audio_process.stdout], [], [], 0.1)
-                if not ready:
-                    continue
-                    
-                # Read exactly 30ms of 16kHz 16-bit mono audio (960 bytes)
-                in_data = self.audio_process.stdout.read(960)
-                if not in_data:
-                    logger.debug("Swift stdout EOF")
+                # 30ms of 16 kHz 16-bit mono = 960 bytes
+                in_data = _read_exact(960)
+                if in_data is None:
+                    logger.info("Audio capture stream ended (EOF).")
                     break
-                if len(in_data) < 960:
-                    logger.debug(f"Partial read: {len(in_data)} bytes, waiting for more")
-                    # Read remaining
-                    remaining = self.audio_process.stdout.read(960 - len(in_data))
-                    in_data += remaining
-                    if len(in_data) < 960:
-                        continue
-                        
-                # Already Little-Endian 16-bit PCM from Swift (16 kHz)
-                aligned_chunk = in_data
-                
+
+                if not first_frame_logged:
+                    logger.info("🎤 Mic capture flowing (first audio frame received).")
+                    first_frame_logged = True
+
                 if self.loop and self.loop.is_running():
                     is_speech = self.vad.is_speech(in_data, INPUT_RATE)
-                    rms = calculate_rms(aligned_chunk)
-                    self.loop.call_soon_threadsafe(self.mic_queue.put_nowait, (aligned_chunk, is_speech, rms))
+                    rms = calculate_rms(in_data)
+                    self.loop.call_soon_threadsafe(self.mic_queue.put_nowait, (in_data, is_speech, rms))
             except Exception as e:
-                logger.debug(f"Capture thread error: {e}")
+                logger.error(f"Capture thread error: {e}")
                 break
 
     def _stderr_reader_thread(self):
