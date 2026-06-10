@@ -242,7 +242,9 @@ class VultrRelayClient:
                         "video": {"mimeType": "image/jpeg", "data": encoded_frame}
                     }
                 }
-                if self.ws and not self.ws.closed:
+                # websockets >=13 dropped the `.closed` attribute; send directly
+                # and let the ConnectionClosed handler below catch a dead socket.
+                if self.ws:
                     await self.ws.send(json.dumps(message))
             except asyncio.CancelledError:
                 break
