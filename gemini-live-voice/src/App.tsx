@@ -119,13 +119,13 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
 
   const sessionRef = useRef<any>(null);
-  const inputAudioContextRef = useRef<AudioContext | null>(null);
+  const sharedAudioContextRef = useRef<AudioContext | null>(null);
   const workletNodeRef = useRef<AudioWorkletNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const playbackContextRef = useRef<AudioContext | null>(null);
   const nextPlayTimeRef = useRef<number>(0);
   const workletUrlRef = useRef<string | null>(null);
   const vadRef = useRef<MicVAD | null>(null);
+  const activeSourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
 
   const isListeningRef = useRef(false);
   const isConnectedRef = useRef(false);
@@ -140,15 +140,24 @@ export default function App() {
     const { name, args } = toolCall;
     console.log(`🛠️ Executing Tool: ${name}`, args);
     try {
-      const resp = await fetch(`http://127.0.0.1:8088/api/agent/memory`, {
+      const resp = await fetch(`http://127.0.0.1:8090/mcp/tool/execute`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tool: name, args })
+        body: JSON.stringify({ name, arguments: args })
       });
-      return JSON.stringify(await resp.json());
+      const data = await resp.json();
+      return JSON.stringify(data.result || data);
     } catch (err: any) {
       return JSON.stringify({ error: err.message });
     }
+  }, []);
+
+  const flushPlayback = useCallback(() => {
+    activeSourcesRef.current.forEach(source => {
+      try { source.stop(); } catch {}
+    });
+    activeSourcesRef.current.clear();
+    nextPlayTimeRef.current = sharedAudioContextRef.current?.currentTime ?? 0;
   }, []);
 
   const stopMicrophone = useCallback(() => {
@@ -164,10 +173,8 @@ export default function App() {
       workletNodeRef.current.disconnect();
       workletNodeRef.current = null;
     }
-    if (inputAudioContextRef.current) {
-      inputAudioContextRef.current.close();
-      inputAudioContextRef.current = null;
-    }
+    
+    // Do NOT close shared context here, just disconnect tracks
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(t => t.stop());
       streamRef.current = null;
@@ -182,37 +189,37 @@ export default function App() {
 
   const disconnect = useCallback(() => {
     stopMicrophone();
+    flushPlayback();
     if (sessionRef.current) {
       try { sessionRef.current.close(); } catch {}
       sessionRef.current = null;
     }
-    if (playbackContextRef.current) {
-      playbackContextRef.current.close();
-      playbackContextRef.current = null;
+    if (sharedAudioContextRef.current) {
+      sharedAudioContextRef.current.close();
+      sharedAudioContextRef.current = null;
     }
     nextPlayTimeRef.current = 0;
     isModelTalkingRef.current = false;
     isConnectedRef.current = false;
     setIsConnected(false);
     setResponseText('');
-  }, [stopMicrophone]);
+  }, [stopMicrophone, flushPlayback]);
 
   const connect = useCallback(async () => {
     if (!apiKey) return setError('Please enter API Key');
     try {
       setError(null);
       const genAI = new GoogleGenAI({ apiKey });
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-      playbackContextRef.current = audioCtx;
+      
+      // Initialize shared AudioContext at 16000Hz for AEC alignment
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
+      sharedAudioContextRef.current = audioCtx;
       nextPlayTimeRef.current = audioCtx.currentTime;
 
       sessionRef.current = await genAI.live.connect({
-        model: 'gemini-2.5-flash-native-audio-preview-12-2025',
+        model: 'gemini-2.0-flash-exp', // Updated to stable flash live model
         config: {
           generationConfig: { responseModalities: ["AUDIO"] },
-          voiceConfig: {
-            automatic_activity_detection: { disabled: true }
-          },
           tools: [{ functionDeclarations: TOOLS }]
         },
         callbacks: {
@@ -231,17 +238,21 @@ export default function App() {
             if (hasModelTurn) isModelTalkingRef.current = true;
 
             if (message.serverContent?.turnComplete) {
-              isModelTalkingRef.current = false;
+              // Grace period: allow 500ms for hardware buffer to drain
+              setTimeout(() => {
+                isModelTalkingRef.current = false;
+              }, 500);
             }
             if (message.serverContent?.interrupted) {
+              console.log('⛔ [INTERRUPT] Flushing playback buffer');
               isModelTalkingRef.current = false;
-              nextPlayTimeRef.current = playbackContextRef.current?.currentTime ?? 0;
+              flushPlayback();
             }
 
             // Audio playback — NEVER gated, always plays
             const parts = message.serverContent?.modelTurn?.parts;
-            if (parts && playbackContextRef.current) {
-              const ctx = playbackContextRef.current;
+            if (parts && sharedAudioContextRef.current) {
+              const ctx = sharedAudioContextRef.current;
               for (const part of parts) {
                 if (part.inlineData?.data) {
                   const raw = atob(part.inlineData.data);
@@ -250,11 +261,19 @@ export default function App() {
                   const int16 = new Int16Array(uint8.buffer);
                   const float32 = new Float32Array(int16.length);
                   for (let i = 0; i < int16.length; i++) float32[i] = int16[i] / 32768.0;
-                  const buffer = ctx.createBuffer(1, float32.length, 24000);
+                  
+                  // Native Gemini output is often 24k, but we align to 16k context
+                  const buffer = ctx.createBuffer(1, float32.length, 24000); 
                   buffer.getChannelData(0).set(float32);
+                  
                   const source = ctx.createBufferSource();
                   source.buffer = buffer;
                   source.connect(ctx.destination);
+                  
+                  // Track source for interruption flushing
+                  activeSourcesRef.current.add(source);
+                  source.onended = () => activeSourcesRef.current.delete(source);
+
                   if (nextPlayTimeRef.current < ctx.currentTime) nextPlayTimeRef.current = ctx.currentTime;
                   source.start(nextPlayTimeRef.current);
                   nextPlayTimeRef.current += buffer.duration;
@@ -277,7 +296,10 @@ export default function App() {
                   });
                 } catch (e) { console.error('Tool response failed:', e); }
               }
-              isModelTalkingRef.current = false;
+              // Grace period for tool execution feedback
+              setTimeout(() => {
+                isModelTalkingRef.current = false;
+              }, 500);
             }
 
             if (message.text) setResponseText(prev => prev + message.text);
@@ -305,22 +327,22 @@ export default function App() {
   }, [apiKey, handleToolCall, stopMicrophone]);
 
   const startMicrophone = useCallback(async () => {
-    if (!sessionRef.current) return;
+    if (!sessionRef.current || !sharedAudioContextRef.current) return;
     try {
-      // Hardware DSP constraints
+      // Hardware DSP constraints strictly enforced for Antigravity Mandate
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          channelCount: 1,
-          sampleRate: 16000,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
+          echoCancellation: { ideal: true },
+          noiseSuppression: { ideal: true },
+          autoGainControl: { ideal: false }, // Disable to prevent floating noise floors
+          sampleRate: 16000,                 // Match Gemini Live API native rate
+          channelCount: 1                    // Mono stream
         }
       });
       streamRef.current = stream;
 
-      const audioCtx = new window.AudioContext({ sampleRate: 16000 });
-      inputAudioContextRef.current = audioCtx;
+      const audioCtx = sharedAudioContextRef.current;
+      if (audioCtx.state === 'suspended') await audioCtx.resume();
 
       // Load AudioWorklet
       const blob = new Blob([captureWorkletCode], { type: 'application/javascript' });
@@ -335,8 +357,6 @@ export default function App() {
       // Gated mic sending — only when VAD detects speech
       workletNode.port.onmessage = (e) => {
         if (!sessionRef.current || !isConnectedRef.current) return;
-        if (isModelTalkingRef.current) return;
-        if (!isSpeechActiveRef.current) return; // ← VAD GATE
 
         const uint8Array = new Uint8Array(e.data);
         const chunkSize = 8192;

@@ -10,59 +10,50 @@ from mcp.server.fastmcp import FastMCP
 
 # Configuration
 TELEMETRY_PATH = "/Users/danexall/biomimetics/logs/model_telemetry.json"
-OPENCODE_API_URL = "https://api.opencode.ai/v1/execute" # Placeholder for OpenCode Go subscription
+OPENCODE_ZEN_URL = "https://opencode.ai/zen/v1"
+OPENCODE_GO_URL = "https://opencode.ai/zen/go/v1"
+OPENCODE_TOKEN_PATH = "/Users/danexall/biomimetics/secrets/opencode_api"
 DOCS_DIR = "/Users/danexall/biomimetics/docs"
 
 mcp = FastMCP("serena")
 
-@mcp.tool()
-def get_model_metrics():
-    """
-    Retrieves the latest performance metrics for all available models.
-    Use this tool to inform the Agent PM's routing decisions based on success_rate, 
-    latency, and known_quirks.
-    """
-    if not os.path.exists(TELEMETRY_PATH):
-        return {"error": "Telemetry file not found."}
-    
-    with open(TELEMETRY_PATH, "r") as f:
-        return json.load(f)
+def get_opencode_key():
+    if os.path.exists(OPENCODE_TOKEN_PATH):
+        with open(OPENCODE_TOKEN_PATH, "r") as f:
+            return f.read().strip()
+    return os.getenv("OPENCODE_API_KEY")
 
 @mcp.tool()
 async def execute_opencode_task(target_model: str, task_brief: str, technical_context: str = ""):
     """
     Executes a technical task via the OpenCode Go subscription.
-    
-    Args:
-       target_model: The specific model to route to (e.g., 'kimi-k2.5', 'glm-4v').
-       task_brief: The detailed instructions for the task.
-       technical_context: Optional architecture or codebase context to aid execution.
     """
-    # This tool will interact with the OpenCode API once the key is provisioned.
-    # For now, it logs the routing decision for audit.
+    api_key = get_opencode_key()
+    if not api_key:
+        return {"status": "error", "message": "Missing OPENCODE_API_KEY"}
+
+    # Map roles if needed, or use target_model directly
+    # For autonomous loops, we default to the GO URL
+    from openai import OpenAI
+    client = OpenAI(base_url=OPENCODE_GO_URL, api_key=api_key)
     
-    print(f"DEBUG: Routing task to {target_model}")
-    print(f"DEBUG: Brief: {task_brief[:100]}...")
-    
-    # Placeholder for actual API call
-    opencode_api_key = os.getenv("OPENCODE_API_KEY")
-    if not opencode_api_key:
+    try:
+        response = await asyncio.to_thread(
+            client.chat.completions.create,
+            model=target_model,
+            messages=[
+                {"role": "system", "content": f"You are the BiOS Serena Agent. Technical Context: {technical_context}"},
+                {"role": "user", "content": task_brief},
+            ],
+            temperature=0.2,
+        )
         return {
-            "status": "dry_run",
-            "message": f"Task routed to {target_model}, but OPENCODE_API_KEY is missing. Dry-run complete.",
-            "target": target_model
+            "status": "success",
+            "model": target_model,
+            "response": response.choices[0].message.content
         }
-
-    # Potential implementation:
-    # async with httpx.AsyncClient() as client:
-    #     response = await client.post(
-    #         OPENCODE_API_URL,
-    #         json={"model": target_model, "prompt": task_brief, "context": technical_context},
-    #         headers={"Authorization": f"Bearer {opencode_api_key}"}
-    #     )
-    #     return response.json()
-
-    return {"status": "error", "message": "API Integration Pending."}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 @mcp.tool()
 def read_file(path: str) -> str:
