@@ -314,7 +314,16 @@ class VultrRelayClient:
         floor_update_counter = 0
         cached_floor = 40.0
         turn_active = False
-        
+        active_streak = 0  # consecutive active ticks — debounce turn start vs. echo spikes
+
+        # Turn-gating tunables (see VAD finesse 2026-06-10):
+        # - SILENCE_END: ticks of sub-floor audio before we end the turn. ~33 ticks/sec,
+        #   so 75 ≈ 2.2s — long enough that a natural mid-sentence pause doesn't cut you off.
+        # - ACTIVE_START: consecutive active ticks required to OPEN a turn, so a single
+        #   one-frame echo/AEC spike (e.g. rms=2932 for one tick) can't trip it.
+        SILENCE_END = 75
+        ACTIVE_START = 2
+
         while self.running:
             # Drain queue to prevent lag, but concatenate all frames so NO audio is dropped!
             frames = []
@@ -352,11 +361,17 @@ class VultrRelayClient:
                 pass
 
             if is_active:
-                if not turn_active:
-                    self.telemetry.start_turn()
-                self.silence_ticks = 0
-                turn_active = True
+                active_streak += 1
+                # Only open a turn once we've seen a couple of active ticks in a row —
+                # rejects single-frame echo/AEC bursts. Once a turn is open, any active
+                # tick keeps it alive and resets the silence counter.
+                if turn_active or active_streak >= ACTIVE_START:
+                    if not turn_active:
+                        self.telemetry.start_turn()
+                    self.silence_ticks = 0
+                    turn_active = True
             else:
+                active_streak = 0
                 self.silence_ticks += len(frames)
                 
             # STRATEGY A: CONTINUOUS AUDIO STREAMING
@@ -373,7 +388,7 @@ class VultrRelayClient:
                 logger.error(f"Failed to transmit audio packet: {e}")
 
             # STRATEGY A: EXPLICIT TURN COMPLETION AFTER SILENCE
-            if turn_active and self.silence_ticks >= 50:
+            if turn_active and self.silence_ticks >= SILENCE_END:
                 turn_active = False
                 self.telemetry.end_turn()
                 try:
