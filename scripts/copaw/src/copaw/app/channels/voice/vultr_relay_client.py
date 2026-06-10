@@ -607,21 +607,40 @@ class VultrRelayClient:
                     
                     result_data = resp.json()
                     res = result_data.get("result", result_data)
-                    
+
                     # Unpack standard CallToolResult content structures into plain text for voice spoken clarity
                     if isinstance(res, dict):
                         if "content" in res and isinstance(res["content"], list):
                             texts = []
+                            saw_image = False
                             for item in res["content"]:
                                 if isinstance(item, dict) and item.get("type") == "text":
                                     texts.append(item.get("text", ""))
-                            output = "\n".join(texts)
+                                elif isinstance(item, dict) and item.get("type") == "image":
+                                    # Image content (e.g. take_screenshot) must NOT be
+                                    # dumped as base64 into the toolResponse: it balloons
+                                    # the WS frame and the relay drops the socket (1006).
+                                    # Gemini already sees the screen via the 1 FPS vision
+                                    # pipeline, so a short ack is the correct response.
+                                    saw_image = True
+                            output = "\n".join(t for t in texts if t)
+                            if not output and saw_image:
+                                output = json.dumps({"status": "success", "message": "Screen captured; image available via the live vision feed."})
                         elif "text" in res:
                             output = res["text"]
                         else:
                             output = json.dumps(res)
                     else:
                         output = str(res)
+
+                    # Hard cap: never send an oversized tool response back over the relay
+                    # (huge payloads cause abnormal WS closes / 1006). 8 KB is ample for
+                    # any spoken/textual tool result; anything larger is almost certainly
+                    # embedded binary that Gemini can't use in a toolResponse anyway.
+                    MAX_TOOL_OUTPUT = 8192
+                    if isinstance(output, str) and len(output) > MAX_TOOL_OUTPUT:
+                        logger.warning(f"Tool '{name}' output {len(output)}B exceeds {MAX_TOOL_OUTPUT}B cap — truncating.")
+                        output = output[:MAX_TOOL_OUTPUT] + "…[truncated]"
                     return output
         except Exception as e:
             logger.error(f"Error executing single tool {name}: {e}")
