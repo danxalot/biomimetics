@@ -81,3 +81,52 @@ that happens to be the first project BiOS manages.**
 → Vultr relay (`ws://…:8765`) → Gemini Live → tools via `POST /api/mcp/tool/execute`.
 Tools declared to Gemini in `…/channels/voice/mcp_tool_definitions.py::get_all_declarations()`.
 The browser React app `gemini-live-voice/` was an orphan (referenced by nothing) and was **deleted**.
+
+## Voice agent status (2026-06-10, branch `fix/voice-agent-serena-opencode`)
+
+**Fixed & verified:**
+- App startup crash (`arca_bridge` config missing from `ChannelConfig` Pydantic model →
+  `AttributeError`). Added `ArcaBridgeConfig`. This was blocking `bios-voice.sh` entirely.
+- `render_canvas` NameError (missing `tempfile`/`webbrowser` imports).
+- `serena_mcp_server.py` missing `import asyncio`.
+- Vision loop crash on `websockets` 16.0 (`.closed` attr removed).
+- Audio engine: ran `swift <source>` (recompiled each launch; source had iOS-only
+  AVAudioSession guarded `#if os(macOS)` → never compiled → silent hang). Now runs the
+  PREBUILT binary; source `#if os(iOS)` fixed; binary rebuilt + reconciled with source.
+- Mic capture: `select()`+`read(960)` dropped chunks (throughput ~1/5). Replaced with
+  blocking read-exact loop. NOTE: VPIO/AEC engine takes ~4.7s to warm up — NOT a hang.
+- **Playback pitch (deep/slow):** player node was connected to output at `playbackFormat`
+  (24kHz) but fed `hwFormat` (hardware-rate) buffers → samples clocked at 24kHz → ~half
+  speed. Fixed: connect player at `hwFormat`. Kept the 24kHz→hw converter (VPIO needs the
+  output node at hardware rate; removing it caused CoreAudio `-10875`).
+
+**End-to-end VERIFIED earlier (22:25 run):** mic → turn detection → `execute_opencode_task`
+→ `200 OK` → tool response to Gemini. The voice agent CAN control opencode agents.
+
+**OPEN BLOCKER — voice agent does not respond.** Connects, mic flows, but no turn ever
+completes (no `🗣️ Turn complete`, no model audio back) across multiple runs incl. an 11s
+direct test. The pitch fix is therefore unconfirmed (it can't speak yet).
+Turn gate in `send_loop`: `is_active = is_speech AND mic_rms > cached_floor`, then 50 silence
+ticks → `clientContent.turnComplete`. If the gate never opens, no turn fires. Suspects: VPIO/AEC
+suppressing mic level below the dynamic noise floor, or webrtcvad not detecting speech.
+Added a TEMP `[VAD DIAG]` log (~1x/sec) printing `is_speech / rms / floor / active / turn_active`.
+**Next:** run twice and read `[VAD DIAG]` — (a) `bash scripts/sys/bios-voice.sh` (AEC on),
+(b) `BIOS_TEST_MODE=1 bash scripts/sys/bios-voice.sh` (AEC off, via `BIOS_AEC_ENABLED=0`).
+If AEC-off works but AEC-on doesn't → VPIO is killing the mic. If `is_speech=True` but
+`rms<floor` → floor too high (clamp/lower it). If `is_speech=False` always → VAD/mic format.
+NOTE the earlier 22:25 run DID produce turns + tool calls within ~1s of mic flowing (possibly
+noise-triggered), so the wire path works; the gate tuning is the issue.
+BiOS only replies when addressed as **"BiOS"** (persona directive in `vultr_relay_client.py`).
+The relay sends `goAway` after ~9 min idle (normal); the client auto-reconnects.
+
+**Known cosmetic:** on Ctrl-C shutdown, MCP stdio clients log
+`Attempted to exit cancel scope in a different task` — a teardown race in the agentscope MCP
+stdio client cleanup; harmless (happens after the engine has stopped).
+
+## Pending follow-ups (scoped out, NOT done)
+1. Wire CoPaw voice/Serena agents into the shared **muninndb `:8750`** lifecycle hooks
+   (pre-prompt inject + response track). Voice currently only has the `query_memory` tool.
+2. Add ARCA **reasoning-bank** proxy tools (`consult_reasoning_bank`/`reasoning_search`) to
+   omni_mcp for agent-PM task scoping.
+3. Confirm playback pitch by ear; if still off, adjust the engine playback format.
+4. Decide whether to map BiOS into its own representational/universal-context graph.
