@@ -397,18 +397,6 @@ class VultrRelayClient:
                     self.playback_queue.task_done()
                     break
 
-                # TEMP DIAGNOSTIC: accumulate total bytes per spoken turn (reset on
-                # turnComplete). Total bytes / 2 / true_rate = utterance seconds, so
-                # comparing the printed @24k/@48k durations to how long BiOS actually
-                # spoke reveals the true rate. (Wall-clock B/s is unreliable: audio
-                # arrives in faster-than-realtime bursts.)
-                self._diag_bytes = getattr(self, "_diag_bytes", 0) + len(audio_data)
-                logger.info(
-                    f"[RATE DIAG] chunk={len(audio_data)}B turn_total={self._diag_bytes}B "
-                    f"(16-bit mono => dur@16k={self._diag_bytes/2/16000:.2f}s, "
-                    f"@24k={self._diag_bytes/2/24000:.2f}s, @48k={self._diag_bytes/2/48000:.2f}s)"
-                )
-
                 if self.audio_process and self.audio_process.stdin:
                     # Write PCM chunk to Swift engine via stdin (24 kHz native)
                     await asyncio.to_thread(self.audio_process.stdin.write, audio_data)
@@ -476,15 +464,6 @@ class VultrRelayClient:
             # State Resets
             if sc.get("turnComplete"):
                 self.is_playing = False
-                # TEMP DIAGNOSTIC: report + reset per-turn audio byte total.
-                _tb = getattr(self, "_diag_bytes", 0)
-                if _tb:
-                    logger.info(
-                        f"[RATE DIAG] TURN END total={_tb}B => spoken duration is "
-                        f"{_tb/2/16000:.2f}s @16k / {_tb/2/24000:.2f}s @24k / "
-                        f"{_tb/2/48000:.2f}s @48k. Match against how long BiOS spoke."
-                    )
-                self._diag_bytes = 0
             
             if sc.get("interrupted"):
                 self.interrupt_playback()
