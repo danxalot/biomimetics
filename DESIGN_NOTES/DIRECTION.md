@@ -115,10 +115,10 @@ raw tap maxAbs=0.99, converted maxAbs=0.0.
 **Fix (in `bios_audio_engine.swift`):** added `hwMonoFormat` (mono @ hw rate); the tap now uses
 `hwMonoFormat` so CoreAudio reduces channels, and the converter only resamples mono→mono.
 Rebuilt the prebuilt binary. Verified end-to-end: **70,575 nonzero bytes / 96KB**, full range.
-The `[VAD DIAG]` log is still in `send_loop` — **next run** should show non-zero `rms` +
-`is_speech=True` on speech; once confirmed by ear (this also confirms the pitch fix), remove the
-TEMP `[VAD DIAG]` block. Two earlier red herrings chased and cleared: pitch (already fixed),
-VPIO/AEC suppression (AEC actually gives the *strongest* signal).
+**CONFIRMED WORKING 2026-06-10** by Dan: voice agent hears speech, completes turns, and
+responds — pitch correct by ear. The TEMP `[VAD DIAG]` block has been removed from `send_loop`.
+Two earlier red herrings chased and cleared: pitch (already fixed), VPIO/AEC suppression (AEC
+actually gives the *strongest* signal). Branch `fix/voice-agent-serena-opencode` merged to main.
 BiOS only replies when addressed as **"BiOS"** (persona directive in `vultr_relay_client.py`).
 The relay sends `goAway` after ~9 min idle (normal); the client auto-reconnects.
 
