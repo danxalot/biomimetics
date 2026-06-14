@@ -387,7 +387,7 @@ def _persist_gdrive_token(creds: Credentials) -> None:
 
     The Credentials Server HTTP API is read-only by design, so the write goes
     straight to Key Vault via the `az` CLI (already authenticated on this host).
-    After this, POST /cache/rotate is hit so the server re-reads the fresh value
+    After this, POST /secrets/rotate is hit so the server re-reads the fresh value
     instead of serving the stale cached one for up to its 300s TTL.
 
     Best-effort: a failure here is logged but NOT fatal — the in-memory refreshed
@@ -412,7 +412,7 @@ def _persist_gdrive_token(creds: Credentials) -> None:
         try:
             api_key = get_credentials_api_key()
             req = urllib.request.Request(
-                f"{CREDENTIALS_SERVER_URL}/cache/rotate?name=gdrive-oauth-token",
+                f"{CREDENTIALS_SERVER_URL}/secrets/rotate?name=gdrive-oauth-token",
                 method="POST", headers={"X-API-Key": api_key})
             urllib.request.urlopen(req, timeout=10)
         except Exception as e:

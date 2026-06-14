@@ -36,6 +36,7 @@ Run from the copaw venv:
   config_copaw/venv/bin/python3 scripts/copaw/reauth_gdrive_oauth.py
 """
 import json
+import os
 import subprocess
 import sys
 import urllib.request
@@ -120,7 +121,7 @@ def main() -> int:
     # Evict the cached (dead) token so the new one is served immediately.
     try:
         req = urllib.request.Request(
-            f"{CREDENTIALS_SERVER_URL}/cache/rotate?name=gdrive-oauth-token",
+            f"{CREDENTIALS_SERVER_URL}/secrets/rotate?name=gdrive-oauth-token",
             method="POST", headers={"X-API-Key": _api_key()})
         urllib.request.urlopen(req, timeout=10)
     except Exception as e:
