@@ -37,6 +37,15 @@ from ...phantom import get_phantom_controller
 # Suppress noisy warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="websockets.exceptions")
 
+# Suppress agentscope MCP cleanup warnings (logged internally before exception propagates)
+import logging as _logging
+class _CancelScopeFilter(_logging.Filter):
+    def filter(self, record):
+        msg = record.getMessage()
+        return "cancel scope" not in msg and "different task" not in msg
+
+_logging.getLogger("agentscope.mcp._stateful_client_base").addFilter(_CancelScopeFilter())
+
 logger = logging.getLogger(__name__)
 
 # Audio configuration
@@ -350,6 +359,19 @@ class VultrRelayClient:
         SILENCE_END = 75
         ACTIVE_START = 2
 
+        # --- Half-duplex barge-in gate (fixes the self-interrupt loop, 2026-06-14) ---
+        # Why: local VPIO/AEC cleans the *recording*, but it leaves residual echo of
+        # BiOS's own TTS. We were streaming that residual to the relay unconditionally,
+        # and the SERVER's VAD (which never saw the AEC) read it as the user barging in
+        # → emitted `interrupted` → killed every turn before any audio played. AEC can't
+        # fix that; it isn't in the server-VAD loop. So while BiOS is speaking we SUPPRESS
+        # the mic→server stream, and only re-open it for a GENUINE barge-in: speech that is
+        # sustained AND well above the AEC residual level (BARGE_IN_FLOOR over BARGE_IN_TICKS).
+        BARGE_IN_FLOOR = 700.0   # RMS gate to clear AEC residual echo of BiOS's own voice
+        BARGE_IN_TICKS = 4       # consecutive loud-speech ticks (~120ms) to confirm a real cut-in
+        barge_streak = 0
+        bargein_active = False   # latched true once the user genuinely cuts in this turn
+
         while self.running:
             # Drain queue to prevent lag, but concatenate all frames so NO audio is dropped!
             frames = []
@@ -380,6 +402,26 @@ class VultrRelayClient:
             
             is_active = is_speech and current_mic_rms > cached_floor
 
+            # --- Half-duplex barge-in decision ---
+            # When BiOS is playing back audio, the relay must NOT receive the mic
+            # stream unless we're confident the user is genuinely cutting in. We hold
+            # the gate shut on AEC residual and only open it on sustained, high-RMS speech.
+            if self.is_playing and not bargein_active:
+                if is_speech and current_mic_rms > BARGE_IN_FLOOR:
+                    barge_streak += 1
+                    if barge_streak >= BARGE_IN_TICKS:
+                        bargein_active = True
+                        logger.info("🙋 Genuine barge-in detected — re-opening mic to relay.")
+                else:
+                    barge_streak = 0
+            elif not self.is_playing:
+                # Playback finished — reset the latch so the next agent turn re-arms the gate.
+                barge_streak = 0
+                bargein_active = False
+
+            # Suppress the mic→relay stream while BiOS speaks, until a real barge-in.
+            suppress_send = self.is_playing and not bargein_active
+
             # Signal Phantom Controller for resource management
             try:
                 get_phantom_controller().set_voice_active(is_active)
@@ -401,20 +443,26 @@ class VultrRelayClient:
                 self.silence_ticks += len(frames)
                 
             # STRATEGY A: CONTINUOUS AUDIO STREAMING
-            # Always send the audio frame to keep server VAD alive
-            try:
-                encoded_chunk = base64.b64encode(data).decode('utf-8')
-                message = self.build_realtime_input(encoded_chunk)
-                await self.ws.send(json.dumps(message, separators=(',', ':')))
-            except asyncio.CancelledError:
-                break
-            except websockets.exceptions.ConnectionClosed:
-                pass
-            except Exception as e:
-                logger.error(f"Failed to transmit audio packet: {e}")
+            # Stream the mic to the relay to keep server VAD alive — EXCEPT while BiOS
+            # is speaking (suppress_send), so the server VAD never mistakes AEC residual
+            # echo of BiOS's own voice for the user barging in. A genuine barge-in
+            # (bargein_active) re-opens the stream immediately.
+            if not suppress_send:
+                try:
+                    encoded_chunk = base64.b64encode(data).decode('utf-8')
+                    message = self.build_realtime_input(encoded_chunk)
+                    await self.ws.send(json.dumps(message, separators=(',', ':')))
+                except asyncio.CancelledError:
+                    break
+                except websockets.exceptions.ConnectionClosed:
+                    pass
+                except Exception as e:
+                    logger.error(f"Failed to transmit audio packet: {e}")
 
             # STRATEGY A: EXPLICIT TURN COMPLETION AFTER SILENCE
-            if turn_active and self.silence_ticks >= SILENCE_END:
+            # Don't emit turnComplete while we're suppressing (BiOS is mid-speech) —
+            # that signal only makes sense for the user's own turn.
+            if not suppress_send and turn_active and self.silence_ticks >= SILENCE_END:
                 turn_active = False
                 self.telemetry.end_turn()
                 try:
@@ -521,15 +569,34 @@ class VultrRelayClient:
             self.ready.set()
 
     async def _handle_tool_calls_batch(self, tool_calls):
-        """Execute multiple tool calls in parallel and send a single batched toolResponse."""
+        """Execute multiple tool calls in parallel and send a single batched toolResponse.
+        
+        Deduplicates identical tool calls (same name + args) to prevent Gemini
+        from re-calling the same tool multiple times when output is truncated.
+        """
+        seen = set()
+        unique_calls = []
+        for tc in tool_calls:
+            name = tc.get("name")
+            args_key = json.dumps(tc.get("args", {}), sort_keys=True)
+            dedup_key = f"{name}:{args_key}"
+            if dedup_key not in seen:
+                seen.add(dedup_key)
+                unique_calls.append(tc)
+            else:
+                logger.info(f"Deduplicating tool call: {name} (identical args)")
+        
+        if len(unique_calls) < len(tool_calls):
+            logger.info(f"Deduplicated {len(tool_calls)} tool calls to {len(unique_calls)} unique calls")
+        
         tasks = []
-        for tool_call in tool_calls:
+        for tool_call in unique_calls:
             tasks.append(self._execute_single_tool(tool_call))
         
         results = await asyncio.gather(*tasks, return_exceptions=True)
         
         function_responses = []
-        for tool_call, result in zip(tool_calls, results):
+        for tool_call, result in zip(unique_calls, results):
             name = tool_call.get("name")
             call_id = tool_call.get("id")
             
@@ -616,20 +683,16 @@ class VultrRelayClient:
                 except Exception as e:
                     return json.dumps({"error": str(e)})
             
-            # Graceful stubs for unimplemented tools
-            elif name in ["dispatch_pm_brief", "update_notion_task_status", "get_pending_approvals", "approve_tool_request"]:
-                logger.warning(f"Tool {name} is a known stub. Returning graceful fallback.")
-                return json.dumps({"status": "error", "message": f"Tool '{name}' is declared but execution backend is currently offline/pending."})
-                
             else:
                 # Proceed with existing MCP routing for all other tools
-                async with httpx.AsyncClient(timeout=30.0) as client:
+                async with httpx.AsyncClient(timeout=45.0) as client:
                     resp = await client.post(
                         f"{self.copaw_base_url}/api/mcp/tool/execute",
                         json={"name": name, "arguments": args}
                     )
                     if resp.status_code != 200:
-                        return json.dumps({"status": "error", "message": f"MCP execution endpoint returned status {resp.status_code}"})
+                        error_text = resp.text[:500] if resp.text else f"HTTP {resp.status_code}"
+                        return json.dumps({"status": "error", "message": f"MCP execution failed: {error_text}"})
                     
                     result_data = resp.json()
                     res = result_data.get("result", result_data)
@@ -660,17 +723,19 @@ class VultrRelayClient:
                         output = str(res)
 
                     # Hard cap: never send an oversized tool response back over the relay
-                    # (huge payloads cause abnormal WS closes / 1006). 8 KB is ample for
+                    # (huge payloads cause abnormal WS closes / 1006). 16 KB is ample for
                     # any spoken/textual tool result; anything larger is almost certainly
                     # embedded binary that Gemini can't use in a toolResponse anyway.
-                    MAX_TOOL_OUTPUT = 8192
+                    MAX_TOOL_OUTPUT = 16384
                     if isinstance(output, str) and len(output) > MAX_TOOL_OUTPUT:
                         logger.warning(f"Tool '{name}' output {len(output)}B exceeds {MAX_TOOL_OUTPUT}B cap — truncating.")
                         output = output[:MAX_TOOL_OUTPUT] + "…[truncated]"
                     return output
         except Exception as e:
-            logger.error(f"Error executing single tool {name}: {e}")
-            return json.dumps({"status": "error", "message": str(e)})
+            error_type = type(e).__name__
+            error_msg = str(e) if str(e) else f"{error_type} (no message)"
+            logger.error(f"Error executing single tool {name}: {error_type}: {error_msg}")
+            return json.dumps({"status": "error", "message": f"{error_type}: {error_msg}"})
 
     async def send_setup_message(self):
         """Initial BidiGenerateContentSetup handshake with session resumption."""
