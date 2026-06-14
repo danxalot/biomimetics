@@ -172,16 +172,32 @@ was never wired). Fix: suppress mic→relay (and turnComplete) while `is_playing
 barge-in (sustained speech > `BARGE_IN_FLOOR=700` RMS over `BARGE_IN_TICKS=4`) re-opens it.
 *Tunables live in `send_loop` if the gate is too eager/lazy by ear.*
 
-**GDrive kept expiring (commit `713398e`).** Cause: `get_drive_service()` used the OAuth
-access token as-is, never refreshed; the stored `gdrive-oauth-token` refresh_token is
-**revoked** (`invalid_grant` — Google revokes refresh tokens for **Testing-mode** consent
+**GDrive kept expiring (commits `713398e` then corrected by `4c30b2c`).** Cause: `get_drive_service()`
+used the OAuth access token as-is, never refreshed; the stored `gdrive-oauth-token` refresh_token
+is **revoked** (`invalid_grant` — Google revokes refresh tokens for **Testing-mode** consent
 screens ~weekly). The SA fallback never worked either — `gcp-credentials-json` is stored
-**base64-wrapped** and the code did a plain `json.loads`. Fix: **service account is now the
-PRIMARY, durable path** — `arca-service-agent@arca-471022.iam.gserviceaccount.com` is already
-shared on the Obsidian-life vault, fetched from the Credentials Server, **never expires**.
-OAuth is fallback-only now with refresh-on-load + write-back to Key Vault (`_persist_gdrive_token`)
-for if/when the consent screen is published. *To make OAuth durable instead: publish the
-GCP consent screen to Production and re-auth once.* Verified: SA reads the real vault root.
+**base64-wrapped** and the code did a plain `json.loads`.
+
+⚠️ **A service account CANNOT write to a personal `@gmail.com` Drive** — confirmed 403
+`"Service Accounts do not have storage quota"`. SA reads fine (it's shared on the vault) but
+cannot **create** files (no Shared Drive on consumer Gmail; no domain-wide delegation either).
+So the first fix (SA-primary) was wrong for writes and was corrected:
+
+**Final design (`4c30b2c`): user OAuth is PRIMARY for read AND write.** `get_drive_service(require_write=False)`:
+- PRIMARY = OAuth (`gdrive-oauth-token`), refresh-on-load + write-back to Key Vault (`_persist_gdrive_token`,
+  via `az` + `POST /cache/rotate`). Files owned by the user.
+- FALLBACK = SA (`gcp-credentials-json`), **READ-ONLY** — keeps search/read alive during re-auth.
+  `write_gdrive_file` passes `require_write=True` so it never silently falls to the SA (would 403).
+
+**Durability requires two MANUAL steps (then code self-heals):**
+1. **Publish** the GCP OAuth consent screen to *Production* (project `757330161781`):
+   https://console.cloud.google.com/auth/audience?project=757330161781 → "Publish app".
+   (Testing-mode refresh tokens die ~weekly; Published ones are long-lived.)
+2. Run `config_copaw/venv/bin/python3 scripts/copaw/reauth_gdrive_oauth.py` — one browser
+   consent, mints a fresh long-lived refresh_token, writes it to Key Vault + rotates the cache.
+
+Verified with the current (dead) token: read falls back to SA OK; write correctly refuses the
+SA and emits the re-auth instruction instead of a silent 403. **Pending: the two manual steps above.**
 
 ## Pending follow-ups (scoped out, NOT done)
 1. Wire CoPaw voice/Serena agents into the shared **muninndb `:8750`** lifecycle hooks
