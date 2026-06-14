@@ -449,9 +449,11 @@ def get_drive_service(require_write: bool = False):
     quota" — confirmed 403), so all WRITES must use the user's own identity, and
     we use OAuth for reads too for one consistent permission model. OAuth access
     tokens expire hourly, so we refresh-on-load and persist the refreshed token
-    back to Key Vault (_persist_gdrive_token). The refresh_token itself stays
-    long-lived ONLY if the GCP consent screen is Published (Testing-mode tokens
-    are revoked ~weekly → invalid_grant; re-run scripts/copaw/reauth_gdrive_oauth.py).
+    back to Key Vault (_persist_gdrive_token). The app stays in TESTING (publishing
+    the restricted auth/drive scope needs days of compliance review). The
+    refresh_token stays long-lived because the user is a listed Test user
+    (test-user tokens skip the 7-day non-test-user revocation). If it ever dies
+    (invalid_grant), re-run scripts/copaw/reauth_gdrive_oauth.py.
 
     FALLBACK = service account (`gcp-credentials-json`), READ-ONLY. It can read
     anything shared with arca-service-agent@… (incl. the vault), so it keeps

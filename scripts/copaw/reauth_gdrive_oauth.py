@@ -6,14 +6,22 @@ Why this exists
 A service account cannot create files on a personal @gmail.com Drive
 ("Service Accounts do not have storage quota"), so writes MUST go through the
 user's own OAuth identity. The previously-stored refresh_token is revoked
-(invalid_grant) — Google revokes refresh tokens issued by a *Testing*-mode
-OAuth consent screen roughly weekly. There is no code-only way to revive a
-revoked refresh_token: you must re-consent.
+(invalid_grant). There is no code-only way to revive a revoked refresh_token:
+you must re-consent (this script).
 
-PREREQUISITE (do this first, or the new token rots in 7 days too):
-  Publish the OAuth consent screen to *Production*:
-  https://console.cloud.google.com/auth/audience?project=757330161781
-  ("Publish app" → confirm). Then run this script.
+The app STAYS IN TESTING (publishing requires days of compliance/verification
+for the restricted auth/drive scope — not happening). The lever that keeps a
+Testing-mode token alive is being a listed **Test user**: refresh tokens issued
+to test users are not subject to the 7-day non-test-user revocation.
+
+PREREQUISITE: your Google account must be under "Test users" on the consent
+screen (https://console.cloud.google.com/auth/audience?project=757330161781).
+Add it if missing (instant, no review). Then run this script.
+
+CAVEAT: auth/drive is a *restricted* scope, the strictest tier — the test-user
+carve-out is expected to hold but is not 100% guaranteed. After re-auth, WATCH
+the token for ~8-10 days. If it survives, we're durable in Testing. If it dies,
+pivot (narrow to drive.file, or schedule a weekly silent re-auth).
 
 What it does
 ------------
@@ -72,7 +80,15 @@ def main() -> int:
         }
     }
 
+    # Restricted scopes (auth/drive) can come back with a slightly different scope
+    # string than requested, which otherwise makes oauthlib abort with a
+    # "Scope has changed" Warning→error. Relax that check.
+    os.environ.setdefault("OAUTHLIB_RELAX_TOKEN_SCOPE", "1")
+
     print("→ Opening browser for Google consent (approve the Drive scope)...")
+    print("  NOTE: app stays in TESTING — at the 'Google hasn't verified this app'")
+    print("  screen, click Advanced → 'Go to BiOS (unsafe)'. That's expected for a")
+    print("  test-user consent and needs no verification/compliance review.")
     flow = InstalledAppFlow.from_client_config(client_config, scopes=SCOPES)
     # access_type=offline + prompt=consent forces a *refresh_token* to be returned.
     creds = flow.run_local_server(
@@ -82,8 +98,9 @@ def main() -> int:
     )
 
     if not creds.refresh_token:
-        print("✖ No refresh_token returned. Make sure the consent screen is "
-              "PUBLISHED and you fully re-consented (prompt=consent).", file=sys.stderr)
+        print("✖ No refresh_token returned. Re-run and make sure you fully "
+              "re-consented (prompt=consent). Your account must be listed under "
+              "'Test users' on the consent screen.", file=sys.stderr)
         return 3
 
     token_json = creds.to_json()

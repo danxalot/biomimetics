@@ -189,15 +189,25 @@ So the first fix (SA-primary) was wrong for writes and was corrected:
 - FALLBACK = SA (`gcp-credentials-json`), **READ-ONLY** — keeps search/read alive during re-auth.
   `write_gdrive_file` passes `require_write=True` so it never silently falls to the SA (would 403).
 
-**Durability requires two MANUAL steps (then code self-heals):**
-1. **Publish** the GCP OAuth consent screen to *Production* (project `757330161781`):
-   https://console.cloud.google.com/auth/audience?project=757330161781 → "Publish app".
-   (Testing-mode refresh tokens die ~weekly; Published ones are long-lived.)
-2. Run `config_copaw/venv/bin/python3 scripts/copaw/reauth_gdrive_oauth.py` — one browser
-   consent, mints a fresh long-lived refresh_token, writes it to Key Vault + rotates the cache.
+**Stay in TESTING — do NOT publish.** Publishing the *restricted* `auth/drive` scope triggers
+days of Google compliance/verification (decided 2026-06-14). The durability lever inside Testing
+is the **Test user** carve-out: refresh tokens issued to a *listed test user* are not subject to
+the 7-day non-test-user revocation.
 
-Verified with the current (dead) token: read falls back to SA OK; write correctly refuses the
-SA and emits the re-auth instruction instead of a silent 403. **Pending: the two manual steps above.**
+**Durability steps (then code self-heals):**
+1. Ensure the user's `@gmail.com` is under **Test users** on the consent screen (project
+   `757330161781`): https://console.cloud.google.com/auth/audience?project=757330161781 — add if
+   missing (instant, no review).
+2. Run `config_copaw/venv/bin/python3 scripts/copaw/reauth_gdrive_oauth.py` — one browser consent
+   (click through "Google hasn't verified this app" → Advanced → Go to BiOS), mints a fresh
+   refresh_token, writes to Key Vault + rotates cache.
+3. **WATCH it ~8-10 days.** auth/drive is restricted (strictest tier) so the test-user carve-out
+   is expected but not guaranteed. If the token survives → durable in Testing. If it dies again →
+   pivot: narrow to `drive.file` (non-sensitive, but loses sight of files the app didn't create),
+   or schedule a weekly silent re-auth.
+
+Verified with the current (dead) token: read falls back to SA OK; write correctly refuses the SA
+and emits the re-auth instruction instead of a silent 403. **Pending: steps 1-2 above (user).**
 
 ## Pending follow-ups (scoped out, NOT done)
 1. Wire CoPaw voice/Serena agents into the shared **muninndb `:8750`** lifecycle hooks
