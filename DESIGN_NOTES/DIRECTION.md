@@ -160,6 +160,29 @@ The relay sends `goAway` after ~9 min idle (normal); the client auto-reconnects.
 `Attempted to exit cancel scope in a different task` — a teardown race in the agentscope MCP
 stdio client cleanup; harmless (happens after the engine has stopped).
 
+## Voice self-interrupt loop + GDrive expiry — FIXED 2026-06-14
+
+**Self-interrupt loop (commit `a45e36a`).** Symptom: agent looped tool-call →
+`⛔ FLUSH (interrupted)` → tool-call, never spoke. Cause: VPIO/AEC cleans the
+*recording* but leaves residual echo of BiOS's own TTS; `send_loop` streamed that
+residual to the relay **unconditionally** while BiOS spoke, so the **server's** VAD
+(no AEC awareness) read it as the user barging in → `interrupted` → killed every turn.
+`is_playing` was set but never gated the send (the docstring's "Half-Duplex echo gating"
+was never wired). Fix: suppress mic→relay (and turnComplete) while `is_playing`; a genuine
+barge-in (sustained speech > `BARGE_IN_FLOOR=700` RMS over `BARGE_IN_TICKS=4`) re-opens it.
+*Tunables live in `send_loop` if the gate is too eager/lazy by ear.*
+
+**GDrive kept expiring (commit `713398e`).** Cause: `get_drive_service()` used the OAuth
+access token as-is, never refreshed; the stored `gdrive-oauth-token` refresh_token is
+**revoked** (`invalid_grant` — Google revokes refresh tokens for **Testing-mode** consent
+screens ~weekly). The SA fallback never worked either — `gcp-credentials-json` is stored
+**base64-wrapped** and the code did a plain `json.loads`. Fix: **service account is now the
+PRIMARY, durable path** — `arca-service-agent@arca-471022.iam.gserviceaccount.com` is already
+shared on the Obsidian-life vault, fetched from the Credentials Server, **never expires**.
+OAuth is fallback-only now with refresh-on-load + write-back to Key Vault (`_persist_gdrive_token`)
+for if/when the consent screen is published. *To make OAuth durable instead: publish the
+GCP consent screen to Production and re-auth once.* Verified: SA reads the real vault root.
+
 ## Pending follow-ups (scoped out, NOT done)
 1. Wire CoPaw voice/Serena agents into the shared **muninndb `:8750`** lifecycle hooks
    (pre-prompt inject + response track). Voice currently only has the `query_memory` tool.
