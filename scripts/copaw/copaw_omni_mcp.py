@@ -441,34 +441,26 @@ def _load_json_secret(raw: str) -> Optional[dict]:
         return None
 
 
-def get_drive_service():
+def get_drive_service(require_write: bool = False):
     """Retrieve a Drive service.
 
-    PRIMARY = service account (`gcp-credentials-json`). Service-account creds
-    NEVER expire — no refresh dance, no 7-day OAuth-testing cap — and this SA
-    (`arca-service-agent@…`) is already shared on the Obsidian-life vault folder
-    (the daily-briefing writers use it). This is the durable path.
+    PRIMARY = user OAuth (`gdrive-oauth-token`). A service account CANNOT create
+    files on a personal @gmail.com Drive ("Service Accounts do not have storage
+    quota" — confirmed 403), so all WRITES must use the user's own identity, and
+    we use OAuth for reads too for one consistent permission model. OAuth access
+    tokens expire hourly, so we refresh-on-load and persist the refreshed token
+    back to Key Vault (_persist_gdrive_token). The refresh_token itself stays
+    long-lived ONLY if the GCP consent screen is Published (Testing-mode tokens
+    are revoked ~weekly → invalid_grant; re-run scripts/copaw/reauth_gdrive_oauth.py).
 
-    SECONDARY = user OAuth token (`gdrive-oauth-token`), kept only as a fallback.
-    OAuth access tokens expire hourly and the refresh_token gets revoked (Google
-    revokes refresh tokens for Testing-mode consent screens every 7 days), so we
-    refresh-on-load AND persist the refreshed token back to the vault. If the
-    refresh_token is dead (invalid_grant), we just skip it — the SA already covers us.
+    FALLBACK = service account (`gcp-credentials-json`), READ-ONLY. It can read
+    anything shared with arca-service-agent@… (incl. the vault), so it keeps
+    search/read alive if OAuth is mid-re-auth — but it can't write, so callers
+    that need to create files pass require_write=True to skip it.
     """
     from google.oauth2 import service_account
 
-    # 1. Service account — durable, no expiry. (base64-wrapped in the vault.)
-    sa_data = _load_json_secret(fetch_secret("gcp-credentials-json"))
-    if sa_data:
-        try:
-            creds = service_account.Credentials.from_service_account_info(
-                sa_data, scopes=GDRIVE_SCOPES
-            )
-            return build('drive', 'v3', credentials=creds)
-        except Exception as e:
-            logger.warning("Service-account creds failed to load, trying OAuth: %s", e)
-
-    # 2. User OAuth token — fallback only; expires and self-heals when possible.
+    # 1. User OAuth — primary; required for writes. Refresh + persist on load.
     token_json = fetch_secret("gdrive-oauth-token")
     if token_json:
         token_data = _load_json_secret(token_json)
@@ -480,12 +472,28 @@ def get_drive_service():
                     _persist_gdrive_token(creds)
                 except Exception as e:
                     logger.error("gdrive OAuth refresh failed (refresh_token likely "
-                                 "revoked — re-auth or publish consent screen): %s", e)
+                                 "revoked — publish consent screen + run "
+                                 "reauth_gdrive_oauth.py): %s", e)
                     creds = None
             if creds is not None:
                 return build('drive', 'v3', credentials=creds)
 
-    raise ValueError("❌ Error: Missing GDrive credentials (no working Service Account or OAuth token).")
+    # 2. Service account — READ-ONLY fallback. Skip when the caller needs to write.
+    if not require_write:
+        sa_data = _load_json_secret(fetch_secret("gcp-credentials-json"))
+        if sa_data:
+            try:
+                creds = service_account.Credentials.from_service_account_info(
+                    sa_data, scopes=GDRIVE_SCOPES
+                )
+                logger.warning("Using read-only service-account GDrive fallback "
+                               "(OAuth unavailable — writes will fail until re-auth).")
+                return build('drive', 'v3', credentials=creds)
+            except Exception as e:
+                logger.warning("Service-account fallback failed to load: %s", e)
+
+    raise ValueError("❌ Error: No working GDrive credentials. For writes, OAuth is "
+                     "required — publish the consent screen and run reauth_gdrive_oauth.py.")
 
 @mcp.tool()
 def search_gdrive(query: str) -> str:
@@ -524,7 +532,10 @@ def read_gdrive_file(file_id: str) -> str:
 def write_gdrive_file(name: str, content: str, parent_id: str = VAULT_FOLDER_ID) -> str:
     """Create or update a file in Google Drive vault."""
     try:
-        service = get_drive_service()
+        # require_write=True → never fall back to the SA (it can't write to a
+        # personal Drive; it would 403 'no storage quota'). Surface the re-auth
+        # message instead.
+        service = get_drive_service(require_write=True)
         media = MediaIoBaseUpload(io.BytesIO(content.encode('utf-8')), mimetype='text/plain')
         
         # Check if exists
