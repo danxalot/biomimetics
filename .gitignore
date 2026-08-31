@@ -3,6 +3,13 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
+*.dylib
+*.a
+*.o
+llama-server
+**/working_memory.db
+**/*.sqlite3
+scripts/copaw/src/copaw/tokenizer/vocab.json
 .Python
 venv/
 .venv/
