@@ -1,11 +1,18 @@
 import asyncio
 import os
+import sys
 import time
 import json
 import logging
 import requests
 from datetime import datetime
+from pathlib import Path
 from openai import OpenAI
+
+_LIB = Path(__file__).resolve().parents[1] / "lib"
+if str(_LIB) not in sys.path:
+    sys.path.insert(0, str(_LIB))
+from creds import get_first
 
 # Configuration
 LOG_DIR = os.path.expanduser("~/biomimetics/logs")
@@ -21,7 +28,9 @@ logging.basicConfig(
 logger = logging.getLogger("swarm_dispatcher")
 
 # Notion Settings
-NOTION_TOKEN = ""
+NOTION_TOKEN = os.environ.get("NOTION_TOKEN") or get_first("notion")
+if not NOTION_TOKEN:
+    raise RuntimeError("Notion token missing (NOTION_TOKEN or credentials server)")
 NOTION_DB_ID = "3284d2d9fc7c811188deeeaba9c5f845"
 NOTION_HEADERS = {
     "Authorization": f"Bearer {NOTION_TOKEN}",

@@ -64,16 +64,7 @@ except ImportError:
     # Fallback for local testing or cases where shared is not mounted
     class MockSecrets:
         def get(self, name):
-            # Try to load from /Users/danexall/Documents/VS Code Projects/ARCA/.secrets/
-            secrets_path = "/Users/danexall/Documents/VS Code Projects/ARCA/.secrets/"
-            secret_file = os.path.join(secrets_path, name.lower())
-            if os.path.exists(secret_file):
-                try:
-                    with open(secret_file, "r") as f:
-                        return f.read().strip()
-                except:
-                    pass
-            return os.getenv(name.upper())
+            return os.getenv(name) or os.getenv(name.upper())
 
     secrets = MockSecrets()
 
@@ -270,8 +261,17 @@ STRICT_ROTATION = {
     ],
 }
 
-AZURE_FOUNDRY_ENDPOINT = "https://arca-3412-resource.services.ai.azure.com/api/projects/arca-3412/chat/completions?api-version=2024-10-21-preview"
-AZURE_FOUNDRY_KEY = ""
+AZURE_FOUNDRY_ENDPOINT = os.getenv(
+    "AZURE_FOUNDRY_ENDPOINT",
+    "https://arca-3412-resource.services.ai.azure.com/api/projects/arca-3412/chat/completions?api-version=2024-10-21-preview",
+)
+AZURE_FOUNDRY_KEY = (
+    os.getenv("AZURE_FOUNDRY_KEY")
+    or secrets.get("AZURE_FOUNDRY_KEY")
+    or secrets.get("azure-foundry-key")
+    or secrets.get("azure_foundry_key")
+    or ""
+)
 
 ALIBABA_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
