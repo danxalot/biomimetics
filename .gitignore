@@ -114,8 +114,8 @@ config_copaw/token_usage.json
 .tmp_write_test
 .agent_bridge/
 .agents/
-models/
-models_optimized/
+models
+models_optimized
 *.revert
 *.raw
 llama_cpp_bypass
@@ -160,3 +160,4 @@ scripts/copaw/src/copaw/tokenizer/merges.txt
 opencode.json
 generate_4_designs.py
 generate_design.py
+pythia
