@@ -19,7 +19,6 @@ from typing import Dict, List, Optional
 # OpenCode integration
 from openai import OpenAI
 
-OPENCODE_TOKEN_PATH = "/Users/danexall/biomimetics/secrets/opencode_api"
 OPENCODE_BASE_URL = "https://opencode.ai/zen/v1"
 OPENCODE_MODELS = {
     "nemotron": "nemotron-3-super-free",
@@ -34,18 +33,23 @@ GCP_GATEWAY_URL = os.environ.get(
 )
 STATE_FILE = Path.home() / ".arca" / "serena_sync_state.json"
 SYNC_INTERVAL = int(os.environ.get("SERENA_SYNC_INTERVAL", "300"))  # 5 minutes
-ARCA_MEMORIES_DIR = Path(
-    "/Users/danexall/Documents/VS Code Projects/ARCA/.serena/memories"
-)
+_MUNINN_TURN = Path("/Users/danexall/biomimetics/scripts/mcp/muninn_turn.py")
+
+
+def _opencode_token() -> Optional[str]:
+    sys.path.insert(0, str(Path("/Users/danexall/biomimetics/scripts")))
+    try:
+        from lib.creds import get_first
+        return get_first("opencode") or get_first("zen")
+    except Exception:
+        return None
 
 
 def process_with_opencode(content: str, filename: str) -> Optional[str]:
     """Route memory content through OpenCode for enrichment/summarization."""
-    try:
-        with open(OPENCODE_TOKEN_PATH, "r") as f:
-            api_key = f.read().strip()
-    except FileNotFoundError:
-        print(f"⚠️  OpenCode token not found, skipping enrichment")
+    api_key = _opencode_token()
+    if not api_key:
+        print("⚠️  OpenCode token missing from credentials server, skipping enrichment")
         return None
 
     client = OpenAI(base_url=OPENCODE_BASE_URL, api_key=api_key)
@@ -109,16 +113,22 @@ def compute_file_hash(filepath: Path) -> str:
         return ""
 
 
-def send_to_gateway(content: str, metadata: dict) -> dict:
-    """Send content to GCP Cloud Function Gateway"""
+def send_to_gateway(content: str, metadata: dict, catalog: str) -> dict:
+    """Upsert into GCP orchestrator (Muninn catalog + MemU body)."""
     try:
-        payload = {"operation": "memorize", "content": content, "metadata": metadata}
-
+        payload = {
+            "operation": "memorize",
+            "upsert": True,
+            "skip_token_budget": True,
+            "content": content,
+            "catalog": catalog,
+            "metadata": metadata,
+        }
         response = httpx.post(
             GCP_GATEWAY_URL,
             json=payload,
             headers={"Content-Type": "application/json"},
-            timeout=60.0,
+            timeout=90.0,
         )
         response.raise_for_status()
         return response.json()
@@ -126,16 +136,25 @@ def send_to_gateway(content: str, metadata: dict) -> dict:
         return {"error": str(e)}
 
 
+def _remember_local(prompt: str, response: str) -> None:
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("muninn_turn_serena", _MUNINN_TURN)
+        if spec is None or spec.loader is None:
+            return
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        getattr(mod, "remember_turn")(prompt, response, origin="serena")
+    except Exception:
+        pass
+
+
 def scan_serena_memories() -> List[Path]:
-    """Scan Serena memories directories (global + ARCA project) for markdown files"""
-    md_files = []
-    for directory in [SERENA_MEMORIES_DIR, ARCA_MEMORIES_DIR]:
-        if directory.exists():
-            for filepath in directory.rglob("*.md"):
-                md_files.append(filepath)
-        else:
-            print(f"⚠️  Memories directory does not exist: {directory}")
-    return md_files
+    """Scan local Serena memories only. Never walk the ARCA project tree."""
+    if not SERENA_MEMORIES_DIR.exists():
+        print(f"⚠️  Memories directory does not exist: {SERENA_MEMORIES_DIR}")
+        return []
+    return list(SERENA_MEMORIES_DIR.rglob("*.md"))
 
 
 def sync_file(filepath: Path, state: SerenaSyncState) -> Optional[dict]:
@@ -164,24 +183,27 @@ def sync_file(filepath: Path, state: SerenaSyncState) -> Optional[dict]:
     except ValueError:
         relative_path = filepath.name
 
-    # Prepare metadata
+    source_path = f"serena/{relative_path}"
     metadata = {
-        "source": "serena",
+        "source": source_path,
         "filename": filepath.name,
         "path": str(relative_path),
-        "full_path": str(filepath),
         "size": len(content),
         "hash": current_hash,
         "synced_at": datetime.now().isoformat(),
         "type": "code_spec",
+        "tagged": True,
+        "source_system": "serena_sync",
+        "partition": ["bios"],
+        "partition_primary": "bios",
+        "tags": ["source/serena", "partition/bios"],
+        "memory_role": "catalog_and_archive",
     }
 
-    # Format content for memory storage
     memory_content = (
         f"# Serena Code Specification\n\nFile: {relative_path}\n\n{content}"
     )
 
-    # Enrich via OpenCode before sending to gateway
     enrichment = process_with_opencode(content, filepath.name)
     if enrichment:
         memory_content += f"\n\n## OpenCode Analysis\n\n{enrichment}"
@@ -189,8 +211,12 @@ def sync_file(filepath: Path, state: SerenaSyncState) -> Optional[dict]:
     else:
         metadata["opencode_enriched"] = False
 
-    # Send to gateway
-    result = send_to_gateway(memory_content, metadata)
+    catalog = (
+        f"# {filepath.stem}\nsource: {source_path}\npartition: bios\norigin: source/serena\n\n"
+        + " ".join(memory_content.split())[:500]
+    )
+    result = send_to_gateway(memory_content, metadata, catalog)
+    _remember_local(f"Serena spec {relative_path}", memory_content[:4000])
 
     # Update state
     state.set_hash(str(filepath), current_hash)

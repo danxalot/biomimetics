@@ -774,7 +774,7 @@ def query_memory(query: str, limit: int = 3, include_local: bool = True) -> str:
     if include_local:
         try:
             import subprocess
-            muninn_token = os.environ.get("MUNINN_MCP_TOKEN") or fetch_secret("muninndb-token") or "mdb_248e19f39cc1db20ffbb88d987fc351f9841038702cee471"
+            muninn_token = os.environ.get("MUNINN_MCP_TOKEN") or fetch_secret("muninndb-token")
 
             payload = {
                 "jsonrpc": "2.0",

@@ -48,6 +48,22 @@ _logging.getLogger("agentscope.mcp._stateful_client_base").addFilter(_CancelScop
 
 logger = logging.getLogger(__name__)
 
+_MUNINN_TURN = "/Users/danexall/biomimetics/scripts/mcp/muninn_turn.py"
+
+
+def _muninn_fns():
+    """Load local-Muninn activate/remember. Fail closed; never touch GCP."""
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("muninn_turn_local", _MUNINN_TURN)
+        if spec is None or spec.loader is None:
+            return None, None
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return getattr(mod, "activate_context", None), getattr(mod, "remember_turn", None)
+    except Exception:
+        return None, None
+
 # Audio configuration
 CHANNELS = 1
 INPUT_RATE = 16000
@@ -91,6 +107,10 @@ class VultrRelayClient:
         # Local MCP Endpoint
         self.copaw_port = int(os.environ.get("COPAW_API_PORT", 8090))
         self.copaw_base_url = f"http://localhost:{self.copaw_port}"
+        self._last_user_text = ""
+        self._last_model_text = ""
+        self._user_bits: list[str] = []
+        self._model_bits: list[str] = []
 
         # Agent Identity
         self.agent_name = "BiOS"
@@ -111,8 +131,8 @@ class VultrRelayClient:
             "- Files (Google Drive 'Obsidian-life' vault): search_gdrive, read_gdrive_file,\n"
             "  write_gdrive_file.\n"
             "- Messaging: send_whatsapp, analyze_whatsapp_image.\n"
-            "- Memory: query_memory (recall prior context / project knowledge) and\n"
-            "  memorize (persist something for later). Prefer recalling before asking.\n"
+            "- Memory: local Muninn is injected automatically each turn. query_memory\n"
+            "  is the GCP archive fallback only. Do not re-ask what was just said.\n"
             "- ARCA project: get_universal_context, search_arca, and the Serena code tools\n"
             "  (serena_chat, serena_analyze_code, serena_refactor_suggestion,\n"
             "  serena_semantic_diff, serena_security_scan).\n"
@@ -536,7 +556,8 @@ class VultrRelayClient:
 
         if "serverContent" in payload:
             sc = payload["serverContent"]
-            
+            self._ingest_live_transcription(sc, on_transcript_cb)
+
             # Gating Control
             parts = sc.get("modelTurn", {}).get("parts", [])
             for part in parts:
@@ -553,6 +574,7 @@ class VultrRelayClient:
             # State Resets
             if sc.get("turnComplete"):
                 self.is_playing = False
+                self._flush_muninn_turn()
             
             if sc.get("interrupted"):
                 self.interrupt_playback()
@@ -737,13 +759,87 @@ class VultrRelayClient:
             logger.error(f"Error executing single tool {name}: {error_type}: {error_msg}")
             return json.dumps({"status": "error", "message": f"{error_type}: {error_msg}"})
 
+    def _ingest_live_transcription(self, sc: dict, on_transcript_cb=None) -> None:
+        inn = sc.get("inputTranscription") or sc.get("input_transcription") or {}
+        out = sc.get("outputTranscription") or sc.get("output_transcription") or {}
+        if isinstance(inn, dict) and inn.get("text"):
+            bit = str(inn["text"])
+            self._user_bits.append(bit)
+            if inn.get("finished") is True:
+                self._last_user_text = "".join(self._user_bits).strip()
+                self._user_bits = []
+                self._inject_muninn_async(self._last_user_text)
+        if isinstance(out, dict) and out.get("text"):
+            bit = str(out["text"])
+            self._model_bits.append(bit)
+            if out.get("finished") is True:
+                self._last_model_text = "".join(self._model_bits).strip()
+                self._model_bits = []
+
+    def _inject_muninn_async(self, prompt: str) -> None:
+        if not prompt or not self.ws:
+            return
+
+        async def _go():
+            activate, _ = _muninn_fns()
+            if not activate:
+                return
+            ctx = await asyncio.to_thread(activate, prompt)
+            if not ctx or not self.ws:
+                return
+            payload = {
+                "clientContent": {
+                    "turns": [{
+                        "role": "user",
+                        "parts": [{"text": "[Muninn working memory — do not read aloud]\n" + ctx[:1500]}],
+                    }],
+                    "turnComplete": False,
+                }
+            }
+            try:
+                await self.ws.send(json.dumps(payload, separators=(",", ":")))
+            except Exception:
+                pass
+
+        asyncio.create_task(_go())
+
+    def _flush_muninn_turn(self) -> None:
+        user = self._last_user_text or "".join(self._user_bits).strip()
+        model = self._last_model_text or "".join(self._model_bits).strip()
+        self._user_bits = []
+        self._model_bits = []
+        if not user or not model:
+            return
+        _, remember = _muninn_fns()
+        if not remember:
+            return
+
+        def _store():
+            try:
+                remember(user, model, origin="copaw")
+            except Exception:
+                pass
+
+        threading.Thread(target=_store, daemon=True).start()
+
     async def send_setup_message(self):
         """Initial BidiGenerateContentSetup handshake with session resumption."""
+        brief = self.persona_brief
+        activate, _ = _muninn_fns()
+        if activate:
+            try:
+                ctx = await asyncio.to_thread(activate, "voice session continuity")
+                if ctx:
+                    brief = brief + "\n\n[Muninn working memory]\n" + ctx[:2000]
+            except Exception:
+                pass
         setup = {
             "setup": {
                 "model": self.model_id,
-                "systemInstruction": {"parts": [{"text": self.persona_brief}]},
+                "systemInstruction": {"parts": [{"text": brief}]},
                 "generationConfig": {"responseModalities": ["AUDIO"]},
+                "inputAudioTranscription": {},
+                "outputAudioTranscription": {},
                 "tools": [{"functionDeclarations": get_all_declarations()}],
             }
         }

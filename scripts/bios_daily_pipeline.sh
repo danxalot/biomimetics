@@ -42,6 +42,9 @@ echo -e "\n--- [Step 4/8] Running Vault Condenser (Pillar Assimilation) ---"
 echo -e "\n--- [Step 4b/8] Chunking oversized vault notes ---"
 "$PYTHON_BIN" scripts/archivist/vault_chunker.py || fail "Vault Chunker"
 
+echo -e "\n--- [Step 4c/8] Serena memories + OpenCode enrichment ---"
+"$PYTHON_BIN" scripts/memory/serena-memory-sync.py --once || echo "Warning: Serena/OpenCode sync skipped."
+
 echo -e "\n--- [Step 5/8] Running Semantic LLM Tagger (partition delineation) ---"
 "$PYTHON_BIN" scripts/archivist/semantic_llm_tagger.py || fail "Semantic Tagger"
 

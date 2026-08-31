@@ -236,6 +236,30 @@ def inject(evt: dict) -> None:
     )
 
 
+def remember_turn(prompt: str, response: str, origin: str = "agent") -> None:
+    """Store a conversation turn in local Muninn. Never raises. GCP is not touched."""
+    prompt = (prompt or "").strip()
+    response = (response or "").strip()
+    if not prompt or not response:
+        return
+    token = _token()
+    if not token:
+        return
+    origin = (origin or "agent").strip().lower() or "agent"
+    concept = f"Conversation turn ({origin}): {prompt.splitlines()[0][:60]}"
+    content = f"Prompt: {prompt[:4000]}\n\nResponse: {response[:8000]}"
+    _call(
+        token,
+        "muninn_remember",
+        {
+            "concept": concept,
+            "content": content,
+            "tags": ["conversation-turn", "hebbian-memory", f"source/{origin}"],
+            "confidence": 1.0,
+        },
+    )
+
+
 def track(evt: dict) -> None:
     # Grok fires an extra observe-only Stop at session teardown.
     reason = evt.get("reason")
@@ -258,22 +282,7 @@ def track(evt: dict) -> None:
     if not prompt or not response:
         return
 
-    token = _token()
-    if not token:
-        return
-
-    concept = f"Conversation turn: {prompt.splitlines()[0][:60]}"
-    content = f"Prompt: {prompt}\n\nResponse: {response}"
-    _call(
-        token,
-        "muninn_remember",
-        {
-            "concept": concept,
-            "content": content,
-            "tags": ["conversation-turn", "hebbian-memory", "agent-response"],
-            "confidence": 1.0,
-        },
-    )
+    remember_turn(prompt, response, origin="grok" if is_grok() else "claude")
     try:
         p = _sidecar_path(evt)
         if p.exists():
