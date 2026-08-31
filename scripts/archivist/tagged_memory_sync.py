@@ -197,18 +197,18 @@ def catalog_card(filepath: str, content: str, tags: list, partitions: list) -> s
     return "\n".join(lines)[:CATALOG_CHARS]
 
 
-def sync_to_gcp(content: str, filepath: str, tags: list, partitions: list) -> tuple:
+def sync_to_gcp(content: str, filepath: str, tags: list, partitions: list, previous_id=None) -> tuple:
     """MemU gets the note; Muninn gets a catalog card. Returns (ok, memory_id)."""
     if len(content) > MAX_CHARS:
         print(f"   skip oversized ({len(content)} chars) — chunk in Obsidian first")
         return False, None
-    purge_source(filepath)
     payload = {
         "operation": "memorize",
         "upsert": True,
         "skip_token_budget": True,
         "content": content,
         "catalog": catalog_card(filepath, content, tags, partitions),
+        "previous_id": previous_id,
         "metadata": {
             "source": filepath,
             "tags": tags,
@@ -331,7 +331,10 @@ def main():
                     synced_count += 1
                     by_partition[prim] = by_partition.get(prim, 0) + 1
                     continue
-                ok, memory_id = sync_to_gcp(content, rel_path, tags, partitions)
+                ok, memory_id = sync_to_gcp(
+                    content, rel_path, tags, partitions,
+                    previous_id=rec.get("memory_id"),
+                )
                 if ok:
                     set_file_record(state, rel_path, current_hash, memory_id)
                     synced_count += 1

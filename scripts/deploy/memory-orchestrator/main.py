@@ -10,12 +10,14 @@ Does not touch any local Muninn or local MCP wiring.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
-import urllib.error
-import urllib.request
 import time
+import urllib.error
+import urllib.parse
+import urllib.request
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -70,8 +72,9 @@ def call_endpoint(
     method: str = "POST",
 ) -> dict:
     try:
-        # Never attach a body on GET — Cloud Run rejects GET-with-body as 400
-        if method.upper() == "GET":
+        method_u = method.upper()
+        # Never attach a body on GET/DELETE — Cloud Run rejects GET-with-body as 400
+        if method_u in ("GET", "DELETE", "HEAD"):
             data = None
             headers = {}
         else:
@@ -81,7 +84,7 @@ def call_endpoint(
             url,
             data=data,
             headers=headers,
-            method=method,
+            method=method_u,
         )
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             body = resp.read().decode()
@@ -139,7 +142,7 @@ def process_memory_request(request):
       memorize                 — dual-write Muninn engrams + MemU store
       consolidate              — daily impart: non-transient Muninn → MemU filing
       inspect                  — backend health
-      purge                    — coordinated delete
+      purge                    — Muninn DELETE /engrams/{id} + MemU /purge
     """
     request_json = request.get_json(silent=True)
     if not request_json:
@@ -621,21 +624,121 @@ def handle_search(payload: dict) -> tuple:
     return (json.dumps(response), 200, {"Content-Type": "application/json"})
 
 
-def _purge_source_both(source: str) -> list:
-    """Drop prior copies of a vault path from both tiers before re-memorize."""
-    errors = []
-    if not source:
-        return errors
-    purge_payload = {"source": source, "timeframe": "all"}
-    muninn_res = call_endpoint(f"{MUNINN_VM_URL}/api/purge", purge_payload)
-    memu_res = call_endpoint(f"{MEMU_URL}/purge", purge_payload)
-    muninn_err = str(muninn_res.get("error") or "")
-    # GCP Muninn has no /api/purge (404). MemU is the replace path.
-    if muninn_err and "404" not in muninn_err:
-        errors.append(f"MuninnDB purge: {muninn_res['error']}")
-    if "error" in memu_res:
-        errors.append(f"MemU purge: {memu_res['error']}")
-    return errors
+def vault_source_tag(source: str) -> str:
+    """Stable Muninn tag for a vault path. vs:<16 hex> stays well under tag limits."""
+    digest = hashlib.sha256(source.encode("utf-8")).hexdigest()[:16]
+    return f"vs:{digest}"
+
+
+def _engram_list(listed: dict) -> list:
+    if not isinstance(listed, dict):
+        return []
+    return listed.get("engrams") or listed.get("results") or listed.get("items") or []
+
+
+def _engram_matches_source(eng: dict, source: str, stag: str) -> bool:
+    if not source or not isinstance(eng, dict):
+        return False
+    meta = eng.get("metadata") if isinstance(eng.get("metadata"), dict) else {}
+    if meta.get("source") == source:
+        return True
+    if (eng.get("concept") or "") == source:
+        return True
+    tags = eng.get("tags") or meta.get("tags") or []
+    if isinstance(tags, list) and stag and stag in tags:
+        return True
+    content = eng.get("content") or ""
+    needle = f"source: {source}"
+    for line in content.splitlines()[:12]:
+        if line.strip() == needle:
+            return True
+    return False
+
+
+def _delete_engram(engram_id: str, vault: str = "default") -> dict:
+    if not engram_id:
+        return {}
+    q = urllib.parse.urlencode({"vault": vault})
+    return call_endpoint(
+        f"{MUNINN_VM_URL}/api/engrams/{urllib.parse.quote(str(engram_id), safe='')}?{q}",
+        None,
+        method="DELETE",
+    )
+
+
+def _purge_muninn_source(source: str, previous_id: Optional[str] = None, vault: str = "default") -> tuple:
+    """Soft-delete prior catalog cards for this vault path (DELETE /engrams/{id}).
+
+    Muninn has no /api/purge. Product path is archive-by-id (restorable 7 days).
+    """
+    deleted: list = []
+    errors: list = []
+    if not source and not previous_id:
+        return deleted, errors
+    seen = set()
+    stag = vault_source_tag(source) if source else ""
+
+    def _drop(eid):
+        if not eid or eid in seen:
+            return
+        seen.add(eid)
+        res = _delete_engram(str(eid), vault=vault)
+        err = str(res.get("error") or "")
+        if err and "404" not in err:
+            errors.append(f"MuninnDB DELETE {eid}: {res['error']}")
+        else:
+            deleted.append(str(eid))
+
+    if previous_id:
+        _drop(previous_id)
+
+    def _scan(url: str, max_pages: int, page_size: int) -> None:
+        offset = 0
+        for _ in range(max_pages):
+            sep = "&" if "?" in url else "?"
+            listed = call_endpoint(
+                f"{url}{sep}limit={page_size}&offset={offset}&vault={urllib.parse.quote(vault)}",
+                None,
+                method="GET",
+                timeout=60,
+            )
+            if "error" in listed:
+                errors.append(f"MuninnDB list: {listed['error']}")
+                return
+            batch = _engram_list(listed)
+            if not batch:
+                return
+            for eng in batch:
+                if _engram_matches_source(eng, source, stag):
+                    _drop(eng.get("id"))
+            if len(batch) < page_size:
+                return
+            offset += page_size
+
+    if source and stag:
+        _scan(
+            f"{MUNINN_VM_URL}/api/engrams?tags={urllib.parse.quote(stag)}",
+            max_pages=4,
+            page_size=50,
+        )
+    # Untagged stacks from before vs: stamps: page the vault and match concept/source line.
+    if source and len(deleted) <= (1 if previous_id else 0):
+        _scan(f"{MUNINN_VM_URL}/api/engrams", max_pages=8, page_size=100)
+
+    return deleted, errors
+
+
+def _purge_source_both(source: str, previous_id: Optional[str] = None) -> tuple:
+    """Replace path: Muninn soft-delete by id/tag, MemU purge-by-source."""
+    deleted, errors = _purge_muninn_source(source, previous_id=previous_id)
+    if source:
+        memu_res = call_endpoint(
+            f"{MEMU_URL}/purge",
+            {"source": source, "timeframe": "all"},
+        )
+        if "error" in memu_res:
+            errors.append(f"MemU purge: {memu_res['error']}")
+    return deleted, errors
 
 
 def handle_memorize(payload: dict) -> tuple:
@@ -651,6 +754,7 @@ def handle_memorize(payload: dict) -> tuple:
     user_id = payload.get("user_id", "default")
     source = metadata.get("source") or payload.get("source")
     upsert = bool(payload.get("upsert") or source)
+    previous_id = payload.get("previous_id") or metadata.get("previous_id")
 
     content_tokens = estimate_tokens(content)
     skip_budget = bool(payload.get("skip_token_budget") or metadata.get("tagged"))
@@ -668,8 +772,6 @@ def handle_memorize(payload: dict) -> tuple:
         # Metadata layer: Muninn never holds the full vault note.
         muninn_content = truncate_to_token_budget(content, 400)
 
-    pre_purge_errors = _purge_source_both(source) if upsert and source else []
-
     # Product-shaped write: concept + content + tags when available
     concept = metadata.get("concept") or metadata.get("source") or ""
     if not concept and content:
@@ -679,11 +781,24 @@ def handle_memorize(payload: dict) -> tuple:
                 concept = s[:120]
                 break
     tags = metadata.get("tags") if isinstance(metadata.get("tags"), list) else []
+    if not isinstance(tags, list):
+        tags = []
+    tags = [str(t) for t in tags]
+    stag = vault_source_tag(source) if source else ""
+    if stag:
+        tags = [stag] + [t for t in tags if t != stag]
+    tags = tags[:30]
+
+    pre_purge_deleted, pre_purge_errors = ([], [])
+    if upsert and (source or previous_id):
+        pre_purge_deleted, pre_purge_errors = _purge_source_both(
+            source, previous_id=previous_id
+        )
 
     muninn_payload = {
         "concept": concept or "memory",
         "content": muninn_content,
-        "tags": tags[:30] if tags else [],
+        "tags": tags,
         "vault": metadata.get("vault") or "default",
         "metadata": {**metadata, "memory_role": metadata.get("memory_role") or "catalog"},
     }
@@ -719,6 +834,7 @@ def handle_memorize(payload: dict) -> tuple:
         "source": "unified" if (muninn_ok and memu_ok) else ("muninndb" if muninn_ok else "memu"),
         "memory_id": muninn_result.get("id", muninn_result.get("memory_id")),
         "upsert": upsert,
+        "replaced_ids": pre_purge_deleted,
         "token_usage": {
             "content": estimate_tokens(memu_content),
             "catalog": estimate_tokens(muninn_content),
@@ -739,25 +855,20 @@ def handle_memorize(payload: dict) -> tuple:
 def handle_purge(payload: dict) -> tuple:
     source_filter = payload.get("source_filter") or payload.get("source")
     timeframe = payload.get("timeframe", "48h")
-    purge_payload = {"source": source_filter, "timeframe": timeframe}
-
-    muninn_res = call_endpoint(f"{MUNINN_VM_URL}/api/purge", purge_payload)
-    memu_res = call_endpoint(f"{MEMU_URL}/purge", purge_payload)
+    previous_id = payload.get("previous_id") or payload.get("memory_id")
+    deleted, errors = _purge_source_both(source_filter, previous_id=previous_id)
 
     response = {
-        "status": "success",
+        "status": "success" if not errors else ("partial" if deleted else "failed"),
         "operation": "purge",
         "source_filter": source_filter,
         "timeframe": timeframe,
+        "deleted_ids": deleted,
         "deleted_counts": {
-            "muninndb": muninn_res.get("deleted_count", 0),
-            "memu": memu_res.get("deleted_count", 0),
-            "total": muninn_res.get("deleted_count", 0) + memu_res.get("deleted_count", 0),
+            "muninndb": len(deleted),
+            "memu": 0 if any("MemU purge" in e for e in errors) else (1 if source_filter else 0),
+            "total": len(deleted),
         },
-        "errors": [],
+        "errors": errors,
     }
-    if "error" in muninn_res:
-        response["errors"].append(f"MuninnDB: {muninn_res['error']}")
-    if "error" in memu_res:
-        response["errors"].append(f"MemU: {memu_res['error']}")
     return (json.dumps(response), 200, {"Content-Type": "application/json"})
