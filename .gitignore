@@ -20,6 +20,7 @@ scripts/secrets/__pycache__/
 # Logs
 *.log
 *.err
+logs/
 .arca/
 node_modules/
 dist/
@@ -105,9 +106,25 @@ llama_cpp_bypass/
 # scripts/secret_manager/
 # config_copaw/
 config_copaw.secret/
+config_copaw/sessions/
+config_copaw/chats.json
+config_copaw/copaw.log*
+config_copaw/token_usage.json
 .staging/
 .tmp_write_test
 .agent_bridge/
+.agents/
+models/
+models_optimized/
+*.revert
+*.raw
+llama_cpp_bypass
+scripts/copaw/src/*.egg-info/
+scripts/secret_manager/github_mcp_api_key
+scripts/secret_manager/github_mcp_zed_config.json
+identify_vm.command
+run_tagger_test.command
+system_diag.command
 .serena/
 # scripts/copaw/src/
 docs/
