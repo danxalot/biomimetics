@@ -1,0 +1,11 @@
+{
+  "task_id": "b1cf4e1c-2d38-4663-82cb-e214bc1326c4",
+  "agent_type": "docker",
+  "operation": "execute",
+  "success": false,
+  "execution_log": [],
+  "validation_results": [],
+  "escalation_reason": "Execution failure: ",
+  "timestamp": "20260125_111140",
+  "nurture_recommendation": "Refine SOP for docker or check MCP skills."
+}

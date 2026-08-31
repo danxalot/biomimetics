@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  docker_helper:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: arca-docker_helper
+    restart: unless-stopped
+    ports:
+      - "8082:8082"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    networks:
+      - arca-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/containers"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.docker-helper.rule=Host(`docker-helper.localhost`)"
+      - "traefik.http.services.docker-helper.loadbalancer.server.port=8082"
+
+networks:
+  arca-network:
+    external: true
+    name: arca-network

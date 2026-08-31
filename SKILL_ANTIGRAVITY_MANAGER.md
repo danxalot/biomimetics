@@ -12,7 +12,7 @@ python3 /Users/danexall/biomimetics/scripts/copaw/antigravity_manager.py
 ## Workflow
 1.  **Poll**: The `antigravity_manager.py` script queries Notion for tasks where `Status == Ready for Dev` and `Execution_Tier == Antigravity`.
 2.  **Claim**: The script sets the task status to `In Progress` in Notion, signaling to the rest of the swarm that the IDE has claimed the work.
-3.  **Execute**: I (Antigravity) parse the mission brief, perform the necessary research, and execute the architectural or code changes locally.
+3.  **Execute**: I (Antigravity) parse the mission brief, perform the necessary research, and execute the architectural or code changes locally. **Crucially, all voice-agent related changes must adhere to the mandates in `GEMINI.md`.**
 4.  **Sync**: Upon completion, I update the Notion Task card with execution logs and transition the status to `Ready for Sync` for the **Archivist** to ingest into the Obsidian vault.
 
 ## Schemas

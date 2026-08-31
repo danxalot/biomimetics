@@ -662,12 +662,17 @@ async def handle_webhook(request: web.Request) -> web.Response:
     payload["metadata"]["received_at"] = datetime.now().isoformat()
     payload["metadata"]["remote_addr"] = request.remote
 
-    # Forward to gateway
-    result = await forward_to_gateway({
-        "operation": "memorize",
-        "content": json.dumps(payload),
-        "metadata": payload["metadata"]
-    })
+    # --- DEDUPLICATION: DISABLED IN WEBHOOK RECEIVER ---
+    # Shifted to AgentRunner After-Turn Hook to prevent pre-turn duplication.
+    # logger.info(f"Deduplication: Skipping direct memorize for webhook from {source}")
+    # ---------------------------------------------------
+    
+    # Forward to gateway (ONLY FOR BACKWARD COMPATIBILITY IF NEEDED, BUT DISABLED BY DEFAULT)
+    # result = await forward_to_gateway({
+    #     "operation": "memorize",
+    #     "content": json.dumps(payload),
+    #     "metadata": payload["metadata"]
+    # })
 
     request_log.append({
         "type": "webhook",
@@ -851,16 +856,17 @@ async def handle_notion(request: web.Request) -> web.Response:
         )
     
     else:
-        # Unknown action - store in memory for later processing
-        skill_result = await forward_to_gateway({
-            "operation": "memorize",
-            "content": f"Notion action: {action}\nData: {json.dumps(source_data)}",
-            "metadata": {
-                "source": "notion",
-                "action": action,
-                "received_at": datetime.now().isoformat()
-            }
-        })
+        # Unknown action - skip direct memorization (deduplicated)
+        skill_result = {"status": "skipped", "reason": "action_unsupported"}
+        # skill_result = await forward_to_gateway({
+        #     "operation": "memorize",
+        #     "content": f"Notion action: {action}\nData: {json.dumps(source_data)}",
+        #     "metadata": {
+        #         "source": "notion",
+        #         "action": action,
+        #         "received_at": datetime.now().isoformat()
+        #     }
+        # })
     
     request_log.append({
         "type": "notion",
@@ -904,16 +910,16 @@ async def trigger_copaw_skill(skill_name: str, input_data: dict) -> dict:
         "input_data": input_data
     })
     
-    # Also store in memory for context
-    await forward_to_gateway({
-        "operation": "memorize",
-        "content": f"Skill triggered: {skill_name}\nInput: {json.dumps(input_data)}",
-        "metadata": {
-            "source": "notion_skill",
-            "skill_name": skill_name,
-            "triggered_at": skill_request["queued_at"]
-        }
-    })
+    # Also store in memory for context (Deduplicated)
+    # await forward_to_gateway({
+    #     "operation": "memorize",
+    #     "content": f"Skill triggered: {skill_name}\nInput: {json.dumps(input_data)}",
+    #     "metadata": {
+    #         "source": "notion_skill",
+    #         "skill_name": skill_name,
+    #         "triggered_at": skill_request["queued_at"]
+    #     }
+    # })
     
     return {
         "status": "queued",

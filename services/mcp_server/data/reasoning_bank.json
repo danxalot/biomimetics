@@ -1,0 +1,29 @@
+{
+    "patterns": [
+        {
+            "id": "PAT_001",
+            "type": "PATTERN",
+            "name": "Atomic Deployment",
+            "description": "Build locally, push to registry, pull to OCI. Avoid building on restricted resources.",
+            "usage_count": 0,
+            "last_used": null
+        },
+        {
+            "id": "PAT_002",
+            "type": "ANTI-PATTERN",
+            "name": "Context Locking",
+            "description": "Storing raw math in Architect context. Use Translator Layer instead to ensure Model Agnosticism.",
+            "usage_count": 0,
+            "last_used": null
+        },
+        {
+            "id": "PAT_003",
+            "type": "PATTERN",
+            "name": "Gravity Well Alignment",
+            "description": "Ensure new features respect the 'Gravity' of existing modules (e.g. Biology code stays in Biology module).",
+            "usage_count": 0,
+            "last_used": null
+        }
+    ],
+    "skills": []
+}

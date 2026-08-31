@@ -1,0 +1,2132 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARCA Interactive Terminal - danexall@ai-workhorse-a1</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        body {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            margin: 0;
+            padding: 0;
+            background: #1e1e1e;
+            color: #d4d4d4;
+            overflow: hidden;
+        }
+
+        .terminal-container {
+            display: flex;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        .terminal-header {
+            background: #2d2d30;
+            border-bottom: 1px solid #3e3e42;
+            padding: 8px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .terminal-title {
+            color: #cccccc;
+            font-size: 14px;
+            font-weight: normal;
+        }
+
+        .user-info {
+            color: #4ec9b0;
+            font-size: 12px;
+        }
+
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .left-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #3e3e42;
+        }
+
+        .right-panel {
+            width: 300px;
+            background: #252526;
+            border-left: 1px solid #3e3e42;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .genesis-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-bottom: 1px solid #3e3e42;
+            min-height: 0;
+            /* Allow flex shrinking */
+        }
+
+        .open-interpreter-chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            /* Allow flex shrinking */
+        }
+
+        .chat-header {
+            background: #37373d;
+            padding: 8px 12px;
+            border-bottom: 1px solid #3e3e42;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            /* Prevent header from shrinking */
+        }
+
+        .chat-title {
+            font-size: 12px;
+            font-weight: bold;
+            color: #cccccc;
+        }
+
+        .chat-controls {
+            display: flex;
+            gap: 4px;
+        }
+
+        .btn.danger {
+            background: #ff3b30;
+            /* iPhone red */
+        }
+
+        .btn.danger:hover {
+            background: #d70015;
+        }
+
+        .btn.orange {
+            background: #ff9500;
+            /* iPhone orange */
+        }
+
+        .btn.orange:hover {
+            background: #cc7700;
+        }
+
+        .genesis-button-row {
+            display: flex;
+            gap: 6px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .genesis-button-row .btn {
+            flex: 1;
+            min-width: 80px;
+            font-size: 11px;
+            padding: 6px 8px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 8px;
+            background: #1e1e1e;
+            font-size: 12px;
+            line-height: 1.4;
+            scroll-behavior: smooth;
+            min-height: 0;
+            /* Critical for flex shrinking */
+            scrollbar-width: thin;
+            scrollbar-color: #5a5a5a #2d2d30;
+            box-sizing: border-box;
+        }
+
+        /* Custom Scrollbar for Webkit browsers */
+        .chat-messages::-webkit-scrollbar {
+            width: 12px;
+            /* Force scrollbar to always be visible */
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: #2d2d30;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background-color: #5a5a5a;
+            border-radius: 6px;
+            border: 3px solid #2d2d30;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background-color: #6e6e6e;
+        }
+
+        .message {
+            margin: 8px 12px;
+            padding: 12px 16px;
+            border-radius: 18px;
+            max-width: 70%;
+            word-wrap: break-word;
+            position: relative;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .message.user {
+            background: #34c759;
+            /* iPhone Messages green */
+            color: white;
+            margin-left: auto;
+            margin-right: 12px;
+            text-align: left;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.assistant {
+            background: #007aff;
+            /* iPhone Messages blue */
+            color: white;
+            margin-right: auto;
+            margin-left: 12px;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message.system {
+            background: #8e8e93;
+            color: white;
+            margin: 8px auto;
+            text-align: center;
+            max-width: 60%;
+            font-style: italic;
+            border-radius: 12px;
+        }
+
+        .message.serena {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            /* Purple gradient for Serena */
+            color: white;
+            margin-right: auto;
+            margin-left: 12px;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message.interpreter {
+            background: #ff9500;
+            /* iPhone orange */
+            color: white;
+            margin-right: auto;
+            margin-left: 12px;
+            border-bottom-left-radius: 4px;
+        }
+
+        .chat-input-area {
+            border-top: 1px solid #3e3e42;
+            padding: 8px;
+            background: #252526;
+            flex-shrink: 0;
+            /* Prevent input area from shrinking */
+        }
+
+        .input-row {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 4px;
+        }
+
+        .chat-input {
+            flex: 1;
+            background: #3c3c3c;
+            border: 1px solid #5a5a5a;
+            color: #d4d4d4;
+            padding: 6px 8px;
+            font-size: 12px;
+            font-family: inherit;
+            border-radius: 3px;
+            resize: none;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: #007acc;
+        }
+
+        .status-panel {
+            background: #37373d;
+            padding: 8px 12px;
+            border-bottom: 1px solid #3e3e42;
+        }
+
+        .status-item {
+            font-size: 11px;
+            margin: 2px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .status-label {
+            color: #cccccc;
+        }
+
+        .status-value {
+            color: #4ec9b0;
+        }
+
+        .status-value.error {
+            color: #f48771;
+        }
+
+        .status-value.warning {
+            color: #dcdcaa;
+        }
+
+        .expandable-section {
+            border-top: 1px solid #3e3e42;
+        }
+
+        .section-header {
+            background: #37373d;
+            padding: 8px 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+        }
+
+        .section-header:hover {
+            background: #404045;
+        }
+
+        .section-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .section-content.expanded {
+            max-height: 400px;
+        }
+
+        .draft-prompt-area {
+            padding: 8px;
+            background: #252526;
+        }
+
+        .prompt-template {
+            background: #3c3c3c;
+            border: 1px solid #5a5a5a;
+            color: #d4d4d4;
+            padding: 8px;
+            font-size: 11px;
+            font-family: inherit;
+            width: 100%;
+            height: 200px;
+            resize: vertical;
+            border-radius: 3px;
+        }
+
+        .genesis-controls {
+            display: flex;
+            gap: 4px;
+            margin-top: 8px;
+        }
+
+        .transfer-controls {
+            display: flex;
+            gap: 4px;
+            margin-top: 4px;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #f48771;
+        }
+
+        .status-dot.connected {
+            background: #4ec9b0;
+        }
+
+        .telemetry-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            padding: 8px;
+            font-size: 11px;
+        }
+
+        .telemetry-item {
+            background: #3c3c3c;
+            padding: 6px;
+            border-radius: 3px;
+        }
+
+        .thread-status {
+            padding: 8px;
+            background: #252526;
+        }
+
+        .thread-info {
+            font-size: 11px;
+            margin: 2px 0;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .telemetry-display,
+        .cache-display {
+            padding: 12px;
+            background: #2d2d30;
+            border-radius: 8px;
+            margin: 8px;
+            font-family: 'Monaco', monospace;
+            font-size: 11px;
+        }
+
+        .telemetry-item {
+            margin: 4px 0;
+            color: #4ec9b0;
+        }
+
+        .cache-header {
+            color: #dcdcaa;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .cache-content {
+            color: #d4d4d4;
+            line-height: 1.4;
+            white-space: pre-wrap;
+        }
+    </style>
+    <link rel="stylesheet" href="/static/library-styles.css">
+    <link rel="stylesheet" href="/static/activity-styles.css">
+</head>
+
+<body>
+    <div class="terminal-container">
+        <!-- Header -->
+        <div class="terminal-header">
+            <div class="terminal-title">ARCA Interactive Terminal</div>
+            <div class="user-info">danexall@ai-workhorse-a1</div>
+            <div class="connection-status">
+                <span class="status-dot" id="connectionDot"></span>
+                <span id="connectionStatus">Connecting...</span>
+            </div>
+            <div class="header-controls">
+                <button class="btn secondary" onclick="toggleGeometryView()">Geometry Kernel</button>
+                <button class="btn secondary" onclick="window.open('/monitor/', '_blank')">Resource Monitor UI</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <!-- Left Panel: Library & Knowledge -->
+            <div class="panel left-panel library-panel" id="leftPanel">
+                <div class="panel-header">
+                    <span>Library & Knowledge</span>
+                </div>
+
+                <!-- Library View Container -->
+                <div id="view-library" class="view-content">
+                    <!-- Library Toolbar -->
+                    <div class="library-toolbar">
+                        <button class="btn-icon" onclick="createNewFolder()" title="New Folder">
+                            📁+
+                        </button>
+                        <button class="btn-icon" onclick="triggerFileUpload()" title="Upload File">
+                            ⬆
+                        </button>
+                        <button class="btn-icon" onclick="refreshLibrary()" title="Refresh">
+                            🔄
+                        </button>
+                        <input type="file" id="fileUploadInput" style="display:none" multiple
+                            onchange="handleFileUpload(event)">
+                    </div>
+
+                    <!-- Search Bar -->
+                    <div class="library-search">
+                        <input type="text" id="librarySearchInput" placeholder="Search files..."
+                            oninput="searchLibrary(this.value)">
+                    </div>
+
+                    <!-- File Tree Container -->
+                    <div class="panel-content library-content" id="libraryFileTree">
+                        <div class="loading-spinner">Loading files...</div>
+                    </div>
+
+                    <!-- Drag and Drop Zone Overlay -->
+                    <div class="drag-drop-overlay hidden" id="dragDropOverlay">
+                        <div class="drag-drop-content">
+                            <div class="drag-drop-icon">📤</div>
+                            <div class="drag-drop-text">Drop files here to upload</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="resizer" id="resizerLeft"></div>
+
+            <!-- Center Panel: ARCA (Genesis) -->
+            <div class="panel center-panel genesis-chat" id="centerPanel">
+                <div class="chat-header">
+                    <div class="chat-title">Genesis Crew Agent</div>
+                    <div class="chat-controls">
+                        <button class="btn secondary" id="pauseGenesis">Pause</button>
+                        <button class="btn secondary" onclick="clearGenesisChat()">Clear</button>
+                    </div>
+                </div>
+                <div class="chat-messages" id="genesisMessages"></div>
+                <div class="chat-input-area">
+                    <div class="input-row">
+                        <textarea class="chat-input" id="genesisInput" placeholder="Enter message or objective..."
+                            rows="2"></textarea>
+                        <button class="btn" onclick="sendToGenesis()">Send</button>
+                    </div>
+                    <div class="genesis-button-row">
+                        <button class="btn orange" onclick="draftPrompt()">Draft Prompt</button>
+                        <button class="btn danger" onclick="submitPrompt()">Submit</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="resizer" id="resizerRight"></div>
+
+            <!-- Right Panel: Serena -->
+            <div class="panel right-panel serena-chat" id="rightPanel">
+                <div class="chat-header">
+                    <div class="chat-title">🔮 Serena Code Agent <span style="font-size: 0.7em; opacity: 0.7;">(v3.3 -
+                            Fixes Active)</span></div>
+                    <div class="chat-controls">
+                        <button class="btn secondary" onclick="listSerenaSkills()">Skills</button>
+                        <button class="btn secondary" onclick="clearSerenaChat()">Clear</button>
+                        <button class="btn secondary" onclick="resetSerena()">Reset</button>
+                    </div>
+                </div>
+                <div class="chat-messages" id="serenaMessages"></div>
+                <div class="chat-input-area">
+                    <div class="input-row">
+                        <textarea class="chat-input" id="serenaInput" placeholder="Ask Serena..." rows="2"></textarea>
+                        <button class="btn" id="serenaSendBtn">Send</button>
+                    </div>
+                </div>
+
+                <!-- Dynamic View Area (Serena Configurable) -->
+                <div class="dynamic-view hidden" id="dynamicViewPane">
+                    <div class="view-header">
+                        <span id="dynamicViewTitle">Geometry Kernel - Concept Space</span>
+                        <div class="view-controls">
+                            <button class="btn-tiny" id="geometryModeBtn" onclick="toggleGeometryMode()"
+                                style="margin-right: 8px;">Switch to Subject</button>
+                            <button class="btn-tiny" onclick="closeDynamicView()">×</button>
+                        </div>
+                    </div>
+                    <div class="view-content" id="dynamicViewContent"></div>
+                </div>
+            </div>
+
+            <!-- Custom Context Menu for Library Items -->
+            <div id="contextMenu" class="context-menu hidden">
+                <div class="menu-item" onclick="copyLibraryPath()">Copy Path</div>
+                <div class="menu-separator"></div>
+                <div class="menu-item" onclick="passToAgent('genesis')">Pass to ARCA</div>
+                <div class="menu-item" onclick="passToAgent('serena')">Pass to Serena</div>
+            </div>
+        </div>
+
+        <!-- Bottom Panel: Monitoring & Docs -->
+        <div class="bottom-panel">
+            <!-- Document Viewer (Collapsible) -->
+            <div class="doc-viewer collapsed" id="docViewer">
+                <div class="doc-header" onclick="toggleDocViewer()">
+                    <span>Document / Code Viewer</span>
+                    <span class="toggle-icon">▲</span>
+                </div>
+                <div class="doc-content">
+                    <div class="placeholder-text">Select a file to view content...</div>
+                </div>
+            </div>
+
+            <!-- Monitoring Bar -->
+            <div class="monitoring-bar">
+                <div class="led-strip">
+                    <div class="led-group" title="Overall System Load">
+                        <div class="led-label">SYS</div>
+                        <div class="led off" id="led-sys-green"></div>
+                        <div class="led off" id="led-sys-amber"></div>
+                        <div class="led off" id="led-sys-red"></div>
+                    </div>
+                    <div class="led-group" title="CPU Usage">
+                        <div class="led-label">CPU</div>
+                        <div class="led off" id="led-cpu-green"></div>
+                        <div class="led off" id="led-cpu-amber"></div>
+                        <div class="led off" id="led-cpu-red"></div>
+                    </div>
+                    <div class="led-group" title="Memory Usage">
+                        <div class="led-label">MEM</div>
+                        <div class="led off" id="led-mem-green"></div>
+                        <div class="led off" id="led-mem-amber"></div>
+                        <div class="led off" id="led-mem-red"></div>
+                    </div>
+                    <div class="led-group" title="LLM Token Rate">
+                        <div class="led-label">LLM</div>
+                        <div class="led off" id="led-llm-green"></div>
+                        <div class="led off" id="led-llm-amber"></div>
+                        <div class="led off" id="led-llm-red"></div>
+                    </div>
+                </div>
+
+                <div class="health-alert-box">
+                    <div class="alert-controls">
+                        <button class="btn-tiny" onclick="toggleAlertHistory()">History</button>
+                    </div>
+                    <div class="current-alert" id="currentAlert">System Normal</div>
+                    <div class="alert-history hidden" id="alertHistory">
+                        <!-- History items -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let ws = null;
+        let sessionId = null;
+        let genesisThreadId = null;
+        let genesisPaused = false;
+        let serenaCache = '';
+        let promptCache = '';
+        let showingTelemetry = false;
+        let serenaActive = false;
+
+        // Geometry Kernel State
+        let geometryActive = false;
+        let geometryMode = 'system'; // 'system' or 'focus'
+        let geometryScene, geometryCamera, geometryRenderer;
+        let geometryPoints = [];
+        let geometryAttractors = [];
+
+
+        // WebSocket connection
+        function connect() {
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsHost = window.location.hostname;
+            const wsPort = window.location.port || (window.location.protocol === 'https:' ? '443' : '80');
+            ws = new WebSocket(`${wsProtocol}//${wsHost}:${wsPort}/ws`);
+
+            ws.onopen = function (event) {
+                updateConnectionStatus(true);
+                addSystemMessage('genesis', 'Connected to ARCA Terminal');
+                startTelemetryUpdates();
+            };
+
+            ws.onmessage = function (event) {
+                const data = JSON.parse(event.data);
+                handleMessage(data);
+            };
+
+            ws.onclose = function (event) {
+                updateConnectionStatus(false);
+                addSystemMessage('genesis', 'Connection lost. Attempting to reconnect...');
+                setTimeout(connect, 3000);
+            };
+        }
+
+        function updateConnectionStatus(connected) {
+            const dot = document.getElementById('connectionDot');
+            const status = document.getElementById('connectionStatus');
+
+            if (connected) {
+                dot.classList.add('connected');
+                status.textContent = 'Connected';
+            } else {
+                dot.classList.remove('connected');
+                status.textContent = 'Disconnected';
+            }
+        }
+
+        function handleMessage(data) {
+            switch (data.type) {
+                case 'session_created':
+                    sessionId = data.session_id;
+                    document.getElementById('sessionId').textContent = sessionId.substring(0, 8);
+                    break;
+                case 'ping':
+                    // Server keepalive ping - respond with pong
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'pong' }));
+                    }
+                    break;
+                case 'pong':
+                    // Server responded to our ping - connection alive
+                    break;
+                case 'status':
+                    // Processing status update - route to active chat
+                    // Only show in genesis if Serena is not active
+                    if (!serenaActive) {
+                        addSystemMessage('genesis', data.content);
+                    }
+                    // Serena has its own status via serena_message type
+                    break;
+                case 'message':
+                    // Generic message - treat as genesis
+                    addMessage('genesis', data.role, data.content);
+                    if (data.role === 'assistant') {
+                        updateGenesisStatus('Ready');
+                    }
+                    break;
+                case 'genesis_message':
+                    addMessage('genesis', data.role, data.content);
+                    if (data.role === 'assistant') {
+                        updateGenesisStatus('Ready');
+                    }
+                    break;
+                case 'serena_message':
+                    // If this is the assistant response, remove any "thinking" messages first
+                    if (data.role === 'assistant') {
+                        removeThinkingMessages('serena');
+                    }
+                    addMessage('serena', data.role, data.content);
+                    if (data.role === 'assistant') {
+                        updateSerenaStatus('Ready');
+                        serenaActive = false;
+                        // Re-enable input
+                        const serenaInput = document.getElementById('serenaInput');
+                        if (serenaInput) {
+                            serenaInput.disabled = false;
+                            serenaInput.placeholder = 'Ask Serena about code, skills, or dispatch repair jobs...';
+                        }
+                    }
+                    clearSerenaDisplay(); // Clear any cache/telemetry when showing messages
+                    break;
+                case 'genesis_thread_update':
+                    updateGenesisThread(data);
+                    break;
+                case 'telemetry_update':
+                    updateTelemetry(data.data);
+                    break;
+                case 'system_status':
+                    updateSystemStatus(data);
+                    break;
+                case 'file_content':
+                    handleFileContent(data);
+                    break;
+                case 'error':
+                    addSystemMessage('genesis', `Error: ${data.content || data.message}`);
+                    break;
+                default:
+                    console.log('Unknown message type:', data.type, data);
+            }
+        }
+
+        // Track last message per chat to prevent duplicates
+        let lastMessages = {
+            genesis: { role: '', content: '' },
+            serena: { role: '', content: '' }
+        };
+
+        function addMessage(chat, role, content, skipSave) {
+            // Prevent duplicate consecutive messages (same role and content)
+            const lastMsg = lastMessages[chat];
+            if (lastMsg && lastMsg.role === role && lastMsg.content === content) {
+                console.log('Skipping duplicate message:', chat, role, content.substring(0, 50));
+                return;
+            }
+
+            // Update last message tracker
+            lastMessages[chat] = { role, content };
+
+            const messagesDiv = document.getElementById(chat + 'Messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+            let timestamp = new Date().toLocaleTimeString();
+            if (role === 'system') {
+                messageDiv.innerHTML = `<em>${content}</em>`;
+            } else {
+                messageDiv.innerHTML = `<strong>${role}:</strong> ${content} <small>(${timestamp})</small>`;
+            }
+            messagesDiv.appendChild(messageDiv);
+            // Save message to localStorage unless skipSave is true
+            if (!skipSave) saveChatHistory(chat);
+
+            // Robust scrolling implementation with multiple fallback strategies
+            const scrollToBottom = (element) => {
+                if (!element) return;
+
+                // Method 1: Standard scroll
+                element.scrollTop = element.scrollHeight;
+
+                // Method 2: Force reflow and scroll again
+                element.offsetHeight; // Force reflow
+                element.scrollTop = element.scrollHeight;
+
+                // Method 3: Use scrollIntoView on last child if available
+                const lastChild = element.lastElementChild;
+                if (lastChild) {
+                    lastChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                }
+            };
+
+            // Immediate scroll
+            scrollToBottom(messagesDiv);
+
+            // Scroll after DOM updates with multiple attempts
+            requestAnimationFrame(() => {
+                scrollToBottom(messagesDiv);
+                setTimeout(() => scrollToBottom(messagesDiv), 10);
+                setTimeout(() => scrollToBottom(messagesDiv), 50);
+                setTimeout(() => scrollToBottom(messagesDiv), 100);
+            });
+        }
+
+        function addSystemMessage(chat, content) {
+            addMessage(chat, 'system', content);
+        }
+
+        // Remove "thinking" or "processing" status messages when real response arrives
+        function removeThinkingMessages(chat) {
+            const messagesDiv = document.getElementById(chat + 'Messages');
+            if (!messagesDiv) return;
+
+            const systemMessages = messagesDiv.querySelectorAll('.message.system');
+            systemMessages.forEach(msg => {
+                const text = msg.textContent.toLowerCase();
+                if (text.includes('thinking') || text.includes('processing')) {
+                    msg.remove();
+                }
+            });
+
+            // Reset last message tracker for system messages so next one can be added
+            if (lastMessages[chat] && lastMessages[chat].role === 'system') {
+                lastMessages[chat] = { role: '', content: '' };
+            }
+        }
+
+        // Track if user is at bottom for smart scrolling
+        let genesisAtBottom = true;
+        let serenaAtBottom = true;
+
+        // Function to check if chat is scrolled to bottom
+        function isScrolledToBottom(element) {
+            if (!element) return true;
+            const threshold = 50; // pixels from bottom
+            return element.scrollHeight - element.scrollTop - element.clientHeight < threshold;
+        }
+
+        // Update scroll position tracking
+        function updateScrollTracking() {
+            const genesisMessages = document.getElementById('genesisMessages');
+            const serenaMessages = document.getElementById('serenaMessages');
+
+            genesisAtBottom = isScrolledToBottom(genesisMessages);
+            serenaAtBottom = isScrolledToBottom(serenaMessages);
+        }
+
+        // Smart scroll function that only scrolls if user was at bottom
+        function smartScrollToBottom(chatType = 'both') {
+            const scrollChat = (chat) => {
+                const messagesDiv = document.getElementById(`${chat}Messages`);
+                if (!messagesDiv) return;
+
+                const wasAtBottom = (chat === 'genesis') ? genesisAtBottom : serenaAtBottom;
+                if (wasAtBottom) {
+                    scrollToBottom(chat);
+                }
+            };
+
+            if (chatType === 'both') {
+                scrollChat('genesis');
+                scrollChat('serena');
+            } else {
+                scrollChat(chatType);
+            }
+        }
+
+
+
+        // Debug function for scrolling issues
+        function debugScroll(chatType) {
+            const messagesDiv = document.getElementById(`${chatType}Messages`);
+            if (messagesDiv) {
+                console.log(`${chatType} scroll debug:`, {
+                    scrollTop: messagesDiv.scrollTop,
+                    scrollHeight: messagesDiv.scrollHeight,
+                    clientHeight: messagesDiv.clientHeight,
+                    atBottom: isScrolledToBottom(messagesDiv),
+                    computedStyle: window.getComputedStyle(messagesDiv)
+                });
+            }
+        }
+
+        // Add debug keyboard shortcut (Ctrl+Shift+D)
+        document.addEventListener('keydown', function (e) {
+            if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+                e.preventDefault();
+                debugScroll('genesis');
+                debugScroll('serena');
+            }
+        });
+
+        // Function to add test content for scrolling demonstration
+        function addTestContent(chatType = 'both') {
+            const testMessages = [
+                "This is a test message to demonstrate scrolling functionality.",
+                "The scroll bars should appear when content exceeds the container height.",
+                "You can scroll manually or use Ctrl+End to jump to the bottom.",
+                "The auto-scroll feature only works when you're already at the bottom.",
+                "Try scrolling up and then adding more messages to see the smart scrolling in action.",
+                "This message contains a bit more text to ensure we have enough content to trigger scrolling behavior.",
+                "The scrolling system uses multiple fallback methods for maximum compatibility across browsers.",
+                "Mutation observers watch for content changes and trigger scrolling automatically.",
+                "Debug information is available by pressing Ctrl+Shift+D in your browser.",
+                "This should be enough content to definitely show scroll bars!"
+            ];
+
+            const addToChat = (chat) => {
+                testMessages.forEach((msg, index) => {
+                    setTimeout(() => {
+                        addMessage(chat, 'system', `${msg} (${index + 1}/${testMessages.length})`);
+                    }, index * 200); // Stagger the messages
+                });
+            };
+
+            if (chatType === 'both') {
+                addToChat('genesis');
+                addToChat('serena');
+            } else {
+                addToChat(chatType);
+            }
+        }
+
+        // Genesis Crew functions
+        function sendToGenesis() {
+            const input = document.getElementById('genesisInput');
+            const message = input.value.trim();
+
+            if (!message || !ws) return;
+
+            if (genesisPaused) {
+                addSystemMessage('genesis', 'Genesis Crew is paused. Use Pause/Restart to resume.');
+                return;
+            }
+
+            ws.send(JSON.stringify({
+                type: 'genesis_message',
+                message: message,
+                session_id: sessionId,
+                user: 'danexall'
+            }));
+
+            addMessage('genesis', 'user', message);
+            input.value = '';
+            updateGenesisStatus('Processing...');
+        }
+
+        function insertSelected() {
+            const selected = window.getSelection().toString();
+            const genesisInput = document.getElementById('genesisInput');
+            const serenaMessages = document.getElementById('serenaMessages');
+
+            if (selected) {
+                // Check if selection is from Serena pane
+                if (serenaMessages.contains(window.getSelection().anchorNode)) {
+                    genesisInput.value = selected;
+                    addSystemMessage('genesis', 'Inserted text from Serena Code Agent');
+                } else {
+                    // Insert from genesis output to Serena cache
+                    serenaCache = selected;
+                    updateSerenaDisplay();
+                    addSystemMessage('serena', 'Inserted text from Genesis output');
+                }
+            }
+        }
+
+        function draftPrompt() {
+            const genesisMessages = document.getElementById('genesisMessages').children;
+            let conversationContext = '';
+
+            // Extract recent conversation
+            for (let i = Math.max(0, genesisMessages.length - 6); i < genesisMessages.length; i++) {
+                conversationContext += genesisMessages[i].textContent + '\n';
+            }
+
+            // Create structured prompt based on conversation
+            promptCache = `## Objective
+Based on the recent conversation, analyze and implement the discussed requirements.
+
+## Context
+Recent conversation:
+${conversationContext}
+
+## Requirements
+- Address all points mentioned in the conversation
+- Provide specific deliverables and implementation steps
+- Consider system constraints and available resources
+
+## Success Criteria
+- All discussed objectives are met
+- Implementation is complete and tested
+- Documentation is updated as needed
+
+## Resources
+- ARCA system (Docker, Neo4j, LLM server)
+- Serena Code Agent for system commands
+- User interaction terminal for coordination
+
+## Constraints
+- Maintain system stability
+- Follow safety protocols
+- Preserve existing functionality`;
+
+            addMessage('genesis', 'system', 'Draft prompt generated and cached');
+            document.getElementById('pauseRestartBtn').textContent = 'View Draft';
+        }
+
+        function toggleGenesisThread() {
+            const btn = document.getElementById('pauseRestartBtn');
+
+            if (promptCache && btn.textContent === 'View Draft') {
+                // Show draft in Serena pane
+                serenaCache = promptCache;
+                updateSerenaDisplay();
+                btn.textContent = 'Pause/Restart';
+                addSystemMessage('serena', 'Showing draft prompt');
+            } else if (genesisThreadId) {
+                // Toggle thread pause/resume
+                if (genesisPaused) {
+                    resumeGenesisThread();
+                } else {
+                    pauseGenesisThread();
+                }
+            } else {
+                // Show telemetry
+                toggleTelemetryDisplay();
+            }
+        }
+
+        function pauseGenesisThread() {
+            if (ws && genesisThreadId) {
+                ws.send(JSON.stringify({
+                    type: 'pause_thread',
+                    thread_id: genesisThreadId,
+                    session_id: sessionId
+                }));
+                genesisPaused = true;
+                document.getElementById('pauseRestartBtn').textContent = 'Restart';
+                updateGenesisStatus('Paused');
+            }
+        }
+
+        function resumeGenesisThread() {
+            if (ws && genesisThreadId) {
+                ws.send(JSON.stringify({
+                    type: 'resume_thread',
+                    thread_id: genesisThreadId,
+                    session_id: sessionId
+                }));
+                genesisPaused = false;
+                document.getElementById('pauseRestartBtn').textContent = 'Pause';
+                updateGenesisStatus('Running');
+            }
+        }
+
+        function submitPrompt() {
+            if (promptCache) {
+                // Submit cached prompt to Genesis
+                if (ws) {
+                    ws.send(JSON.stringify({
+                        type: 'genesis_request',
+                        objective: promptCache,
+                        session_id: sessionId,
+                        user: 'danexall'
+                    }));
+
+                    addMessage('genesis', 'system', 'Genesis confirmed! ✅');
+                    promptCache = ''; // Clear cache after submission
+                    document.getElementById('pauseRestartBtn').textContent = 'Pause/Restart';
+                }
+            } else {
+                // Toggle between cache content and telemetry
+                toggleTelemetryDisplay();
+            }
+        }
+
+        function clearGenesisChat() {
+            document.getElementById('genesisMessages').innerHTML = '';
+            saveChatHistory('genesis');
+        }
+
+        function updateGenesisStatus(status) {
+            document.getElementById('genesisStatus').textContent = status;
+        }
+
+        // Serena Code Agent functions
+        function updateSerenaCache() {
+            const input = document.getElementById('serenaInput');
+            serenaCache = input.value;
+        }
+
+        function sendToSerena() {
+            const input = document.getElementById('serenaInput');
+            const message = input.value.trim();
+
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                alert("🔴 Connection lost. Please refresh the page.");
+                return;
+            }
+            if (!message) return;
+
+            // Prevent double-submit while processing
+            if (serenaActive) {
+                // Safety valve: check if it's been stuck for too long (e.g. > 30s)
+                console.log('Serena is processing...');
+                return;
+            }
+
+            serenaActive = true;  // Mark Serena as active
+
+            // Safety timeout to unlock UI if backend crashes/hangs
+            setTimeout(() => {
+                if (serenaActive) {
+                    console.log("⚠️ Serena request timed out - resetting UI lock.");
+                    serenaActive = false;
+                    const el = document.getElementById('serenaInput');
+                    if (el) {
+                        el.disabled = false;
+                        el.placeholder = 'Ask Serena...';
+                    }
+                    updateSerenaStatus('⚠️ Timeout - please try again');
+                }
+            }, 45000); // 45s timeout
+
+            // Disable input while processing
+            input.disabled = true;
+            input.placeholder = '⏳ Serena is processing... please wait (do not refresh!)';
+
+            ws.send(JSON.stringify({
+                type: 'serena_request',
+                message: message,
+                session_id: sessionId,
+                user: 'danexall'
+            }));
+
+            addMessage('serena', 'user', message);
+            input.value = '';
+            serenaCache = '';
+            updateSerenaStatus('🔄 Processing (calling tools)...');
+        }
+
+        function listSerenaSkills() {
+            if (!ws) return;
+            ws.send(JSON.stringify({
+                type: 'serena_skills_list',
+                session_id: sessionId
+            }));
+            updateSerenaStatus('Loading skills...');
+        }
+
+        function updateSerenaDisplay() {
+            const serenaMessages = document.getElementById('serenaMessages');
+
+            if (showingTelemetry) {
+                // Show telemetry data
+                serenaMessages.innerHTML = `
+                    <div class="telemetry-display">
+                        <div class="telemetry-item">Thread ID: ${genesisThreadId || 'None'}</div>
+                        <div class="telemetry-item">Status: ${genesisPaused ? 'Paused' : 'Running'}</div>
+                        <div class="telemetry-item">CPU: 12%</div>
+                        <div class="telemetry-item">Memory: 6.1GB/23GB</div>
+                        <div class="telemetry-item">LLM: 6.3 tok/s</div>
+                        <div class="telemetry-item">Neo4j: Online</div>
+                        <div class="telemetry-item">Containers: 5 running</div>
+                        <div class="telemetry-item">Swap: 0MB/16GB</div>
+                    </div>
+                `;
+            } else if (serenaCache && serenaCache.trim()) {
+                // Show cached content
+                serenaMessages.innerHTML = `
+                    <div class="cache-display">
+                        <div class="cache-header">Cached Content:</div>
+                        <div class="cache-content">${serenaCache.replace(/\n/g, '<br>')}</div>
+                    </div>
+                `;
+            }
+        }
+
+        function clearSerenaDisplay() {
+            // Only clear telemetry display, not chat messages
+            // Previously this was clearing all messages which was wrong
+            showingTelemetry = false;
+        }
+
+        function toggleTelemetryDisplay() {
+            showingTelemetry = !showingTelemetry;
+            updateSerenaDisplay();
+
+            if (showingTelemetry) {
+                addSystemMessage('serena', 'Showing thread status and telemetry');
+            } else {
+                addSystemMessage('serena', 'Showing cached content');
+            }
+        }
+
+        function clearSerenaChat() {
+            document.getElementById('serenaMessages').innerHTML = '';
+            saveChatHistory('serena');
+        }
+        // Chat history persistence
+        function saveChatHistory(chat) {
+            const messagesDiv = document.getElementById(chat + 'Messages');
+            let history = [];
+            for (let msg of messagesDiv.children) {
+                history.push({
+                    className: msg.className,
+                    html: msg.innerHTML
+                });
+            }
+            localStorage.setItem('arca_' + chat + '_history', JSON.stringify(history));
+        }
+
+        function loadChatHistory(chat) {
+            const messagesDiv = document.getElementById(chat + 'Messages');
+            messagesDiv.innerHTML = '';
+            let history = localStorage.getItem('arca_' + chat + '_history');
+            if (history) {
+                try {
+                    history = JSON.parse(history);
+                    for (let msg of history) {
+                        const messageDiv = document.createElement('div');
+                        messageDiv.className = msg.className;
+                        messageDiv.innerHTML = msg.html;
+                        messagesDiv.appendChild(messageDiv);
+                    }
+                } catch (e) { /* ignore parse errors */ }
+            }
+        }
+
+        function resetSerena() {
+            if (ws) {
+                ws.send(JSON.stringify({
+                    type: 'serena_reset',
+                    session_id: sessionId,
+                    user: 'danexall'
+                }));
+                addSystemMessage('serena', 'Serena session reset');
+            }
+        }
+
+        function updateSerenaStatus(status) {
+            document.getElementById('serenaStatus').textContent = status;
+        }
+
+        // Transfer functions
+        function sendSelectedToAgent() {
+            const selected = window.getSelection().toString();
+            if (selected && !genesisPaused) {
+                document.getElementById('genesisInput').value = selected;
+                addSystemMessage('genesis', `Transferred selected text: "${selected.substring(0, 50)}..."`);
+            }
+        }
+
+        function getFromAgent() {
+            // Get last genesis message and put in Serena
+            const genesisMessages = document.getElementById('genesisMessages').children;
+            if (genesisMessages.length > 0) {
+                const lastMessage = genesisMessages[genesisMessages.length - 1];
+                const content = lastMessage.textContent;
+                document.getElementById('serenaInput').value = content;
+                addSystemMessage('serena', 'Retrieved from Genesis Crew');
+            }
+        }
+
+        // Draft prompt functions
+        function generatePrompt() {
+            const template = document.getElementById('promptTemplate').value;
+            if (template.trim()) {
+                // Save the prompt and send to Genesis
+                localStorage.setItem('arca_prompt_draft_danexall', template);
+                document.getElementById('genesisInput').value = template;
+                addSystemMessage('genesis', 'Generated prompt loaded into Genesis input');
+            }
+        }
+
+        function savePromptDraft() {
+            const template = document.getElementById('promptTemplate').value;
+            localStorage.setItem('arca_prompt_draft_danexall', template);
+            addSystemMessage('genesis', 'Prompt draft saved');
+        }
+
+        function loadPromptDraft() {
+            const saved = localStorage.getItem('arca_prompt_draft_danexall');
+            if (saved) {
+                document.getElementById('promptTemplate').value = saved;
+                addSystemMessage('genesis', 'Prompt draft loaded');
+            }
+        }
+
+        // Thread management
+        function updateGenesisThread(data) {
+            genesisThreadId = data.thread_id;
+            document.getElementById('activeThread').textContent = data.thread_id?.substring(0, 8) || 'None';
+            document.getElementById('threadId').textContent = data.thread_id || 'None';
+            document.getElementById('threadStatus').textContent = data.status || 'Idle';
+            document.getElementById('threadProgress').textContent = (data.progress || 0) + '%';
+            document.getElementById('lastActivity').textContent = new Date().toLocaleTimeString();
+        }
+
+        function refreshThreadStatus() {
+            if (ws && genesisThreadId) {
+                ws.send(JSON.stringify({
+                    type: 'thread_status_request',
+                    thread_id: genesisThreadId,
+                    session_id: sessionId
+                }));
+            }
+        }
+
+        function resumeThread() {
+            if (ws && genesisThreadId) {
+                ws.send(JSON.stringify({
+                    type: 'thread_resume_request',
+                    thread_id: genesisThreadId,
+                    session_id: sessionId
+                }));
+                addSystemMessage('genesis', `Resuming thread ${genesisThreadId}`);
+            }
+        }
+
+        // Telemetry functions
+        function updateTelemetry(data) {
+            if (!data) return;
+
+            // Original text updates
+            document.getElementById('cpuUsage').textContent = data.cpu || '--';
+            document.getElementById('memoryUsage').textContent = data.memory || '--';
+            document.getElementById('llmPerf').textContent = data.llm_perf || '--';
+            document.getElementById('neo4jStatus').textContent = data.neo4j || '--';
+            document.getElementById('containerStatus').textContent = data.containers || '--';
+            document.getElementById('swapUsage').textContent = data.swap || '--';
+
+            // Parse values for LEDs (assuming "XX%" format or number)
+            const cpuVal = parseFloat(data.cpu) || 0;
+            const memVal = parseFloat(data.memory) || 0;
+
+            // Update LEDs
+            updateLed('sys', Math.max(cpuVal, memVal));
+            updateLed('cpu', cpuVal);
+            updateLed('mem', memVal);
+
+            // LLM LED - simplistic mock based on perf text if available
+            updateLed('llm', data.llm_perf ? 50 : 0); // Green if active
+
+            // Health Checks
+            if (cpuVal > 90) addHealthAlert("High CPU Usage (" + cpuVal + "%)", "error");
+            if (memVal > 90) addHealthAlert("High Memory Usage (" + memVal + "%)", "error");
+        }
+
+        function updateLed(type, value) {
+            // User requested: Green < 50%, Amber 50-75%, Red > 75%
+            let color = 'green';
+            if (value > 75) color = 'red';
+            else if (value >= 50) color = 'amber';
+
+            // Reset all for this group
+            ['green', 'amber', 'red'].forEach(c => {
+                const el = document.getElementById(`led-${type}-${c}`);
+                if (el) el.className = `led ${c} off`;
+            });
+
+            // Set active
+            const activeEl = document.getElementById(`led-${type}-${color}`);
+            if (activeEl) activeEl.className = `led ${color} on`;
+        }
+
+        // Alert System
+        let alertHistory = [];
+        function addHealthAlert(msg, level) {
+            const timestamp = new Date().toLocaleTimeString();
+
+            // Dedup: Don't add if same as last alert within 10s
+            if (alertHistory.length > 0) {
+                const last = alertHistory[0];
+                if (last.msg === msg && (new Date() - new Date('1970/01/01 ' + last.timestamp)) < 10000) return;
+            }
+
+            const alert = { msg, level, timestamp };
+            alertHistory.unshift(alert);
+            if (alertHistory.length > 50) alertHistory.pop();
+
+            // Update UI
+            const currentEl = document.getElementById('currentAlert');
+            if (currentEl) {
+                currentEl.textContent = `[${timestamp}] ${msg}`;
+                currentEl.className = `current-alert ${level}`;
+            }
+
+            renderAlertHistory();
+        }
+
+        function renderAlertHistory() {
+            const container = document.getElementById('alertHistory');
+            if (container) {
+                container.innerHTML = alertHistory.map(a => `
+                    <div class="alert-item">
+                        <span class="alert-time">${a.timestamp}</span>
+                        <span class="alert-msg ${a.level}">${a.msg}</span>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function toggleAlertHistory() {
+            const el = document.getElementById('alertHistory');
+            if (el) el.classList.toggle('hidden');
+        }
+
+        // Doc Viewer
+        function toggleDocViewer() {
+            const el = document.getElementById('docViewer');
+            if (el) {
+                el.classList.toggle('collapsed');
+                const icon = el.querySelector('.toggle-icon');
+                if (icon) icon.textContent = el.classList.contains('collapsed') ? '▲' : '▼';
+            }
+        }
+
+        function updateSystemStatus(data) {
+            document.getElementById('llmStatus').textContent = data.llm_server || 'Unknown';
+        }
+
+        function startTelemetryUpdates() {
+            setInterval(() => {
+                if (ws) {
+                    ws.send(JSON.stringify({
+                        type: 'telemetry_request',
+                        session_id: sessionId
+                    }));
+                }
+            }, 5000);
+        }
+
+        // UI functions
+        function toggleSection(sectionName) {
+            const content = document.getElementById(sectionName + 'Content');
+            const toggle = document.getElementById(sectionName + 'Toggle');
+
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                toggle.textContent = '▼';
+            } else {
+                content.classList.add('expanded');
+                toggle.textContent = '▲';
+            }
+        }
+
+        // Keyboard shortcuts and input handling
+        document.addEventListener('keydown', function (e) {
+            if (document.activeElement.id === 'genesisInput') {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendToGenesis();
+                }
+            } else if (document.activeElement.id === 'serenaInput') {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    updateSerenaCache();
+                    sendToSerena();
+                }
+            }
+        });
+
+        // Update Serena cache on input
+        // Geometry Viewer
+        function showGeometry() {
+            const viewer = document.getElementById('dynamicViewPane');
+            const title = document.getElementById('dynamicViewTitle');
+            const content = document.getElementById('dynamicViewContent');
+
+            if (viewer && content) {
+                viewer.classList.remove('hidden');
+                title.textContent = 'Geometry Kernel Visualization';
+                // Placeholder content until full Three.js integration
+                content.innerHTML = `
+                    <div style="padding: 20px; text-align: center; color: var(--text-secondary);">
+                        <h3>Geometry Visualization Active</h3>
+                        <p>Waiting for kernel data stream...</p>
+                        <div class="led on" style="margin: 10px auto; background: var(--accent-color);"></div>
+                    </div>
+                `;
+            }
+        }
+
+        function closeDynamicView() {
+            const viewer = document.getElementById('dynamicViewPane');
+            if (viewer) viewer.classList.add('hidden');
+        }
+
+        // Document Viewer
+        // Document Viewer
+        function viewDocument(filename) {
+            const viewer = document.getElementById('docViewer');
+            const content = viewer.querySelector('.doc-content');
+
+            if (viewer && content) {
+                viewer.classList.remove('collapsed');
+                const icon = viewer.querySelector('.toggle-icon');
+                if (icon) icon.textContent = '▼';
+
+                content.innerHTML = `<div class="code-block" style="padding:10px;">Loading ${filename}...</div>`;
+
+                // Send request to backend
+                // Determine full path if it's a known file, or use as is
+                let fullPath = filename;
+                if (!filename.startsWith('/')) {
+                    // Mapping for common library items
+                    if (filename === 'project_brief.md') fullPath = '/app/shared_storage/project_brief.md';
+                    else if (filename === 'architecture.png') fullPath = '/app/shared_storage/architecture.png';
+                    // Default to shared storage if relative
+                    else fullPath = `/app/shared_storage/${filename}`;
+                }
+
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({
+                        type: 'read_file_request',
+                        path: fullPath,
+                        session_id: sessionId
+                    }));
+                } else {
+                    content.innerHTML = `<div class="error">Connection lost. Cannot read file.</div>`;
+                }
+            }
+        }
+
+        function handleFileContent(data) {
+            const viewer = document.getElementById('docViewer');
+            const content = viewer.querySelector('.doc-content');
+
+            // Auto-open viewer if closed
+            if (viewer.classList.contains('collapsed')) {
+                toggleDocViewer();
+            }
+
+            if (data.success) {
+                // Check if image
+                const ext = data.filename.split('.').pop().toLowerCase();
+                if (['png', 'jpg', 'jpeg', 'gif', 'svg'].includes(ext)) {
+                    // For images, we might need a separate endpoint or base64
+                    // Currently text-based read_file might return garbage for images
+                    // Assuming host_bridge/read_file handles text. 
+                    // Use a proxy message? For now, show placeholder for binary
+                    content.innerHTML = `
+                        <div style="padding: 10px; color: var(--text-primary);">
+                            <strong>${data.filename}</strong><br>
+                            <div style="margin-top: 10px; padding: 20px; text-align: center; background: #2d2d30;">
+                                [Binary File Content - Preview Not Available via Text Bridge]<br>
+                                Path: ${data.path}
+                            </div>
+                        </div>
+                     `;
+                } else {
+                    // Render Text
+                    // Simple escape
+                    const safeContent = data.content
+                        .replace(/&/g, "&amp;")
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;");
+
+                    content.innerHTML = `
+                        <div style="padding: 10px; color: var(--text-primary);">
+                            <strong>${data.filename}</strong> <span style="opacity:0.5; font-size:0.8em">${data.path}</span><br>
+                            <pre style="margin-top: 10px; font-family: monospace; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 4px; overflow: auto; max-height: 500px;">${safeContent}</pre>
+                        </div>
+                     `;
+                }
+            } else {
+                content.innerHTML = `
+                    <div style="padding: 10px; color: #f48771;">
+                        <strong>Error Reading File</strong><br>
+                        ${data.content}
+                    </div>
+                 `;
+            }
+        }
+
+        // Update Serena cache on input
+        document.addEventListener('input', function (e) {
+            if (e.target.id === 'serenaInput') {
+                try { updateSerenaCache(); } catch (e) { console.error(e); }
+            }
+        });
+
+        // Initialize with Robust Event Listeners
+        document.addEventListener('DOMContentLoaded', function () {
+            connect();
+            loadChatHistory('genesis');
+            loadChatHistory('serena');
+
+            // Serena Input Bindings
+            const serenaBtn = document.getElementById('serenaSendBtn');
+            const serenaInput = document.getElementById('serenaInput');
+
+            if (serenaBtn) {
+                serenaBtn.addEventListener('click', function () {
+                    try { updateSerenaCache(); } catch (e) { }
+                    sendToSerena();
+                });
+            }
+
+            if (serenaInput) {
+                serenaInput.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        try { updateSerenaCache(); } catch (e) { }
+                        sendToSerena();
+                    }
+                });
+            }
+
+            // Add test content to demonstrate scrolling
+            setTimeout(() => {
+                if (document.getElementById('genesisMessages').children.length === 0) {
+                    addSystemMessage('genesis', 'Welcome to ARCA Genesis Crew Agent!');
+                    addSystemMessage('genesis', 'This is a test message to demonstrate scrolling functionality.');
+                    addSystemMessage('genesis', 'Scroll bars should now be visible if the content exceeds the container height.');
+                    addSystemMessage('genesis', 'Try sending a message or adding more content to test scrolling.');
+                }
+                if (document.getElementById('serenaMessages').children.length === 0) {
+                    addSystemMessage('serena', 'Welcome to Serena Code Agent!');
+                    addSystemMessage('serena', 'This chat area should also show scroll bars when content overflows.');
+                    addSystemMessage('serena', 'The scrolling functionality has been enhanced with multiple fallback methods.');
+                }
+            }, 1000);
+
+            // Initialize Serena cache monitoring (already bound above, removing duplicate)
+            // const serenaInput = document.getElementById('serenaInput');
+            // if (serenaInput) {
+            //    serenaInput.addEventListener('input', updateSerenaCache);
+            // }
+            // Set initial button state
+            document.getElementById('pauseRestartBtn').textContent = 'Pause/Restart';
+            // Ensure scrolling works on window resize
+            window.addEventListener('resize', () => scrollToBottom());
+            // Set up mutation observers for automatic scrolling
+            setupScrollObservers();
+
+            // Initialize LEDs to green (healthy) state
+            ['sys', 'cpu', 'mem', 'llm'].forEach(type => {
+                updateLed(type, 0); // 0% = green
+            });
+        });
+
+        // Set up mutation observers to auto-scroll when new messages are added
+        function setupScrollObservers() {
+            const observeChat = (chatType) => {
+                const messagesDiv = document.getElementById(`${chatType}Messages`);
+                if (!messagesDiv) return;
+
+                // Debounce scroll calls to avoid excessive scrolling
+                let scrollTimeout;
+                const debouncedScroll = () => {
+                    clearTimeout(scrollTimeout);
+                    scrollTimeout = setTimeout(() => {
+                        smartScrollToBottom(chatType);
+                    }, 10);
+                };
+
+                const observer = new MutationObserver((mutations) => {
+                    // Only scroll if new nodes were added
+                    const hasNewNodes = mutations.some(mutation =>
+                        mutation.type === 'childList' && mutation.addedNodes.length > 0
+                    );
+                    if (hasNewNodes) {
+                        debouncedScroll();
+                    }
+                });
+
+                observer.observe(messagesDiv, {
+                    childList: true,
+                    subtree: true,
+                    attributes: false,
+                    characterData: false
+                });
+
+                // Also observe for content changes in existing messages
+                const contentObserver = new MutationObserver(() => {
+                    debouncedScroll();
+                });
+
+                // Observe all message elements for content changes
+                const observeMessageContent = (element) => {
+                    if (element.classList && element.classList.contains('message')) {
+                        contentObserver.observe(element, {
+                            childList: true,
+                            subtree: true,
+                            characterData: true
+                        });
+                    }
+                    // Observe children recursively
+                    Array.from(element.children).forEach(observeMessageContent);
+                };
+
+                // Initial observation of existing messages
+                Array.from(messagesDiv.children).forEach(observeMessageContent);
+
+                // Observe for new message additions to also observe their content
+                const newMessageObserver = new MutationObserver((mutations) => {
+                    mutations.forEach(mutation => {
+                        mutation.addedNodes.forEach(node => {
+                            if (node.nodeType === Node.ELEMENT_NODE) {
+                                observeMessageContent(node);
+                            }
+                        });
+                    });
+                });
+
+                newMessageObserver.observe(messagesDiv, { childList: true });
+            };
+
+            observeChat('genesis');
+            observeChat('serena');
+
+            // Add scroll event listeners to track user scroll position
+            const genesisMessages = document.getElementById('genesisMessages');
+            const serenaMessages = document.getElementById('serenaMessages');
+
+            if (genesisMessages) {
+                genesisMessages.addEventListener('scroll', () => {
+                    genesisAtBottom = isScrolledToBottom(genesisMessages);
+                });
+            }
+
+            if (serenaMessages) {
+                serenaMessages.addEventListener('scroll', () => {
+                    serenaAtBottom = isScrolledToBottom(serenaMessages);
+                });
+            }
+
+            // Initialize scroll tracking
+            updateScrollTracking();
+        }
+
+        // Initialize Advanced UI Features
+        document.addEventListener('DOMContentLoaded', () => {
+            // Defer slightly to ensure elements exist
+            setTimeout(() => {
+                initResizers();
+                setupContextMenu();
+            }, 100);
+        });
+
+        // --- Resizing Logic ---
+        function initResizers() {
+            const resizerLeft = document.getElementById('resizerLeft');
+            const resizerRight = document.getElementById('resizerRight');
+            const mainContent = document.getElementById('mainSplitter');
+
+            if (resizerLeft) makeResizable(resizerLeft, 'left');
+            if (resizerRight) makeResizable(resizerRight, 'right');
+
+            function makeResizable(resizer, side) {
+                let x = 0;
+                let w = 0;
+                let panel = side === 'left' ? document.getElementById('leftPanel') : document.getElementById('rightPanel');
+                if (!panel) return;
+
+                const mouseDownHandler = function (e) {
+                    x = e.clientX;
+                    w = panel.getBoundingClientRect().width;
+                    resizer.classList.add('active');
+
+                    document.addEventListener('mousemove', mouseMoveHandler);
+                    document.addEventListener('mouseup', mouseUpHandler);
+                    document.body.style.cursor = 'col-resize';
+                    e.preventDefault(); // Prevent text selection
+                };
+
+                const mouseMoveHandler = function (e) {
+                    const dx = e.clientX - x;
+                    const newW = side === 'left' ? w + dx : w - dx; // Right panel grows when dragged left
+                    if (newW > 150 && newW < 600) {
+                        panel.style.width = `${newW}px`;
+                    }
+                };
+
+                const mouseUpHandler = function () {
+                    resizer.classList.remove('active');
+                    document.body.style.cursor = '';
+                    document.removeEventListener('mousemove', mouseMoveHandler);
+                    document.removeEventListener('mouseup', mouseUpHandler);
+                };
+
+                resizer.addEventListener('mousedown', mouseDownHandler);
+            }
+        }
+
+        // --- Context Menu Logic ---
+        let contextTarget = null;
+        function setupContextMenu() {
+            const menu = document.getElementById('contextMenu');
+            if (!menu) return;
+
+            document.addEventListener('click', () => menu.classList.add('hidden'));
+
+            // Re-bindable function for dynamic items
+            window.bindContextMenu = function () {
+                document.querySelectorAll('.library-item').forEach(item => {
+                    // Remove old listener to avoid dupes (naive approach, better to use delegation)
+                    item.removeEventListener('contextmenu', handleRightClick);
+                    item.addEventListener('contextmenu', handleRightClick);
+                });
+            };
+
+            function handleRightClick(e) {
+                e.preventDefault();
+                contextTarget = e.currentTarget;
+
+                menu.style.top = `${e.clientY}px`;
+                menu.style.left = `${e.clientX}px`;
+                menu.classList.remove('hidden');
+            }
+
+            window.bindContextMenu();
+        }
+
+        function copyLibraryPath() {
+            if (!contextTarget) return;
+            const filename = contextTarget.textContent.trim();
+            const path = `/app/shared_storage/workspace/${filename}`;
+
+            navigator.clipboard.writeText(path).then(() => {
+                addSystemMessage('genesis', `Copied path: ${path}`);
+            }).catch(err => {
+                addSystemMessage('genesis', `Failed to copy: ${err}`);
+            });
+        }
+
+        function passToAgent(agent) {
+            if (!contextTarget) return;
+            const filename = contextTarget.textContent.trim();
+            const path = `/app/shared_storage/workspace/${filename}`;
+            const msg = `[Reference] ${path}`;
+
+            if (agent === 'genesis') {
+                const input = document.getElementById('genesisInput');
+                input.value = (input.value ? input.value + ' ' : '') + msg;
+                input.focus();
+            } else {
+                const input = document.getElementById('serenaInput');
+                input.value = (input.value ? input.value + ' ' : '') + msg;
+                input.focus();
+            }
+        }
+
+        function openSharedFile(file) {
+            // Use the document viewer instead of placeholder message
+            viewDocument(file);
+        }
+
+        // --- Dynamic View Logic ---
+        function expandDynamicView() {
+            const pane = document.getElementById('dynamicViewPane');
+            pane.classList.toggle('expanded');
+        }
+
+        function closeDynamicView() {
+            document.getElementById('dynamicViewPane').classList.add('hidden');
+        }
+
+        // Mock function to simulate Serena opening a view (can be called via WebSocket later)
+        window.openDynamicView = function (title, content) {
+            const pane = document.getElementById('dynamicViewPane');
+            document.getElementById('dynamicViewTitle').textContent = title;
+            document.getElementById('dynamicViewContent').innerHTML = content;
+            pane.classList.remove('hidden');
+        };
+        // Initialize Geometry View
+        function initGeometry() {
+            if (geometryScene) return; // Already initialized
+
+            const container = document.getElementById('dynamicViewContent');
+            const width = container.clientWidth;
+            const height = container.clientHeight || 400;
+
+            // Scene setup
+            geometryScene = new THREE.Scene();
+            geometryScene.background = new THREE.Color(0x1e1e1e);
+
+            // Camera
+            geometryCamera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+            geometryCamera.position.z = 5;
+
+            // Renderer
+            geometryRenderer = new THREE.WebGLRenderer({ antialias: true });
+            geometryRenderer.setSize(width, height);
+            container.appendChild(geometryRenderer.domElement);
+
+            // Basic lighting
+            const ambientLight = new THREE.AmbientLight(0x404040);
+            geometryScene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            directionalLight.position.set(1, 1, 1);
+            geometryScene.add(directionalLight);
+
+            // Grid helper
+            const gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x222222);
+            geometryScene.add(gridHelper);
+
+            // Orbit Controls
+            if (typeof THREE.OrbitControls !== 'undefined') {
+                const controls = new THREE.OrbitControls(geometryCamera, geometryRenderer.domElement);
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.05;
+                controls.screenSpacePanning = false;
+                controls.minDistance = 1;
+                controls.maxDistance = 50;
+                window.geometryControls = controls; // Store globally
+            } else {
+                console.warn("OrbitControls not loaded");
+            }
+
+            // Start animation loop
+            animateGeometry();
+
+            // Start polling data
+            pollGeometryData();
+        }
+
+        function toggleGeometryView() {
+            const pane = document.getElementById('dynamicViewPane');
+            const title = document.getElementById('dynamicViewTitle');
+
+            if (pane.classList.contains('hidden')) {
+                pane.classList.remove('hidden');
+                title.textContent = "Geometry Kernel - Concept Space";
+                geometryActive = true;
+                // Wait for DOM update to get size
+                setTimeout(initGeometry, 100);
+            } else if (geometryActive) {
+                // If already open showing geometry, close it
+                closeDynamicView();
+            } else {
+                // Was showing something else, switch to geometry
+                title.textContent = "Geometry Kernel - Concept Space";
+                document.getElementById('dynamicViewContent').innerHTML = ''; // Clear previous content
+                geometryActive = true;
+                initGeometry();
+            }
+        }
+
+        function animateGeometry() {
+            if (!geometryActive) return;
+            requestAnimationFrame(animateGeometry);
+
+            // Orbit Controls Update
+            if (window.geometryControls) {
+                window.geometryControls.update();
+            } else {
+                // Fallback auto-rotation if no controls
+                geometryScene.rotation.y += 0.002;
+            }
+
+            geometryRenderer.render(geometryScene, geometryCamera);
+        }
+
+        async function pollGeometryData() {
+            if (!geometryActive) return;
+
+            try {
+                const response = await fetch(`/api/geometry/render?mode=${geometryMode}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    updateGeometryScene(data);
+                }
+            } catch (e) {
+                console.error("Geometry fetch failed", e);
+            }
+
+            // Poll every 1s
+            setTimeout(pollGeometryData, 1000);
+        }
+
+        function toggleGeometryMode() {
+            geometryMode = geometryMode === 'system' ? 'focus' : 'system';
+            const btn = document.getElementById('geometryModeBtn');
+            const title = document.getElementById('dynamicViewTitle');
+
+            if (geometryMode === 'focus') {
+                btn.textContent = "Switch to System";
+                title.textContent = "Geometry Kernel - Active Subject (Focus)";
+            } else {
+                btn.textContent = "Switch to Subject";
+                title.textContent = "Geometry Kernel - System State";
+            }
+
+            // Clear scene logic might be needed here to avoid artifacts, but updateGeometryScene handles rebuild
+        }
+
+        function updateGeometryScene(data) {
+            // Visualize Concepts
+            // Note: This is a simplified update that just creates spheres for concepts
+            // Full implementation would update positions smoothly
+
+            // Simple approach: Clear meshes and rebuild (inefficient but safe for V1)
+            // Ideally we should track IDs and update positions
+
+            // Clear old concepts (keep grid/lights)
+            geometryScene.children = geometryScene.children.filter(c => c.type === 'GridHelper' || c.type === 'AmbientLight' || c.type === 'DirectionalLight');
+            geometryScene.add(new THREE.GridHelper(10, 10, 0x444444, 0x222222)); // Add grid back if filtered out (GridHelper type check might vary)
+
+            // Concepts
+            if (data.concepts) {
+                data.concepts.forEach(c => {
+                    const geometry = new THREE.SphereGeometry(c.mass * 0.2, 32, 32);
+                    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 }); // Green for concepts
+                    const sphere = new THREE.Mesh(geometry, material);
+                    sphere.position.set(c.x * 2, c.y * 2, c.z * 2); // Scale up for visibility
+                    geometryScene.add(sphere);
+
+                    // Add Label (would need HTML overlay or canvas texture, skipping for MVP)
+                });
+            }
+
+            // Attractors
+            if (data.attractors) {
+                data.attractors.forEach(a => {
+                    const geometry = new THREE.BoxGeometry(0.3, 0.3, 0.3);
+                    const material = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
+                    const box = new THREE.Mesh(geometry, material);
+                    box.position.set(a.x * 2, a.y * 2, a.z * 2);
+                    geometryScene.add(box);
+                });
+            }
+        }
+
+        // Close dynamic view
+        function closeDynamicView() {
+            document.getElementById('dynamicViewPane').classList.add('hidden');
+            document.getElementById('dynamicViewContent').innerHTML = '';
+            geometryActive = false;
+            // Dispose renderer if needed or just pause
+     
+    </script>
+    <!-- Image Viewer Modal -->
+    <div id="imageViewerModal" class="modal">
+        <span class="close-modal" onclick="closeImageViewer()">&times;</span>
+        <img class="modal-content" id="img01">
+        <div id="caption"></div>
+    </div>
+
+    <style>
+        /* Modal Style */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            padding-top: 50px;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0, 0, 0);
+            background-color: rgba(0, 0, 0, 0.9);
+        }
+
+        .modal-content {
+            margin: auto;
+            display: block;
+            width: 80%;
+            max-width: 1200px;
+            max-height: 80vh;
+            object-fit: contain;
+        }
+
+        #caption {
+            margin: auto;
+            display: block;
+            width: 80%;
+            max-width: 700px;
+            text-align: center;
+            color: #ccc;
+            padding: 10px 0;
+            height: 150px;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+
+        .close-modal:hover,
+        .close-modal:focus {
+            color: #bbb;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+
+    <script>
+        // Image Viewer Logic
+        function showImage(src, alt) {
+            var modal = document.getElementById("imageViewerModal");
+            var modalImg = document.getElementById("img01");
+            var captionText = document.getElementById("caption");
+            modal.style.display = "block";
+            modalImg.src = src;
+            captionText.innerHTML = alt || "";
+        }
+
+        function closeImageViewer() {
+            var modal = document.getElementById("imageViewerModal");
+            modal.style.display = "none";
+        }
+
+        // Architecture Viewer Shortcut
+        function showArchitecture() {
+            showImage('/static/architecture.png', 'System Architecture Diagram');
+        }
+
+        // Close on escape key
+        document.addEventListener('keydown', function (event) {
+            if (event.key === "Escape") {
+                closeImageViewer();
+            }
+       
+    </script>
+    <script src="/static/library.js"></script>
+    <script src="/static/activity-monitor.js"></script>
+</body>
+<script src="/static/system-views.js"></script>
+
+</html>
+```

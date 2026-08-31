@@ -343,6 +343,27 @@ def generate_api_key() -> str:
 def main():
     import uvicorn
 
+    # ────────────────────────────────────────────────────────────────────────
+    # DEPRECATED — DO NOT RUN THIS SERVER.
+    # This is the OLD v1.0.0 credentials server. It is superseded by the
+    # canonical one at:
+    #     /Users/danexall/biomimetics/scripts/secret_manager/credentials_server.py
+    # which runs under launchd (com.bios.credentials-server) on :8089.
+    #
+    # This v1.0.0 copy has two defects the canonical server does not:
+    #   1. /secrets does NOT follow Azure KV pagination → only ever returns the
+    #      first 25 of ~174 secrets (this was the "only 25 creds" bug).
+    #   2. It binds 127.0.0.1 only → unreachable from Docker-network agents.
+    # Running it on :8089 would shadow the real server with a broken, truncated,
+    # host-local view. Refusing to start to prevent exactly that.
+    # ────────────────────────────────────────────────────────────────────────
+    log.error("=" * 60)
+    log.error("REFUSING TO START: this is the DEPRECATED v1.0.0 credentials server.")
+    log.error("Use the canonical server under launchd (com.bios.credentials-server):")
+    log.error("  biomimetics/scripts/secret_manager/credentials_server.py  (:8089)")
+    log.error("=" * 60)
+    sys.exit(1)
+
     log.info("=" * 60)
     log.info("Azure Credentials Server")
     log.info("=" * 60)

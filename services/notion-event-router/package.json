@@ -1,0 +1,22 @@
+{
+  "name": "notion-event-router",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloudflare Worker that routes Notion webhooks to GitHub Issues and GCP Pub/Sub",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "deploy:prod": "wrangler deploy --env production",
+    "test": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241106.0",
+    "typescript": "^5.6.3",
+    "wrangler": "^3.84.0",
+    "vitest": "^2.1.4"
+  },
+  "dependencies": {
+    "@google-cloud/pubsub": "^4.5.0"
+  }
+}

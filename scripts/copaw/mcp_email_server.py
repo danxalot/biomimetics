@@ -154,6 +154,12 @@ def extract_plain_text_body(msg: email.message.Message) -> str:
     """Extract plain text body from email, stripping HTML if needed."""
     plain_text = ""
     html_text = ""
+    
+    try:
+        from bs4 import BeautifulSoup
+        bs4_available = True
+    except ImportError:
+        bs4_available = False
 
     if msg.is_multipart():
         for part in msg.walk():
@@ -184,10 +190,18 @@ def extract_plain_text_body(msg: email.message.Message) -> str:
         except Exception:
             plain_text = str(msg.get_payload())
 
-    # Prefer plain text, otherwise strip HTML
     if plain_text:
         return plain_text.strip()
     elif html_text:
+        if bs4_available:
+            try:
+                soup = BeautifulSoup(html_text, "html.parser")
+                for element in soup(["script", "style", "head", "title", "meta", "[document]"]):
+                    element.decompose()
+                text = soup.get_text(separator=" ", strip=True)
+                return " ".join(text.split()).strip()
+            except:
+                pass
         return re.sub(r"<[^>]+>", "", html_text).strip()
     else:
         return ""
@@ -284,13 +298,14 @@ def read_recent_emails(account: str, limit: int = 5) -> str:
             sender = decode_header_value(msg.get("From", "Unknown"))
             date = decode_header_value(msg.get("Date", ""))
 
-            # Extract body snippet (first 200 chars)
+            # Extract body snippet (first 2000 chars)
             body = extract_plain_text_body(msg)
-            body_snippet = body[:200].replace("\n", " ").strip()
-            if len(body) > 200:
+            body_snippet = body[:2000].replace("\n", " ").strip()
+            if len(body) > 2000:
                 body_snippet += "..."
 
             results.append({
+                "id": email_id.decode(),
                 "subject": subject,
                 "from": sender,
                 "date": date,
@@ -303,7 +318,8 @@ def read_recent_emails(account: str, limit: int = 5) -> str:
         # Format output
         output = [f"📧 Recent Emails for {account} ({len(results)} emails):\n"]
         for i, email_data in enumerate(results, 1):
-            output.append(f"\n{i}. Subject: {email_data['subject']}")
+            output.append(f"\n{i}. ID: {email_data['id']}")
+            output.append(f"   Subject: {email_data['subject']}")
             output.append(f"   From: {email_data['from']}")
             output.append(f"   Date: {email_data['date']}")
             output.append(f"   Body: {email_data['body']}")
@@ -312,6 +328,48 @@ def read_recent_emails(account: str, limit: int = 5) -> str:
 
     except Exception as e:
         return f"❌ Error reading emails: {e}"
+
+
+@mcp.tool()
+def read_email(account: str, email_id: str) -> str:
+    """
+    Read the full content of a specific email by its ID.
+
+    Args:
+        account: Email address (must be one of the configured accounts)
+        email_id: Message ID of the email to fetch
+
+    Returns:
+        Formatted string containing the complete email details and body
+    """
+    if account not in EMAIL_ACCOUNTS:
+        return f"❌ Invalid account. Must be one of: {', '.join(EMAIL_ACCOUNTS.keys())}"
+
+    try:
+        password, account_type = get_account_password(account)
+        mail = connect_imap(account, password, account_type)
+        mail.select("INBOX")
+
+        status, msg_data = mail.fetch(email_id.encode(), "(RFC822)")
+        if status != "OK" or not msg_data or not msg_data[0]:
+            mail.close()
+            mail.logout()
+            return f"❌ Failed to fetch email with ID {email_id}"
+
+        raw_email = msg_data[0][1]
+        msg = email.message_from_bytes(raw_email)
+
+        subject = decode_header_value(msg.get("Subject", "No Subject"))
+        sender = decode_header_value(msg.get("From", "Unknown"))
+        date = decode_header_value(msg.get("Date", ""))
+        body = extract_plain_text_body(msg)
+
+        mail.close()
+        mail.logout()
+
+        return f"ID: {email_id}\nSubject: {subject}\nFrom: {sender}\nDate: {date}\nBody:\n{body}"
+    except Exception as e:
+        return f"❌ Error reading email: {e}"
 
 
 @mcp.tool()

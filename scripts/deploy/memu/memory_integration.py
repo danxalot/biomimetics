@@ -97,8 +97,8 @@ class GeminiEmbeddingClient:
         dims: int = 1536,
         output_dimensionality: Optional[int] = None,
         rpm: int = 100,
-        tpm: int = 30,
-        tpd: int = 1000,
+        tpm: int = 100000,
+        tpd: int = 1000000,
     ):
         self.api_key = api_key
         self.model = model
@@ -106,7 +106,8 @@ class GeminiEmbeddingClient:
         self.base_url = "https://generativelanguage.googleapis.com/v1beta"
         self._session: Optional[aiohttp.ClientSession] = None
 
-        # Rate limiter for embeddings
+        # Rate limiter for embeddings (defaults sized for vault sync / consolidate;
+        # never use the old 30 TPM / 1000 TPD which caused multi-hour sleeps)
         self._rate_limiter = RateLimiter(
             rpm=rpm,
             tpm=tpm,
@@ -631,9 +632,13 @@ class RateLimiter:
                 if self._token_tokens < estimated_tokens:
                     wait_times.append((estimated_tokens - self._token_tokens) / (self.tpm / 60.0))
                 if self._daily_tokens < estimated_tokens:
-                    wait_times.append(86400)  # Wait until next day
+                    # Fail fast — sleeping until next calendar day hangs Cloud Run
+                    raise RuntimeError(
+                        f"Embedding daily token budget exhausted "
+                        f"(need {estimated_tokens}, remaining {self._daily_tokens}, tpd={self.tpd})"
+                    )
                 
-                wait_time = max(wait_times)
+                wait_time = min(max(wait_times) if wait_times else 0.5, 30.0)
                 await asyncio.sleep(wait_time)
                 
                 now = datetime.now()
@@ -890,6 +895,9 @@ class UnifiedMemory:
         gemini_api_key: Optional[str] = None,
         gemini_embedding_model: str = "text-embedding-004",
         use_gemini_embeddings: bool = False,
+        embedding_rpm: int = 100,
+        embedding_tpm: int = 100000,
+        embedding_tpd: int = 1000000,
     ):
         self.qdrant = QdrantMemory(
             host=qdrant_host,
@@ -909,8 +917,14 @@ class UnifiedMemory:
                 api_key=gemini_api_key,
                 model=gemini_embedding_model,
                 dims=embedding_dims,
+                rpm=embedding_rpm,
+                tpm=embedding_tpm,
+                tpd=embedding_tpd,
             )
-            print(f"✅ Using Gemini Embeddings ({gemini_embedding_model}) at {embedding_dims} dims")
+            print(
+                f"✅ Using Gemini Embeddings ({gemini_embedding_model}) at {embedding_dims} dims "
+                f"(rpm={embedding_rpm} tpm={embedding_tpm} tpd={embedding_tpd})"
+            )
         elif embedding_url:
             self.embedder = LocalEmbeddingClient(url=embedding_url, dims=embedding_dims)
             print(f"✅ Using local embedding server at {embedding_url}")

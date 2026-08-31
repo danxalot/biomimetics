@@ -1,0 +1,8 @@
+# ARCA Pythia Pulse Service Requirements
+# Service-specific dependencies (beyond middleware)
+
+# Redis client for Dragonfly/Redis connections
+redis
+
+# NumPy for Schumann envelope computation
+numpy

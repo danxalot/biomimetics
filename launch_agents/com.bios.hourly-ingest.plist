@@ -38,7 +38,7 @@
         <key>GCP_GATEWAY_URL</key>
         <string>https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator</string>
         <key>WEBHOOK_RECEIVER_URL</key>
-        <string>http://localhost:8000/email</string>
+        <string>http://localhost:8090/email</string>
     </dict>
 
     <key>Nice</key>

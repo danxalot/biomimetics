@@ -1,0 +1,34 @@
+# Use lightweight Python base
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install system utilities
+RUN apt-get update && apt-get install -y curl
+
+# Install Python deps
+# CPU-only torch: on amd64 Linux plain `pip install torch` pulls the ~2 GB CUDA wheel.
+# Force CPU wheel index on x86_64; aarch64 PyPI wheels are already CPU-only.
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then \
+        pip install --no-cache-dir --default-timeout=1000 \
+            --index-url https://download.pytorch.org/whl/cpu \
+            torch; \
+    else \
+        pip install --no-cache-dir --default-timeout=1000 torch; \
+    fi && \
+    pip install --no-cache-dir --default-timeout=1000 \
+        numpy qdrant-client fastapi uvicorn pydantic requests prometheus-api-client
+
+# Copy application code (relative to docker-compose context ./)
+COPY services/conversational_hdc/app /app/app
+
+# Expose port (Internal)
+EXPOSE 8096
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8096/health || exit 1
+
+# Run API
+CMD ["uvicorn", "app.api:app", "--host", "0.0.0.0", "--port", "8096"]

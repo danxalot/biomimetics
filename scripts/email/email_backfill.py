@@ -23,7 +23,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from email.header import decode_header
 from typing import List, Dict, Optional, Tuple
-from email_utils import apply_filtering_rules
+from email_utils import apply_filtering_rules, process_and_save_email, send_to_notion
 
 # ============================================================================
 # Secure Credential Loading from Credentials Server
@@ -37,7 +37,7 @@ CREDENTIALS_SERVER_URL = "http://localhost:8089"
 # Configuration
 # ============================================================================
 
-START_DATE = "01-Mar-2026"  # Backfill from this date (IMAP enforced)
+START_DATE = "01-Mar-2026"
 # No email limit - process ALL emails since START_DATE
 
 # Proton Bridge Configuration
@@ -53,12 +53,12 @@ LOCAL_LLM_BASE_URL = "http://localhost:11435/v1"
 LOCAL_LLM_MODEL = "qwen3.5-2b-q8_0"
 
 # Notion API Configuration
-NOTION_TRIAGE_DB_ID = "3284d2d9fc7c81bd9a91e865511e642f"  # BiOS Triage
+NOTION_TRIAGE_DB_ID = "3284d2d9fc7c81bd9a91e865511e642f"
 NOTION_API_URL = "https://api.notion.com/v1/pages"
 
 # Test Mode Configuration (set to False for full production run)
-TEST_MODE = False  # If False, only processes arca-vsa.tech accounts with limited batch
-TEST_BATCH_SIZE = 50  # Number of emails to process per account in test mode
+TEST_MODE = True
+TEST_BATCH_SIZE = 10
 
 # Multi-Account Configuration
 ACCOUNTS = [
@@ -210,59 +210,8 @@ def triage_email(subject: str, sender: str, body: str = "", list_unsubscribe: st
 
 
 # ============================================================================
-# Notion Integration
+# Notion Integration (Delegated to email_utils.py)
 # ============================================================================
-
-
-def create_notion_payload(subject: str, sender: str, body: str, account: str, email_date: str = None) -> dict:
-    """
-    Create Notion API payload for new page.
-    
-    Args:
-        subject: Email subject
-        sender: Email from address
-        body: Email body text (truncated to 1900 chars)
-        account: Email account source
-        email_date: ISO 8601 formatted date string (included in content, not as separate property)
-    """
-    name = subject[:100] if subject else "Email Triage"
-    
-    # Include date in content body (database doesn't have separate Date property)
-    date_str = f"Date: {email_date[:10]}\n" if email_date else ""
-    content = f"{date_str}From: {sender} ({account})\n\n{body}"
-
-    return {
-        "parent": {"database_id": NOTION_TRIAGE_DB_ID},
-        "properties": {
-            "Name": {"title": [{"text": {"content": name}}]},
-            "Payload": {"rich_text": [{"text": {"content": content}}]},
-            "Source": {"select": {"name": "Email Backfill"}},
-            "Status": {"select": {"name": "New"}},
-        },
-    }
-
-
-def send_to_notion(payload: dict, notion_api_key: str) -> bool:
-    """Send payload directly to Notion API."""
-    headers = {
-        "Authorization": f"Bearer {notion_api_key}",
-        "Content-Type": "application/json",
-        "Notion-Version": "2022-06-28"
-    }
-
-    try:
-        response = httpx.post(NOTION_API_URL, json=payload, headers=headers, timeout=30)
-        if response.status_code == 200:
-            result = response.json()
-            page_id = result.get("id", "unknown")
-            print(f"     📬 → Notion (Page ID: {page_id})")
-            return True
-        else:
-            print(f"     ⚠️  Notion API: {response.status_code} - {response.text[:100]}")
-            return False
-    except Exception as e:
-        print(f"     ❌ Notion error: {e}")
-        return False
 
 
 # ============================================================================
@@ -318,8 +267,8 @@ def backfill_account(email_addr: str, password: str, mail, state: Dict, notion_a
     try:
         mail.select("INBOX")
 
-        # Search emails SINCE 25-Dec-2025 (IMAP-level date filtering)
-        status, messages = mail.search(None, '(SINCE "25-Dec-2025")')
+        # Search emails SINCE the configured START_DATE
+        status, messages = mail.search(None, f'(SINCE "{START_DATE}")')
         if status != "OK":
             print(f"  ❌ Search failed")
             return stats
@@ -327,7 +276,7 @@ def backfill_account(email_addr: str, password: str, mail, state: Dict, notion_a
         email_ids = messages[0].split()
         stats["total"] = len(email_ids)
 
-        print(f"  📬 Found {len(email_ids)} emails since 25-Dec-2025 in INBOX")
+        print(f"  📬 Found {len(email_ids)} emails since {START_DATE} in INBOX")
 
         # Apply test mode batch limit
         if TEST_MODE:
@@ -337,9 +286,6 @@ def backfill_account(email_addr: str, password: str, mail, state: Dict, notion_a
         # Process emails (no limit in production, limited in test mode)
         processed_count = 0
         for email_id in reversed(email_ids):
-            # Enforce 15 RPM limit (4s heartbeat) for Notion API safety
-            time.sleep(4)
-            
             email_id_str = email_id.decode()
             state_key = f"{email_addr}:{email_id_str}"
 
@@ -372,7 +318,7 @@ def backfill_account(email_addr: str, password: str, mail, state: Dict, notion_a
             except Exception:
                 pass  # Date parsing failed, continue without date
 
-            # Extract clean body (text/plain preferred, HTML stripped if needed)
+            # Extract clean body for triage
             body = extract_email_body(msg)
 
             if not body:
@@ -400,21 +346,28 @@ def backfill_account(email_addr: str, password: str, mail, state: Dict, notion_a
                 print(f"    ✅ [Rule: {method}] - KEEP")
                 stats["rule_keep"] += 1
 
-            # Send to Notion with date
-            payload = create_notion_payload(subject, sender, body, email_addr, email_date_iso)
-            success = send_to_notion(payload, notion_api_key)
+            # Use centralized processing and saving
+            output_dir = Path.home() / "biomimetics" / "docs" / "personal" / "emails" / "staging"
+            notion_metadata, filepath = process_and_save_email(
+                raw_email, 
+                email_id_str, 
+                output_dir, 
+                email_addr, 
+                "New"
+            )
 
-            if success:
+            # Send to Notion
+            success = send_to_notion(notion_metadata)
+
+            if success and "error" not in success:
                 stats["notion"] += 1
+                print(f"     📬 → Notion (Page ID: {success.get('id', 'unknown')})")
+                # Notion allows ~3 requests/second. 0.5s sleep is safe and efficient.
+                time.sleep(0.5)
             else:
-                print(f"    ❌ Failed to send to Notion")
+                print(f"    ❌ Failed to send to Notion: {success.get('error', 'unknown error')}")
 
             state["processed_ids"].append(state_key)
-
-            # Rate limiting (Notion allows ~3 requests/second)
-            if processed_count % 10 == 0:
-                print(f"  ⏱️  Rate limit pause...")
-                time.sleep(1)
 
         mail.close()
         mail.logout()

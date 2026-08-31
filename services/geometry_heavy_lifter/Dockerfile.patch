@@ -1,0 +1,23 @@
+# Lightweight patch layer on top of existing GHCR image
+FROM ghcr.io/danxalot/arca-geometry_heavy_lifter:base AS patched
+
+# Overlay updated source code
+COPY services/geometry_kernel/ /app/services/geometry_kernel/
+COPY services/pdf_to_embedding/ /app/services/pdf_to_embedding/
+COPY services/geometry_heavy_lifter/ /app/services/geometry_heavy_lifter/
+COPY modal_apps/ /app/modal_apps/
+
+# Ensure __init__.py files exist
+RUN touch /app/services/__init__.py \
+    && touch /app/services/pdf_to_embedding/__init__.py \
+    && touch /app/services/geometry_heavy_lifter/__init__.py
+
+# Updated environment
+ENV PYTHONPATH=/app/modal_apps:/app
+ENV HF_HUB_ENABLE_HF_TRANSFER=0
+ENV PADDLE_FLAGS_INIT_LOG_FILE=/dev/null
+ENV TOKENIZERS_PARALLELISM=false
+ENV PADDLE_USE_GPU=1
+ENV PADDLE_HOME=/models/paddle
+ENV HF_HOME=/models/hf_cache
+ENV VLLM_COMPILE_CACHE_DIR=/models/vllm_compile_cache

@@ -1,0 +1,27 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "terminal_messages",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "session_id", "order": "ASCENDING"},
+        {"fieldPath": "timestamp", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "terminal_messages", 
+      "queryScope": "COLLECTION",
+      "fields": [
+        {"fieldPath": "agent_type", "order": "ASCENDING"},
+        {"fieldPath": "timestamp", "order": "DESCENDING"}
+      ]
+    },
+    {
+      "collectionGroup": "terminal_sessions",
+      "queryScope": "COLLECTION", 
+      "fields": [
+        {"fieldPath": "last_activity", "order": "DESCENDING"}
+      ]
+    }
+  ]
+}

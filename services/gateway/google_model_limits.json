@@ -1,0 +1,65 @@
+{
+  "default_limits": {
+    "RPM": 5,
+    "TPM": 10000000,
+    "RPD": 20,
+    "description": "Default Non-Billing Limits (User Confirmed)"
+  },
+  "models": {
+    "gemini-3-pro-preview": {
+      "RPM": 2,
+      "TPM": 8000000,
+      "RPD": 20,
+      "Description": "Limit 20/day (User Confirmed)"
+    },
+    "gemini-pro-latest": {
+      "RPM": 2,
+      "TPM": 8000000,
+      "RPD": 20
+    },
+    "gemini-2.5-pro": {
+      "RPM": 2,
+      "TPM": 8000000,
+      "RPD": 20
+    },
+    "gemini-3-flash-preview": {
+      "RPM": 5,
+      "TPM": 10000000,
+      "RPD": 20,
+      "Description": "Flash models (5 RPM, 20 RPD)"
+    },
+    "gemini-flash-latest": {
+      "RPM": 5,
+      "TPM": 10000000,
+      "RPD": 20
+    },
+    "gemini-2.5-flash": {
+      "RPM": 5,
+      "TPM": 10000000,
+      "RPD": 20
+    },
+    "gemini-robotics-er-1.5-preview": {
+      "RPM": 10,
+      "TPM": 10000000,
+      "RPD": 20,
+      "Description": "Robotics (10 RPM, 20 RPD - User Confirmed)"
+    },
+    "gemini-2.0-flash-lite": {
+      "RPM": 10,
+      "TPM": 12000000,
+      "RPD": 20,
+      "Description": "Lite (10 RPM, 20 RPD)"
+    },
+    "gemini-2.5-flash-lite": {
+      "RPM": 10,
+      "TPM": 12000000,
+      "RPD": 20,
+      "Description": "Lite (10 RPM, 20 RPD)"
+    },
+    "deep-research-pro-preview-12-2025": {
+      "RPM": 1,
+      "TPM": 4000000,
+      "RPD": 20
+    }
+  }
+}

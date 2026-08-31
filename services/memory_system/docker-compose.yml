@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  memory_system:
+    build: .
+    ports:
+      - "8001:8001"
+    volumes:
+      - /home/ubuntu/.secrets/ARCA-26ai-wallet:/app/wallet
+      - ./data:/app/data
+    env_file:
+      - .env
+    environment:
+      - ORACLE_WALLET_DIR=/app/wallet
+      - NEO4J_URI=bolt://neo4j:7687
+    networks:
+      - arca-network
+    restart: unless-stopped
+
+networks:
+  arca-network:
+    external: true

@@ -1,0 +1,6 @@
+[DEFAULT]
+user=ocid1.user.oc1..aaaaaaaamoao6lprjbxvw74cgmnzbluiymkkn6csz2ehxdashhaye5otoq3q
+fingerprint=73:e2:5d:84:67:4f:9e:b1:56:62:6b:a8:91:57:32:aa
+tenancy=ocid1.tenancy.oc1..aaaaaaaawa7gdvzf6tnnokr46xqrlvhkuizas3stoug3e3oeq5kvnbxmfz5q
+region=uk-london-1
+key_file=/Users/danexall/.oci/oci_api_key.pem

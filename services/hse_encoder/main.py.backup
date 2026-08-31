@@ -1,0 +1,479 @@
+"""
+Hyper-Spatial Embedding (HSE) Encoder Service
+
+Converts raw telemetry, events, and semantic data into 10000-dimensional
+binary hypervectors using TorchHD. This enables:
+
+1. Thermometer encoding for continuous metrics (CPU, RAM, latency)
+2. Basis vectors for categorical data (service names, event types)
+3. Semantic folding for log text
+4. Bundling for global state vectors
+
+The global state vector V_State is published to Redis for:
+- Velocity detection: Δ = V_t ⊕ V_{t-1}
+- Anomaly detection via similarity to failure mode vectors
+- Geometry Kernel integration for proprioceptive state
+
+Architecture inspired by:
+- Kanerva's sparse distributed memory
+- Hyperdimensional computing (Pentti Kanerva)
+- Holographic reduced representations (Plate)
+"""
+
+import os
+import json
+import logging
+import asyncio
+from datetime import datetime
+from typing import Dict, Any, List, Optional
+from dataclasses import dataclass, field
+
+import numpy as np
+import redis.asyncio as aioredis
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel, Field
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# =============================================================================
+# Configuration
+# =============================================================================
+
+HSE_DIMENSIONS = int(os.environ.get("HSE_DIMENSIONS", "10000"))
+REDIS_HOST = os.environ.get("REDIS_HOST", "redis")
+REDIS_PORT = int(os.environ.get("REDIS_PORT", "6379"))
+STATE_VECTOR_KEY = "arca:hse:state_vector"
+STATE_HISTORY_KEY = "arca:hse:state_history"
+FAILURE_MODES_KEY = "arca:hse:failure_modes"
+
+# =============================================================================
+# Hypervector Operations (TorchHD - ARM NEON optimized)
+# =============================================================================
+
+import torch
+import torchhd as hd
+
+
+class HypervectorOps:
+    """
+    Hyperdimensional computing operations using TorchHD.
+    Optimized for ARM NEON via PyTorch backend.
+    """
+    
+    def __init__(self, dimensions: int = 10000, device: str = "cpu"):
+        self.d = dimensions
+        self.device = device
+        self._basis_cache: Dict[str, torch.Tensor] = {}
+    
+    def random_hv(self) -> torch.Tensor:
+        """Generate a random bipolar hypervector."""
+        return hd.random(1, self.d, device=self.device).squeeze(0)
+    
+    def get_basis(self, name: str) -> torch.Tensor:
+        """Get or create a deterministic basis vector for a named concept."""
+        if name not in self._basis_cache:
+            seed = hash(name) % (2**32)
+            generator = torch.Generator().manual_seed(seed)
+            self._basis_cache[name] = hd.random(1, self.d, generator=generator, device=self.device).squeeze(0)
+        return self._basis_cache[name]
+    
+    def bind(self, a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+        """Bind two hypervectors (element-wise multiplication for bipolar)."""
+        return hd.bind(a.unsqueeze(0), b.unsqueeze(0)).squeeze(0)
+    
+    def bundle(self, vectors: List[torch.Tensor]) -> torch.Tensor:
+        """Bundle hypervectors using TorchHD bundling."""
+        if not vectors:
+            return torch.zeros(self.d, device=self.device)
+        stacked = torch.stack(vectors)
+        return hd.bundle(stacked).squeeze(0)
+    
+    def permute(self, hv: torch.Tensor, n: int = 1) -> torch.Tensor:
+        """Circular shift (permutation) for sequence encoding."""
+        return hd.permute(hv.unsqueeze(0), shifts=n).squeeze(0)
+    
+    def similarity(self, a: torch.Tensor, b: torch.Tensor) -> float:
+        """Cosine similarity between hypervectors."""
+        return hd.cos_similarity(a.unsqueeze(0), b.unsqueeze(0)).item()
+    
+    def thermometer_encode(self, value: float, min_val: float = 0.0, 
+                           max_val: float = 100.0, levels: int = 100) -> torch.Tensor:
+        """
+        Thermometer encoding for continuous values.
+        Returns a bundled vector representing the value level.
+        """
+        normalized = max(0.0, min(1.0, (value - min_val) / (max_val - min_val)))
+        active_levels = int(normalized * levels)
+        
+        level_vectors = [self.get_basis(f"level_{i}") for i in range(active_levels)]
+        
+        return self.bundle(level_vectors) if level_vectors else torch.zeros(self.d, device=self.device)
+    
+    def to_numpy(self, hv: torch.Tensor) -> np.ndarray:
+        """Convert hypervector to numpy for Redis storage."""
+        # Convert bipolar {-1, +1} to binary {0, 1} for compact storage
+        return ((hv > 0).cpu().numpy()).astype(np.int8)
+    
+    def from_numpy(self, arr: np.ndarray) -> torch.Tensor:
+        """Convert numpy array back to TorchHD tensor."""
+        # Convert binary {0, 1} to bipolar {-1, +1}
+        return torch.tensor(arr, dtype=torch.float32, device=self.device) * 2 - 1
+
+
+# =============================================================================
+# Data Models
+# =============================================================================
+
+class MetricEvent(BaseModel):
+    """Telemetry metric event."""
+    type: str = Field(default="metric", description="Event type: metric, log, span")
+    service: str = Field(..., description="Service name (redis, postgres, agent, etc.)")
+    metric_name: Optional[str] = Field(None, description="Metric name (cpu, memory, latency)")
+    value: Optional[float] = Field(None, description="Metric value")
+    text: Optional[str] = Field(None, description="Log text for semantic encoding")
+    labels: Dict[str, str] = Field(default_factory=dict, description="Additional labels")
+    timestamp: Optional[str] = Field(None, description="ISO timestamp")
+
+
+class EncodeRequest(BaseModel):
+    """Request to encode a single event."""
+    type: str = "metric"
+    service: str
+    metric_name: Optional[str] = None
+    value: Optional[float] = None
+    text: Optional[str] = None
+    labels: Dict[str, str] = Field(default_factory=dict)
+
+
+class EncodeBatchRequest(BaseModel):
+    """Request to encode multiple events."""
+    events: List[EncodeRequest]
+
+
+class StateVectorResponse(BaseModel):
+    """Current global state vector."""
+    timestamp: str
+    vector_hash: str
+    dimensions: int
+    velocity: Optional[float] = None
+    anomaly_score: Optional[float] = None
+    component_count: int
+
+
+class HealthResponse(BaseModel):
+    """Service health response."""
+    status: str
+    service: str
+    dimensions: int
+    redis_connected: bool
+    basis_vectors_cached: int
+
+
+# =============================================================================
+# HSE Encoder
+# =============================================================================
+
+@dataclass
+class HSEEncoder:
+    """
+    Main HSE Encoder class.
+    Manages hypervector creation and global state aggregation.
+    """
+    ops: HypervectorOps = field(default_factory=lambda: HypervectorOps(HSE_DIMENSIONS))
+    redis_client: Optional[aioredis.Redis] = None
+    current_state: Optional[np.ndarray] = None
+    previous_state: Optional[np.ndarray] = None
+    state_components: List[np.ndarray] = field(default_factory=list)
+    
+    async def connect_redis(self):
+        """Establish Redis connection."""
+        try:
+            self.redis_client = await aioredis.from_url(
+                f"redis://{REDIS_HOST}:{REDIS_PORT}",
+                encoding="utf-8",
+                decode_responses=False
+            )
+            await self.redis_client.ping()
+            logger.info(f"Connected to Redis at {REDIS_HOST}:{REDIS_PORT}")
+        except Exception as e:
+            logger.warning(f"Redis connection failed: {e}")
+            self.redis_client = None
+    
+    def encode_event(self, event: EncodeRequest) -> np.ndarray:
+        """Encode a single event to a hypervector."""
+        components = []
+        
+        # 1. Service basis
+        service_hv = self.ops.get_basis(f"service:{event.service}")
+        components.append(service_hv)
+        
+        # 2. Event type basis
+        type_hv = self.ops.get_basis(f"type:{event.type}")
+        components.append(type_hv)
+        
+        # 3. Metric encoding (if numeric)
+        if event.metric_name and event.value is not None:
+            metric_basis = self.ops.get_basis(f"metric:{event.metric_name}")
+            
+            # Determine encoding range based on metric type
+            if "cpu" in event.metric_name.lower() or "percent" in event.metric_name.lower():
+                value_hv = self.ops.thermometer_encode(event.value, 0, 100)
+            elif "memory" in event.metric_name.lower() or "bytes" in event.metric_name.lower():
+                value_hv = self.ops.thermometer_encode(event.value, 0, 16 * 1024**3)  # 16GB max
+            elif "latency" in event.metric_name.lower() or "ms" in event.metric_name.lower():
+                value_hv = self.ops.thermometer_encode(event.value, 0, 10000)  # 10s max
+            else:
+                value_hv = self.ops.thermometer_encode(event.value, 0, 1000)
+            
+            # Bind metric name with value
+            metric_value_hv = self.ops.bind(metric_basis, value_hv)
+            components.append(metric_value_hv)
+        
+        # 4. Text encoding (simple bag-of-words semantic folding)
+        if event.text:
+            words = event.text.lower().split()[:50]  # Limit to 50 words
+            word_hvs = [self.ops.get_basis(f"word:{w}") for w in words if len(w) > 2]
+            if word_hvs:
+                text_hv = self.ops.bundle(word_hvs)
+                components.append(text_hv)
+        
+        # 5. Labels encoding
+        for key, value in event.labels.items():
+            label_hv = self.ops.bind(
+                self.ops.get_basis(f"label_key:{key}"),
+                self.ops.get_basis(f"label_val:{value}")
+            )
+            components.append(label_hv)
+        
+        # Bundle all components
+        return self.ops.bundle(components)
+    
+    async def update_state_vector(self, event_hv: np.ndarray):
+        """Update the global state vector with a new event."""
+        self.state_components.append(event_hv)
+        
+        # Limit window size (rolling average)
+        max_components = 100
+        if len(self.state_components) > max_components:
+            self.state_components = self.state_components[-max_components:]
+        
+        # Store previous state for velocity calculation
+        self.previous_state = self.current_state.copy() if self.current_state is not None else None
+        
+        # Update current state
+        self.current_state = self.ops.bundle(self.state_components)
+        
+        # Publish to Redis
+        await self._publish_state()
+    
+    async def _publish_state(self):
+        """Publish current state to Redis."""
+        if self.redis_client is None or self.current_state is None:
+            return
+        
+        try:
+            state_data = {
+                "timestamp": datetime.utcnow().isoformat(),
+                "vector": self.current_state.tobytes().hex(),
+                "dimensions": HSE_DIMENSIONS,
+                "component_count": len(self.state_components)
+            }
+            
+            # Add velocity if we have a previous state
+            if self.previous_state is not None:
+                velocity = 1.0 - self.ops.similarity(self.current_state, self.previous_state)
+                state_data["velocity"] = velocity
+            
+            await self.redis_client.set(STATE_VECTOR_KEY, json.dumps(state_data))
+            
+            # Also push to history (keep last 100)
+            await self.redis_client.lpush(STATE_HISTORY_KEY, json.dumps(state_data))
+            await self.redis_client.ltrim(STATE_HISTORY_KEY, 0, 99)
+            
+        except Exception as e:
+            logger.error(f"Failed to publish state to Redis: {e}")
+    
+    def calculate_velocity(self) -> Optional[float]:
+        """Calculate state change velocity."""
+        if self.current_state is None or self.previous_state is None:
+            return None
+        return 1.0 - self.ops.similarity(self.current_state, self.previous_state)
+    
+    async def check_anomalies(self) -> float:
+        """Check similarity to known failure mode vectors."""
+        if self.redis_client is None or self.current_state is None:
+            return 0.0
+        
+        try:
+            # Load failure mode vectors from Redis
+            failure_modes = await self.redis_client.hgetall(FAILURE_MODES_KEY)
+            if not failure_modes:
+                return 0.0
+            
+            max_similarity = 0.0
+            for mode_name, mode_data in failure_modes.items():
+                mode_vector = np.frombuffer(bytes.fromhex(mode_data.decode()), dtype=np.int8)
+                similarity = self.ops.similarity(self.current_state, mode_vector)
+                max_similarity = max(max_similarity, similarity)
+            
+            return max_similarity
+        except Exception as e:
+            logger.error(f"Anomaly check failed: {e}")
+            return 0.0
+
+
+# =============================================================================
+# FastAPI Application
+# =============================================================================
+
+import threading
+from contextlib import asynccontextmanager
+from otel_ingester import OTelIngester
+
+# ============================================================================
+# Lifecycle & App
+# ============================================================================
+
+app = FastAPI(
+    title="HSE Encoder",
+    description="Hyper-Spatial Embedding Encoder for ARCA proprioceptive state",
+    version="1.0.0"
+)
+
+encoder = HSEEncoder()
+ingester = OTelIngester()
+
+@app.on_event("startup")
+async def startup():
+    """Initialize Redis connection and OTel polling on startup."""
+    await encoder.connect_redis()
+    
+    # Start OTel Ingester (Async Task)
+    logger.info("Starting OTel Ingester task...")
+    asyncio.create_task(ingester.start())
+    
+    logger.info(f"HSE Encoder started with {HSE_DIMENSIONS} dimensions")
+
+
+@app.on_event("shutdown")
+async def shutdown():
+    """Cleanup resources on shutdown."""
+    await ingester.stop()
+    if encoder.redis_client:
+        await encoder.redis_client.close()
+
+
+@app.get("/health", response_model=HealthResponse)
+async def health():
+    """Health check endpoint."""
+    return HealthResponse(
+        status="healthy",
+        service="hse_encoder",
+        dimensions=HSE_DIMENSIONS,
+        redis_connected=encoder.redis_client is not None,
+        basis_vectors_cached=len(encoder.ops._basis_cache)
+    )
+
+
+@app.post("/encode")
+async def encode_single(request: EncodeRequest) -> Dict[str, Any]:
+    """Encode a single event to hypervector."""
+    event_hv = encoder.encode_event(request)
+    
+    # Update global state
+    await encoder.update_state_vector(event_hv)
+    
+    return {
+        "status": "encoded",
+        "vector_hash": hash(event_hv.tobytes()) % (2**32),
+        "dimensions": HSE_DIMENSIONS,
+        "velocity": encoder.calculate_velocity(),
+        "component_count": len(encoder.state_components)
+    }
+
+
+@app.post("/encode/batch")
+async def encode_batch(request: EncodeBatchRequest) -> Dict[str, Any]:
+    """Encode multiple events and update state."""
+    encoded_count = 0
+    for event in request.events:
+        event_hv = encoder.encode_event(event)
+        await encoder.update_state_vector(event_hv)
+        encoded_count += 1
+    
+    return {
+        "status": "batch_encoded",
+        "events_processed": encoded_count,
+        "velocity": encoder.calculate_velocity(),
+        "component_count": len(encoder.state_components)
+    }
+
+
+@app.get("/state", response_model=StateVectorResponse)
+async def get_state():
+    """Get current global state vector."""
+    if encoder.current_state is None:
+        raise HTTPException(status_code=503, detail="No state vector available yet")
+    
+    return StateVectorResponse(
+        timestamp=datetime.utcnow().isoformat(),
+        vector_hash=str(hash(encoder.current_state.tobytes()) % (2**32)),
+        dimensions=HSE_DIMENSIONS,
+        velocity=encoder.calculate_velocity(),
+        anomaly_score=await encoder.check_anomalies(),
+        component_count=len(encoder.state_components)
+    )
+
+
+@app.post("/failure_mode")
+async def register_failure_mode(name: str, description: str) -> Dict[str, Any]:
+    """
+    Register a failure mode by capturing current state as a failure signature.
+    Used to train anomaly detection.
+    """
+    if encoder.current_state is None:
+        raise HTTPException(status_code=503, detail="No state vector to register")
+    
+    if encoder.redis_client is None:
+        raise HTTPException(status_code=503, detail="Redis not connected")
+    
+    # Store current state as failure mode
+    await encoder.redis_client.hset(
+        FAILURE_MODES_KEY,
+        name,
+        encoder.current_state.tobytes().hex()
+    )
+    
+    return {
+        "status": "registered",
+        "failure_mode": name,
+        "description": description,
+        "vector_hash": str(hash(encoder.current_state.tobytes()) % (2**32))
+    }
+
+
+@app.get("/velocity")
+async def get_velocity() -> Dict[str, Any]:
+    """Get current state velocity (rate of change)."""
+    velocity = encoder.calculate_velocity()
+    return {
+        "timestamp": datetime.utcnow().isoformat(),
+        "velocity": velocity if velocity is not None else 0.0,
+        "interpretation": (
+            "stable" if velocity is None or velocity < 0.1 else
+            "changing" if velocity < 0.3 else
+            "volatile"
+        )
+    }
+
+
+# =============================================================================
+# Main Entry Point
+# =============================================================================
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", "8095"))
+    uvicorn.run(app, host="0.0.0.0", port=port)

@@ -1,0 +1,43 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+
+exporters:
+  file:
+    path: /etc/otel/telemetry/traces.jsonl
+    format: json
+  otlp/grafana:
+    endpoint: "https://${GRAFANA_CLOUD_TEMPO_ENDPOINT}"
+    auth:
+      authenticator: basicauth/grafana
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+  basicauth/grafana:
+    client_auth:
+      username: "${GRAFANA_CLOUD_TEMPO_USER}"
+      password: "${GRAFANA_CLOUD_API_KEY}"
+
+service:
+  extensions: [health_check, basicauth/grafana]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [file, otlp/grafana]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [file, otlp/grafana]
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [file]

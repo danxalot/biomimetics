@@ -1,0 +1,13 @@
+{
+  "task_id": "0d61a1bb-d820-4565-b0c6-739e4565eb56",
+  "agent_type": "docker",
+  "operation": "execute_task",
+  "success": false,
+  "execution_log": [
+    "Agent timed out."
+  ],
+  "validation_results": [],
+  "escalation_reason": "Execution failure: ",
+  "timestamp": "20260125_032930",
+  "nurture_recommendation": "Refine SOP for docker or check MCP skills."
+}

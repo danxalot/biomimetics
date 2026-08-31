@@ -1,0 +1,8 @@
+
+fastapi
+uvicorn[standard]
+pydantic
+redis==5.0.1  # For DragonflyDB
+qdrant-client==1.7.3
+numpy
+httpx

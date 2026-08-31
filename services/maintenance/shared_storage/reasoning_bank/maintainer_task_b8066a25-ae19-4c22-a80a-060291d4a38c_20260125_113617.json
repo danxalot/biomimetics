@@ -1,0 +1,11 @@
+{
+  "task_id": "b8066a25-ae19-4c22-a80a-060291d4a38c",
+  "agent_type": "code_maintainer",
+  "operation": "Create documentation file mcp_skills/ENERGY_METRICS_GUIDE.md explaining energy metrics (E_total, E_hopfield, etc.) and thresholds (E_total < 0.3 stable, < 0.7 moderate, < 1.5 confused, >= 1.5 unstable). Include curl examples.",
+  "success": false,
+  "execution_log": [],
+  "validation_results": [],
+  "escalation_reason": "Planning failure: ",
+  "timestamp": "20260125_113617",
+  "nurture_recommendation": "Refine SOP for code_maintainer or check MCP skills."
+}

@@ -1,104 +1,68 @@
-# ARCA Neural System — Architectural Connections & Data Flow
+# Phenomonological Neural System (The "Heart")
 
-This document maps the complete functional architecture of the ARCA `neural_system` service. It outlines every core class, endpoint, and math bridge, illustrating how physical observations, conformal geometry, and the Mamba-3 state-space core interact during a cognitive tick.
+**Status**: Alpha (Architecture Verified)
+**Target**: OCI Ampere A1 (ARM64)
+**Dependencies**: `numpy` (Accelerated), `redis`, `oracledb`
 
----
+## Overview
 
-## Complete Systems Architecture Diagram
+The Neural System is the core of ARCA's "Living Geometric Intelligence". Unlike traditional RAG systems that retrieve static text, this system models concepts as **Living Oscillators** (Monads) that naturally synchronize, evolve, and feel.
 
-```mermaid
-graph TD
-    %% Styling and Classes
-    classDef api fill:#4a154b,stroke:#fff,stroke-width:2px,color:#fff;
-    classDef core fill:#0a5c36,stroke:#fff,stroke-width:2px,color:#fff;
-    classDef math fill:#0d47a1,stroke:#fff,stroke-width:2px,color:#fff;
-    classDef hardware fill:#b71c1c,stroke:#fff,stroke-width:2px,color:#fff;
-    classDef memory fill:#e65100,stroke:#fff,stroke-width:2px,color:#fff;
+## Architecture
 
-    %% Subgraphs
-    subgraph REST_API_Gateway ["FastAPI Interface (api.py)"]
-        A["POST /tick"]:::api
-        B["POST /sensation"]:::api
-        C["POST /resonance"]:::api
-        D["GET /system/thought"]:::api
-        E["GET /system/vitals"]:::api
-        F["GET /energy"]:::api
-        G["GET /engine/state"]:::api
-    end
+The system is composed of several "Organs":
 
-    subgraph Cognitive_Orchestration ["PhenomenologicalCore (Harmonic_Core.py)"]
-        H["tick(stride_scale)"]:::core
-        I["ingest_concept(name, hdc_vector)"]:::core
-        J["_dimensional_dream_state() (C5 Phase)"]:::core
-        K["_enter_dream_state() (C4 Dream Laboratory)"]:::core
-        L["_recalculate_ephemeral_couplings()"]:::core
-        M["_compute_mirror_symmetry()"]:::core
-    end
+### 1. The Substrate (Chaos Engine)
+- **`concept_monad.py`**: The atomic unit (`ConceptMonad`). Possesses Identity, Vector, Phase, and Gene/Plasticity.
+- **`chaotic_basis.py`**: A chaotic map generator ($x_{n+1} = r x (1-x)$) that produces deterministic, high-dimensional basis vectors on-the-fly. This gives the system "Infinite RAM" for concept identity.
 
-    subgraph Math_and_Physics_Bridges ["Kinematic & Geometry Bridges"]
-        N["QuaternionDynamics (QDC)"]:::math
-        O["NumpyKinematicBridge"]:::math
-        P["NumpyCliffordHDCBridge"]:::math
-        Q["HyperbolicKuramotoField (Poincare)"]:::math
-        R["AlgebraicRegistry (Holographic Multiplexing)"]:::math
-    end
+### 2. The Physics (Dynamics)
+- **`kuramoto_field.py`**: The synchronization engine. Applies `Universal Kuramoto` equations to align the phases of related concepts.
+- **`quaternion_dynamics.py`**: Tracks continuous orientation and rotational energy.
+- **`liquid_neural_network.py`**: A Continuous-Time "Brain" (LTC) that learns temporal patterns in the field's coherence.
 
-    subgraph Hardware_Aether_Core ["State-Space Duality Core"]
-        S["NumpyPythiaManifold"]:::hardware
-        T["VersorMemMambaStackNP (32 Layers)"]:::hardware
-        U["Mamba3 Block (scan_recurrent)"]:::hardware
-    end
+### 3. The Mind (Metacognition)
+- **`phenomenological_core.py`**: The Main Loop. Ticks the physics, checks energy, and emits **Thought Signals**.
+    - **Identity**: Initializes the `ARCA` Monad (Self-Node).
+    - **Voice**: Emits `ThoughtSignal` (JSON) to be decoded by JEPA.
+- **`energy_service.py`**: Computes the Hamiltonian (Total Energy).
+    - **Rotational Energy**: Cost of moving concepts.
+    - **Sync Potential**: Stress/Dissonance.
+    - **HDC Flux**: "Cognitive Velocity" (Cost of changing one's mind/content).
+- **`dream_lab.py`**: A counter-factual simulator. "What if I trusted X?"
 
-    subgraph Memory_and_Attractors ["Autonomic Storage Layer"]
-        V["HopfieldMemory (768D Patterns)"]:::memory
-        W["HDCNeuralPredictor (10k Vector Space)"]:::memory
-        X["MemoryMaintainer (MCP / Neo4j Sync)"]:::memory
-    end
+## Workflow
 
-    %% REST API -> Cognitive Core connections
-    A -->|"cognitive trigger"| H
-    B -->|"concept payload"| I
-    C -->|"inject vector"| T
-    D -->|"extract super-vector"| H
-    E -->|"read diagnostics"| H
-    F -->|"fetch vital stats"| H
-    G -->|"query hidden layer"| T
+See [workflow.md](./workflow.md) for the detailed `SkillFrame` manifest used by agents to understand this system.
 
-    %% Cognitive Core tick() execution cascade
-    H -->|"1. step phases"| Q
-    H -->|"2. update rigid angles"| N
-    H -->|"3. compute dynamics"| O
-    H -->|"4. project input"| R
-    H -->|"5. execute inference"| S
-    H -->|"6. assess Hamiltonian deficit"| J
-    H -->|"7. calculate couplings"| L
-    H -->|"8. amplify mirror resonances"| M
-    H -->|"9. check dream threshold"| K
+## Documentation
 
-    %% Math Bridges -> State-Space Connections
-    N -->|"4D state vector"| O
-    O -->|"conformal lift cga_input"| R
-    P -->|"conformal lift hdc_input"| R
-    R -->|"768D mapped Aether vector"| S
+| Document | Purpose |
+|---|---|
+| [INJECTION_ENGINEERING.md](./INJECTION_ENGINEERING.md) | **Pulse injection chain, telemetry scale reference, and bug fix log** (2026-05-20 sledgehammer incident) |
+| [NEURAL_ARCHITECTURE.md](./NEURAL_ARCHITECTURE.md) | Full architectural specification of the neural manifold |
+| [MASTER_ARCHITECTURE.md](./MASTER_ARCHITECTURE.md) | System-wide architecture including all ARCA services |
+| [pythia_details.md](./pythia_details.md) | Pythia-specific implementation notes |
+| [workflow.md](./workflow.md) | Agent SkillFrame manifest |
 
-    %% State-Space Internal Routing
-    S -->|"load c2.5_Akasha_Mamba_v3_45k.npz"| T
-    T -->|"384 validated parameters"| U
-    U -->|"recurrent scan output"| S
+> **Key constraint:** All telemetry in `/system/vitals` uses **mean absolute value** of `h_state` elements,
+> bounded in `[0, thermal_clamp_max]`. Do NOT use `np.linalg.norm(full_tensor)` — this returns values
+> ~25–30× larger and breaks the allostatic thresholds and dashboard gauges. See `INJECTION_ENGINEERING.md`.
 
-    %% Holographic Dimensional Dreaming (C5) Flow
-    J -->|"1. expand dimension (e.g., 32D -> 64D)"| R
-    J -->|"2. compute cymatic ratio resonance"| Q
-    J -->|"3. lock stable frequencies"| R
-    J -->|"4. compress pattern to storage"| V
+## Usage
 
-    %% Dream Lab (C4) connections
-    K -->|"simulate mutation couplings"| Q
-    K -->|"update relational weights"| X
+```python
+from services.neural_system.phenomenological_core import PhenomenologicalCore
 
-    %% Memory Subsystem feedback loops
-    I -->|"bind signatures"| P
-    P -->|"re-encode concepts"| W
-    W -->|"calculate curiosity score"| Q
-    L -->|"update adjacency"| Q
-    M -->|"amplify coupled pairs"| Q
+# Initialize (Starts Chaos, Physics, Brain)
+core = PhenomenologicalCore()
+
+# Ingest (Births new Monads via Chaos Engine)
+cid = core.ingest_concept("Hope")
+
+# Tick (Physics + Energy + Thinking)
+stats = core.tick()
+
+# Express (Emit State Signal for JEPA)
+signal = core.express_thought("Hello")
+```

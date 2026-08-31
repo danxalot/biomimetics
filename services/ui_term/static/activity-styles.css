@@ -1,0 +1,245 @@
+/* ARCA Activity Monitor Styles */
+
+.led-panel {
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    margin-right: 10px;
+}
+
+.led-container {
+    display: flex;
+    gap: 12px;
+}
+
+.led-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 32px;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.led-indicator:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.led-bulb {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #444;
+    box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.5);
+    transition: all 0.3s ease;
+    border: 1px solid #222;
+}
+
+/* Status Colors */
+.led-bulb.green {
+    background: radial-gradient(circle at 30% 30%, #7fff7f, #00cc00);
+    box-shadow: 0 0 8px #00ff00, inset 0 -2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.led-bulb.amber {
+    background: radial-gradient(circle at 30% 30%, #ffcc7f, #ff9900);
+    box-shadow: 0 0 8px #ff9900, inset 0 -2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.led-bulb.red {
+    background: radial-gradient(circle at 30% 30%, #ff7f7f, #cc0000);
+    box-shadow: 0 0 8px #ff0000, inset 0 -2px 4px rgba(0, 0, 0, 0.3);
+    animation: pulse-red 1s infinite;
+}
+
+@keyframes pulse-red {
+
+    0%,
+    100% {
+        box-shadow: 0 0 8px #ff0000, inset 0 -2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    50% {
+        box-shadow: 0 0 16px #ff0000, inset 0 -2px 4px rgba(0, 0, 0, 0.3);
+    }
+}
+
+.led-label {
+    font-size: 10px;
+    color: #888;
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+.led-value {
+    font-size: 9px;
+    color: #aaa;
+    font-family: 'Menlo', monospace;
+    margin-top: 1px;
+}
+
+/* System Views Styles */
+
+.view-tabs {
+    display: flex;
+    gap: 2px;
+    padding: 0;
+    background: #252526;
+    border-bottom: 1px solid #3e3e42;
+}
+
+.tab-btn {
+    background: transparent;
+    border: none;
+    color: #969696;
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 600;
+    border-right: 1px solid #3e3e42;
+    transition: all 0.2s;
+}
+
+.tab-btn:hover {
+    color: #e6e6e6;
+    background: #2d2d30;
+}
+
+.tab-btn.active {
+    color: #ffffff;
+    background: #1e1e1e;
+    border-top: 2px solid #007acc;
+}
+
+.view-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    height: 100%;
+    position: relative;
+}
+
+.view-content.hidden {
+    display: none;
+}
+
+#vector-canvas-container,
+#unified-canvas-container {
+    width: 100%;
+    height: 100%;
+    background: #1e1e1e;
+    position: relative;
+    /* Anchor for absolute overlays */
+}
+
+/* Unified View Overlay */
+#unified-overlay {
+    position: absolute;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: auto;
+}
+
+.query-bar {
+    display: flex;
+    background: rgba(30, 30, 30, 0.9);
+    border: 1px solid #4ec9b0;
+    padding: 10px;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.prompt-char {
+    color: #4ec9b0;
+    margin-right: 10px;
+    font-weight: bold;
+    font-family: 'Monaco', monospace;
+}
+
+#agent-query-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-family: 'Monaco', monospace;
+    font-size: 12px;
+    outline: none;
+}
+
+#agent-query-btn {
+    background: #4ec9b0;
+    border: none;
+    color: #000;
+    font-weight: bold;
+    padding: 2px 10px;
+    cursor: pointer;
+    font-family: 'Monaco', monospace;
+    font-size: 11px;
+}
+
+#agent-query-btn:hover {
+    background: #3daea0;
+}
+
+.agent-response {
+    background: rgba(0, 0, 0, 0.8);
+    color: #aaa;
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: 'Monaco', monospace;
+    min-height: 20px;
+    border-left: 3px solid #666;
+}
+
+.view-controls {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(30, 30, 30, 0.8);
+    padding: 8px;
+    border-radius: 4px;
+    display: flex;
+    gap: 8px;
+    backdrop-filter: blur(4px);
+    border: 1px solid #444;
+}
+
+.placeholder-view {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #666;
+    font-style: italic;
+}
+
+/* Selection Info Style */
+.selection-info {
+    color: #aeaeae;
+    font-size: 10px;
+    margin-left: 8px;
+    padding-left: 8px;
+    border-left: 1px solid #555;
+    white-space: nowrap;
+}
+
+.control-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    font-size: 11px;
+    color: #ccc;
+}

@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  mcp-server:
+    image: arca-mcp-server:latest
+    ports:
+      - "8086:8086"
+    environment:
+      - MCP_SERVER_PORT=8086
+      - INSTANCE_ID=${INSTANCE_ID:-workhorse-mcp}
+      - ARCA_ROOT=${ARCA_ROOT:-/home/ubuntu/ARCA}
+      - MCP_DATA_DIR=/app/data
+      - MCP_TLS_ENABLED=${MCP_TLS_ENABLED:-false}
+      - MCP_CERT_DIR=${MCP_CERT_DIR:-/mnt/mcp_storage/certs}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ${ARCA_ROOT:-/home/ubuntu/ARCA}:/app/arca:ro
+      - ${ARCA_ROOT:-/home/ubuntu/ARCA}/genesis:/app/genesis
+      - ${ARCA_ROOT:-/home/ubuntu/ARCA}/OCI_Mounts/data_hub/shared_memory:/app/shared_data
+      - ${MCP_CERT_DIR:-/mnt/mcp_storage/certs}:/app/certs:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import requests; requests.get('http://localhost:8086/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

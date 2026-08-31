@@ -100,6 +100,15 @@ The BiOS architecture consists of six primary systems that work in concert to cr
 
 ---
 
+## **Autonomous Documentation Strategy**
+
+BiOS utilizes a fully autonomous pipeline to maintain its knowledge wiki, governed by the **BiOS Session Artifact Protocol**. This protocol mandates the harvesting of telemetry and logs from Claude Code, Antigravity, OpenCode, and Zed to build a "Picture of Work" without human intervention.
+
+For detailed retrieval paths, stripping logic, and multi-model synthesis strategies, refer to:
+`./BiOS_Sync/Autonomous Wiki and Knowledge Graph Integration.md`
+
+---
+
 ## GitHub - Primary Trigger Engine
 
 ### Overview
@@ -332,7 +341,7 @@ similar_experiences = memu.query(
 
 ### Overview
 
-Vultr hosts the **voice relay service** that bridges voice commands from CoPaw agents to the voice interface and vice versa. It provides low-latency WebSocket connections for real-time voice interactions.
+Vultr hosts the **voice relay service** that bridges local audio streams to the **Gemini 3.1 Live API**. This allows for low-latency, multimodal voice interactions with the BiOS ecosystem, utilizing the "Puck" persona.
 
 ### Voice Relay Architecture
 
@@ -342,17 +351,17 @@ Vultr hosts the **voice relay service** that bridges voice commands from CoPaw a
 ├──────────────────────────────────────────────────────────────────┤
 │                                                                   │
 │   CoPaw Agent                    Voice Client                     │
-│   (Text Output)                  (Audio Stream)                   │
+│   (Local Mic/Speaker)            (WebSocket Relay)                │
 │        │                              │                           │
-│        │ HTTPS POST                    │                           │
-│        │ /output                       │ WebSocket                 │
+│        │ Audio Stream                 │                           │
+│        │ (PyAudio/VAD)                │ WebSocket (WSS)           │
 │        ▼                              ▼                           │
 │   ┌─────────────────────────────────────────────────────────┐   │
-│   │              Voice Relay Service                         │   │
+│   │              Vultr Relay Service                         │   │
 │   │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐      │   │
-│   │  │   Text→     │  │   Audio     │  │   Stream    │      │   │
-│   │  │   Audio     │  │   Buffer    │  │   Handler   │      │   │
-│   │  │   TTS       │  │             │  │             │      │   │
+│   │  │   Gemini    │  │   Audio     │  │   Tool      │      │   │
+│   │  │   Live      │  │   Buffer    │  │   Routing   │      │   │
+│   │  │   (WSS)     │  │             │  │             │      │   │
 │   │  └─────────────┘  └─────────────┘  └─────────────┘      │   │
 │   └─────────────────────────────────────────────────────────┘   │
 │                              │                                   │
@@ -368,13 +377,13 @@ Vultr hosts the **voice relay service** that bridges voice commands from CoPaw a
 
 ```yaml
 vultr:
-  host: vultr.arca-vsa.tech
-  port: 443
+  host: 100.86.112.119
+  port: 8765
   protocol: wss
-  tts_provider: gemini
-  audio_format: opus
-  sample_rate: 24000
-  voice_schema: gemini_live_standard
+  model: models/gemini-3.1-flash-live-preview
+  audio_format: pcm_s16le
+  sample_rate_in: 16000
+  sample_rate_out: 24000
   
 status_webhook:
   url: https://api.notion.com/v1/pages/{page_id}
@@ -387,17 +396,19 @@ status_webhook:
 
 ### Vultr → Notion Integration
 
-Voice commands automatically update Notion task status:
+Voice interactions are logged to the Notion "Voice Session Logs" database for history and performance tracking:
 
 ```python
-# Voice command execution updates
-async def on_voice_command(command: VoiceCommand):
-    notion_response = await notion.update_page(
-        page_id=command.task_id,
-        properties={"Status": "In Progress"}
+# Voice session logging
+async def log_session_to_notion(speaker: str, text: str):
+    await notion.create_page(
+        database_id=VOICE_LOG_DB_ID,
+        properties={
+            "Name": speaker,
+            "Transcript": text,
+            "Date": datetime.now()
+        }
     )
-    # Relay acknowledgment back to voice client
-    await vultr.send_audio(text="Command received and logged.")
 ```
 
 ---
@@ -406,7 +417,11 @@ async def on_voice_command(command: VoiceCommand):
 
 ### Overview
 
-CoPaw is the **central agent execution gateway** running on port 8090. It orchestrates all agent activities, manages tool approvals, and serves as the bridge between Notion task management and actual code execution.
+CoPaw is the **central agent execution gateway** running on port 8090. It orchestrates all agent activities, manages tool approvals, and serves as the bridge between various input channels (Voice, WhatsApp) and actual tool execution.
+
+### Voice Channel (Puck)
+
+The voice channel implements the **Puck** persona—a dry, witty, tactical trickster-butler. It uses a hardware-level VAD (Voice Activity Detection) system and supports barge-in (interruption) for natural conversation.
 
 ### CoPaw Component Architecture
 
@@ -416,8 +431,8 @@ CoPaw is the **central agent execution gateway** running on port 8090. It orches
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
 │  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐               │
-│  │   Serena      │  │    Agent      │  │    Tool       │               │
-│  │   MCP Server  │  │    Pool       │  │    Guard      │               │
+│  │   Voice       │  │    WhatsApp   │  │    Tool       │               │
+│  │   Channel     │  │    Channel    │  │    Guard      │               │
 │  └───────┬───────┘  └───────┬───────┘  └───────┬───────┘               │
 │          │                  │                  │                        │
 │          └──────────────────┼──────────────────┘                        │
@@ -430,8 +445,8 @@ CoPaw is the **central agent execution gateway** running on port 8090. It orches
 │          ┌──────────────────┼──────────────────┐                          │
 │          ▼                  ▼                  ▼                         │
 │  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐                │
-│  │   MuninnDB    │  │     MemU      │  │    Vultr      │                │
-│  │   Context     │  │   Archive     │  │   Voice       │                │
+│  │   MuninnDB    │  │     MemU      │  │    Notion     │                │
+│  │   Context     │  │   Archive     │  │    Tools      │                │
 │  └───────────────┘  └───────────────┘  └───────────────┘                │
 │                                                                          │
 └─────────────────────────────────────────────────────────────────────────┘
@@ -441,61 +456,25 @@ CoPaw is the **central agent execution gateway** running on port 8090. It orches
 
 | Port | Service | Purpose |
 |------|---------|---------|
-| 8090 | HTTP API | Primary agent interface |
-| 8091 | MCP Bridge | Model Context Protocol |
-| 8092 | WebSocket | Real-time agent updates |
-| 8093 | Metrics | Prometheus metrics |
+| 8090 | HTTP API | Primary gateway interface |
+| 8089 | Credentials | Azure Key Vault Secrets |
+| 8000 | Webhook | Webhook Receiver (WhatsApp/Ingestion) |
 
 ### CoPaw → Notion Integration
 
+All tools (Email, GDrive, Notion) are routed through the CoPaw `/api/mcp/tool/execute` endpoint, providing a unified security and logging layer.
+
 ```python
-# Task status synchronization
-async def sync_task_status(task_id: str, status: str):
-    await notion.update_page(
-        page_id=task_id,
-        properties={"Status": status}
+# Unified tool execution
+@app.post("/api/mcp/tool/execute")
+async def execute_tool(tool_request: ToolRequest):
+    result = await mcp_manager.execute(
+        tool_name=tool_request.name,
+        arguments=tool_request.arguments
     )
-
-# Task completion archival
-async def on_task_complete(task_id: str):
-    task_data = await notion.get_page(task_id)
-    await memu.archive({
-        "type": "completed_task",
-        "task_id": task_id,
-        "content": task_data,
-        "timestamp": datetime.now().isoformat()
-    })
+    return {"result": result}
 ```
 
-### CoPaw → MuninnDB Integration
-
-```python
-# Store execution vectors for future context
-async def store_execution_vector(task_id: str, code: str, result: str):
-    embedding = await muninndb.embed(f"Task: {task_id}\nCode: {code}\nResult: {result}")
-    await muninndb.store(embedding, metadata={
-        "task_id": task_id,
-        "execution_time": datetime.now().isoformat(),
-        "success": result.get("status") == "success"
-    })
-```
-
-### CoPaw → Vultr Integration
-
-```python
-# Voice output relay
-async def relay_voice_output(text: str, task_id: str):
-    await vultr.send({
-        "text": text,
-        "task_id": task_id,
-        "format": "audio"
-    })
-    # Log to Notion
-    await notion.add_comment(
-        page_id=task_id,
-        content=f"[Voice] {text}"
-    )
-```
 
 ---
 

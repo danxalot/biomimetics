@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  mcp-server:
+    image: arca-mcp-server:arm64-latest
+    ports:
+      - "${MCP_SERVER_PORT:-8086}:${MCP_SERVER_PORT:-8090}"
+    environment:
+      - MCP_SERVER_PORT=${MCP_SERVER_PORT:-8090}
+      - INSTANCE_ID=${INSTANCE_ID:-workhorse-mcp}
+      - ARCA_ROOT=${ARCA_ROOT:-/home/ubuntu/ARCA}
+      - MCP_TLS_ENABLED=${MCP_TLS_ENABLED:-false}
+      - MCP_CERT_DIR=${MCP_CERT_DIR:-/mnt/mcp_storage/certs}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ${ARCA_ROOT:-/home/ubuntu/ARCA}:/app/arca:ro
+      - ${ARCA_ROOT:-/home/ubuntu/ARCA}/genesis:/app/genesis
+      - ${MCP_CERT_DIR:-/mnt/mcp_storage/certs}:/app/certs:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${MCP_SERVER_PORT:-8090}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

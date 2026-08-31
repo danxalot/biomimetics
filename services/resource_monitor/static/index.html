@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Resource Monitor</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .control-panel {
+            background-color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 10px;
+        }
+
+        .monitor-window {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            min-height: 300px;
+            margin-bottom: 20px;
+        }
+
+        .button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .button.active {
+            background-color: #f44336;
+        }
+
+        .metric-group {
+            margin-bottom: 20px;
+        }
+
+        .metric-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 5px;
+        }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 5px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .metric-label {
+            color: #666;
+        }
+
+        .metric-value {
+            font-family: monospace;
+            font-weight: bold;
+        }
+
+        /* Grid layout for metrics */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="control-panel">
+            <button id="oneshot" class="button">Refresh Now</button>
+            <button id="stream" class="button">Start Live Stream</button>
+            <div style="margin-left:auto; align-self:center; color:#666">
+                Status: <span id="connection-status">Disconnected</span>
+            </div>
+        </div>
+
+        <!-- Charts Pane -->
+        <div class="monitor-window">
+            <div class="metric-title">Historical Performance (1 Hour)</div>
+            <div class="chart-container">
+                <canvas id="resourceChart"></canvas>
+            </div>
+        </div>
+
+        <div class="metrics-grid">
+            <!-- System Metrics -->
+            <div class="monitor-window">
+                <div class="metric-group">
+                    <div class="metric-title">Host System</div>
+                    <div class="metric-row">
+                        <span class="metric-label">CPU Usage:</span>
+                        <span class="metric-value" id="sys-cpu">-</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Memory Usage:</span>
+                        <span class="metric-value" id="sys-mem">-</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Memory Available:</span>
+                        <span class="metric-value" id="sys-mem-avail">-</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Network Sent:</span>
+                        <span class="metric-value" id="sys-net-sent">-</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Network Recv:</span>
+                        <span class="metric-value" id="sys-net-recv">-</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Disk I/O:</span>
+                        <span class="metric-value" id="sys-disk">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Container List -->
+            <div class="monitor-window">
+                <div class="metric-group">
+                    <div class="metric-title">Active Containers</div>
+                    <div
+                        style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:2px solid #ccc; font-weight:bold; font-size:12px; color:#555;">
+                        <div style="flex:2">Name</div>
+                        <div style="flex:1; text-align:right">CPU %</div>
+                        <div style="flex:1; text-align:right">MEM %</div>
+                    </div>
+                    <div id="container-list" style="max-height: 300px; overflow-y: auto;">
+                        <div style="padding:10px; text-align:center; color:#999">Loading containers...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logs Pane -->
+        <div class="monitor-window">
+            <div class="metric-group">
+                <div class="metric-title">Container Logs</div>
+                <div style="margin-bottom:10px">
+                    <button id="fetch-logs" class="button" style="font-size:14px; padding:5px 10px;">Fetch Qwen
+                        Logs</button>
+                </div>
+                <pre id="logs"
+                    style="height:200px; overflow:auto; background:#1e1e1e; color:#0f0; padding:10px; border-radius:4px; font-size:12px;">No logs fetched yet</pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let chart = null;
+        const oneshot = document.getElementById('oneshot');
+        const stream = document.getElementById('stream');
+        const statusSpan = document.getElementById('connection-status');
+
+        // Color generator
+        const colors = [
+            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40',
+            '#E7E9ED', '#76b900', '#c2185b', '#00acc1', '#fb8c00', '#5e35b1'
+        ];
+        function getColor(index) {
+            return colors[index % colors.length];
+        }
+
+        // Initialize Chart
+        function initChart() {
+            const ctx = document.getElementById('resourceChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: []
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    },
+                    plugins: {
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 10
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Usage %'
+                            }
+                        },
+                        x: {
+                            display: false
+                        }
+                    },
+                    elements: {
+                        point: {
+                            radius: 0,
+                            hitRadius: 10
+                        },
+                        line: {
+                            borderWidth: 1.5
+                        }
+                    },
+                    animation: false
+                }
+            });
+        }
+
+        async function fetchHistory() {
+            try {
+                const response = await fetch('/history');
+                const data = await response.json();
+
+                if (!data.history || !chart) return;
+
+                // Reset datasets
+                const timestamps = data.history.map(d => new Date(d.timestamp).toLocaleTimeString());
+                chart.data.labels = timestamps;
+                chart.data.datasets = [];
+
+                // 1. System CPU (Always first)
+                const sysCpu = data.history.map(d => d.cpu);
+                chart.data.datasets.push({
+                    label: 'System Total CPU',
+                    borderColor: '#000000',
+                    backgroundColor: 'rgba(0,0,0,0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    data: sysCpu,
+                    tension: 0.2
+                });
+
+                // 2. Identify all unique containers
+                const containersMap = {}; // name -> [data array aligned with history]
+
+                // Initialize arrays with nulls
+                data.history.forEach((point, idx) => {
+                    if (point.containers) {
+                        point.containers.forEach(c => {
+                            if (!containersMap[c.name]) {
+                                containersMap[c.name] = new Array(data.history.length).fill(null);
+                            }
+                            containersMap[c.name][idx] = c.cpu; // Tracking CPU for graph primarily
+                        });
+                    }
+                });
+
+                // Create datasets for each container
+                Object.keys(containersMap).forEach((name, i) => {
+                    const color = getColor(i);
+
+                    // User-friendly renames for Graph
+                    let displayName = name;
+                    if (name === 'oracle_db') displayName = 'Pythia';
+                    if (name === 'geometry_kernel' || name === 'pythagoras') displayName = 'The Mount';
+
+                    chart.data.datasets.push({
+                        label: displayName,
+                        borderColor: color,
+                        backgroundColor: color,
+                        borderWidth: 1,
+                        data: containersMap[name],
+                        tension: 0.4
+                    });
+                });
+
+                chart.update();
+
+            } catch (e) {
+                console.error("Failed to load history:", e);
+            }
+        }
+
+        function updateMetrics(data) {
+            // Update System Panels
+            if (data.system) {
+                document.getElementById('sys-cpu').textContent = `${data.system.cpu_percent.toFixed(1)}%`;
+                document.getElementById('sys-mem').textContent = `${data.system.memory_percent.toFixed(1)}%`;
+                document.getElementById('sys-mem-avail').textContent = `${data.system.memory_available.toFixed(2)} GB`;
+                document.getElementById('sys-net-sent').textContent = formatBytes(data.system.net_bytes_sent_per_sec) + '/s';
+                document.getElementById('sys-net-recv').textContent = formatBytes(data.system.net_bytes_recv_per_sec) + '/s';
+                document.getElementById('sys-disk').textContent =
+                    (data.system.disk_read_bytes_per_sec || 0) && (data.system.disk_write_bytes_per_sec || 0) ?
+                        `R: ${formatBytes(data.system.disk_read_bytes_per_sec)}/s | W: ${formatBytes(data.system.disk_write_bytes_per_sec)}/s` : '-';
+            }
+
+            // Update List
+            if (data.containers && Array.isArray(data.containers)) {
+                const list = document.getElementById('container-list');
+                list.innerHTML = '';
+                // Sort by CPU usage DESC
+                data.containers.sort((a, b) => b.cpu_percent - a.cpu_percent);
+                data.containers.forEach(c => {
+                    const row = document.createElement('div');
+                    row.className = 'metric-row';
+                    row.style.fontSize = '12px';
+                    const isHighCpu = c.cpu_percent > 50;
+                    const cpuColor = isHighCpu ? '#f44336' : '#333';
+                    const weight = isHighCpu ? 'bold' : 'normal';
+
+                    // User-friendly renames for List
+                    let displayName = c.name;
+                    if (c.name === 'oracle_db') displayName = 'Pythia';
+                    if (c.name === 'geometry_kernel' || c.name === 'pythagoras') displayName = 'The Mount';
+
+                    row.innerHTML = `
+                        <div style="flex:2; font-weight:bold; overflow:hidden; text-overflow:ellipsis;" title="${c.name}">${displayName}</div>
+                        <div style="flex:1; text-align:right; color:${cpuColor}; font-weight:${weight}">${c.cpu_percent.toFixed(1)}%</div>
+                        <div style="flex:1; text-align:right">${c.memory_percent.toFixed(1)}%</div>
+                    `;
+                    list.appendChild(row);
+                });
+            }
+
+            // NOTE: Live chart streaming for dynamic datasets is complex. 
+            // For now, "refresh" or auto-reload history is safer for consistency.
+            // We'll skip live-pushing to chart to avoid mismatching datasets.
+        }
+
+        function formatBytes(bytes) {
+            if (!bytes) return '0 B';
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(1024));
+            return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
+        }
+
+        // Event Listeners
+        oneshot.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/metrics');
+                const data = await response.json();
+                updateMetrics(data);
+                fetchHistory(); // Reload graph
+            } catch (error) {
+                console.error('Error fetching metrics:', error);
+            }
+        });
+
+        stream.addEventListener('click', () => {
+            if (ws === null) {
+                const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+                ws = new WebSocket(`${protocol}//${location.host}/ws/metrics`);
+                ws.onopen = () => {
+                    statusSpan.textContent = 'Connected (Live)';
+                    statusSpan.style.color = 'green';
+                    stream.textContent = 'Stop Live Stream';
+                    stream.classList.add('active');
+                };
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    updateMetrics(data);
+                    // Optionally auto-refresh history every N seconds?
+                };
+                ws.onclose = () => {
+                    ws = null;
+                    statusSpan.textContent = 'Disconnected';
+                    statusSpan.style.color = '#666';
+                    stream.textContent = 'Start Live Stream';
+                    stream.classList.remove('active');
+                };
+            } else {
+                ws.close();
+            }
+        });
+
+        document.getElementById('fetch-logs').addEventListener('click', async () => {
+            try {
+                document.getElementById('logs').textContent = "Fetching...";
+                const resp = await fetch('/logs?lines=200');
+                const data = await resp.json();
+                if (data.logs) {
+                    document.getElementById('logs').textContent = data.logs;
+                } else {
+                    document.getElementById('logs').textContent = JSON.stringify(data, null, 2);
+                }
+            } catch (e) {
+                document.getElementById('logs').textContent = 'Fetch failed: ' + e;
+            }
+        });
+
+        // Init
+        initChart();
+        fetchHistory();
+
+        // Auto-refresh history every 10s for user "Stream" feeling on graph
+        setInterval(fetchHistory, 10000);
+        oneshot.click();
+
+    </script>
+</body>
+
+</html>

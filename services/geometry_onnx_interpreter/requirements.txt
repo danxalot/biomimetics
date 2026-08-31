@@ -1,0 +1,35 @@
+# Geometry ONNX Interpreter Service
+# Requirements for ONNX model serving with Qwen3VL integration
+
+# HTTP Server
+fastapi==0.104.1
+uvicorn==0.24.0
+python-multipart==0.0.6
+
+# Data validation
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# ONNX Runtime
+onnxruntime==1.16.3
+onnx==1.15.0
+
+# Numerical computing
+numpy==1.24.3
+
+# HTTP client for Qwen3VL integration
+httpx==0.25.1
+
+# JSON handling
+python-dateutil==2.8.2
+
+# Pipeline storage (optional — service degrades gracefully without these)
+qdrant-client==1.7.0
+redis==5.0.1
+
+# Optional: GPU support (for ONNX Runtime with CUDA)
+# onnxruntime-gpu==1.16.3  # Uncomment if using GPU
+
+# Hyperdimensional Computing - torch-hd (optional, for HDC inference)
+# torch-hd>=2.0.0
+# torch>=2.0.0

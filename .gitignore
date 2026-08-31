@@ -151,3 +151,12 @@ pythia/Gold_Standard_Archive/kinematics/
 .swarm_halt
 
 
+llama_cpp
+services/pythia_server/llama_cpp/
+services/pythia_server/llama_cpp/
+services/llama-cpp-python/vendor/
+scripts/copaw/src/copaw/tokenizer/tokenizer.json
+scripts/copaw/src/copaw/tokenizer/merges.txt
+opencode.json
+generate_4_designs.py
+generate_design.py

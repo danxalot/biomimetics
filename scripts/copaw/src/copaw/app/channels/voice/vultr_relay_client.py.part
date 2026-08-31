@@ -1,0 +1,168 @@
+# -*- coding: utf-8 -*-
+"""Vultr Relay Client for CoPaw Voice Channel."""
+import asyncio
+import base64
+import json
+import logging
+import wave
+import wave
+# import audioop  # Removed for Python 3.13+ compatibility
+import pyaudio
+import websockets
+import httpx
+import webrtcvad
+import time
+import threading
+import statistics
+import warnings
+import numpy as np
+import os
+from websockets.exceptions import ConnectionClosed
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="websockets.exceptions")
+from collections import deque
+from pynput import keyboard
+from datetime import datetime, timezone
+from google.oauth2 import service_account
+from google.auth.transport.requests import Request
+# from copaw.app.console_push_store import append as push_store_append  # REMOVED: Process isolation issues
+
+logger = logging.getLogger(__name__)
+
+# Audio configuration
+FORMAT = pyaudio.paInt16
+CHANNELS = 1
+INPUT_RATE = 16000
+OUTPUT_RATE = 24000
+CHUNK = 480  # Task 3: Restored to 30ms @ 16kHz
+VAD_MODE = 3  # Most aggressive filtering
+DUCKING_TIMEOUT_SEC = 0.3  # Reset ducking if no audio received for 300ms
+
+def calculate_rms(audio_data):
+    """Fast RMS calculation using NumPy to avoid blocking the event loop."""
+    if not audio_data: return 0
+    # Convert bytes to numpy array (16-bit PCM = int16)
+    audio_np = np.frombuffer(audio_data, dtype=np.int16)
+    if audio_np.size == 0: return 0
+    # Vectorized root-mean-square calculation
+    return int(np.sqrt(np.mean(np.square(audio_np.astype(np.float32)))))
+
+class VultrRelayClient:
+    """
+    Client for the Vultr Gemini 3.1 Live WebSocket Relay.
+    
+    Handles:
+    - WebSocket connection to the relay
+    - Audio capture from local microphone via PyAudio
+    - Audio playback to local speakers via PyAudio
+    - Bidirectional communication with the relay
+    """
+    
+    def __init__(self, relay_url: str):
+        self.relay_url = relay_url
+        self.ws = None
+        self.p = pyaudio.PyAudio()
+        self.input_stream = None
+        self.output_stream = None
+        self.running = False
+        self.is_playing = False  # Flag for ducking (echo cancellation)
+        self.last_audio_received_at = 0  # Timestamp of last received audio chunk
+        self.current_speaker_rms = 0  # Fairy Dust v2: Track speaker energy
+        self.ready = asyncio.Event()  # Sync flag for handshake completion
+
+        # Load Persona / Identity (BiOS / Puck)
+        self.agent_name = "BiOS"
+        self.persona = "Puck"
+        self.persona_brief = (
+            "[IDENTITY]\n"
+            f"Name: {self.agent_name}\n"
+            f"Persona: {self.persona} (Dry, witty, condescending tactical trickster-butler).\n"
+            "Emergency Protocol: If the user sounds frustrated or things go wrong, immediately pivot to: "
+            "'Omniscient Vanguard Guard & Trusted Advisor' (High-capability systems engineer mode).\n"
+            "Directive: Repetition is forbidden. Avoid duplicating mistakes. Only respond when addressed as 'BiOS'."
+        )
+
+        # Load Notion Token from secrets
+        try:
+            with open("/Users/danexall/biomimetics/secrets/notion_bios_agent_api", "r") as f:
+                self.notion_token = f.read().strip()
+        except Exception as e:
+            logger.error(f"Failed to load Notion token: {e}")
+            self.notion_token = None
+
+        self.notion_client = httpx.AsyncClient(
+            base_url="https://api.notion.com/v1",
+            headers={
+                "Authorization": f"Bearer {self.notion_token}",
+                "Content-Type": "application/json",
+                "Notion-Version": "2022-06-28"
+            }
+        )
+
+        self.vad = webrtcvad.Vad(VAD_MODE)
+        self.ptt_active = False
+        self._is_muted = False  # URGENT: Hardware-level mute flag
+        self.noise_history = deque(maxlen=100) # Rolling baseline (3s window at 30ms frames)
+        self.mic_queue = asyncio.Queue(maxsize=60)  # Task 1: Increased to 60 (1.2s @ 20ms) to survive stabilization delay
+        self.loop = None                  # Initialized at runtime
+        self.mic_thread = None            # Producer thread
+        self._floor_update_counter = 0    # Recalculate median every 30 frames
+        self._cached_floor = 40           # Initial fallback floor
+        
+        # Start keyboard listener for PTT and Mute
+        self.listener = keyboard.Listener(on_press=self._on_press, on_release=self._on_release)
+        self.listener.start()
+        logger.info("VAD, PTT & Dynamic Baseline initialized.")
+        
+        # Determine CoPaw API Port (Task: HUD Stability)
+        self.copaw_port = int(os.environ.get("COPAW_API_PORT", 8090))
+        self.copaw_base_url = f"http://localhost:{self.copaw_port}"
+        logger.info(f"🚀 HUD Relay Target: {self.copaw_base_url}")
+
+        # Task 1 & 3: Credentials and GCP Token Cache
+        self.credentials_server_url = os.environ.get("CREDENTIALS_SERVER_URL", "http://127.0.0.1:8089")
+        self.credentials_api_key = os.environ.get("CREDENTIALS_API_KEY")
+        if not self.credentials_api_key:
+            try:
+                with open("/Users/danexall/biomimetics/secrets/credentials_api_key", "r") as f:
+                    self.credentials_api_key = f.read().strip()
+            except:
+                pass
+        
+        self.gcp_gateway_url = os.environ.get("GCP_GATEWAY_URL", "https://us-central1-arca-471022.cloudfunctions.net/memory-orchestrator")
+        self._cached_oidc_token = None
+        self._token_expiry = 0
+        self._token_cache_lifetime = 3000  # 50 minutes (Wiki: Token lasts 60m)
+
+    def toggle_mute(self):
+        """Toggle the hardware-level mute state."""
+        self._is_muted = not self._is_muted
+        status = "MUTED 🤐" if self._is_muted else "UNMUTED 🎙️"
+        print(f"\n[🛡️  BiOS] Audio state: {status}          ", flush=True)
+
+    def _on_press(self, key):
+        try:
+            if key == keyboard.Key.space:
+                if not self.ptt_active:
+                    self.ptt_active = True
+                    print("\n[🔥 PTT ACTIVE] Force Transmitting...          ", flush=True)
+            elif hasattr(key, 'char') and key.char == 'm':
+                self.toggle_mute()
+        except AttributeError:
+            pass # Ignore special keys that don't have .char
+
+    def _on_release(self, key):
+        if key == keyboard.Key.space:
+            self.ptt_active = False
+            print("\n[☁️ PTT RELEASED] VAD Gate restored.            ", flush=True)
+
+    def get_dynamic_floor(self):
+        """Calculate dynamic RMS floor with rate-limiting to save CPU."""
+        self._floor_update_counter += 1
+        # Only recalculate the median once every 30 frames (~1 second)
+        if self._floor_update_counter >= 30:
+            self._floor_update_counter = 0
+            if len(self.noise_history) >= 10:
+                # Median is robust against volume spikes; 50% buffer for breathing room
+                raw_floor = statistics.median(self.noise_history) * 1.5
+                self._cached_floor = min(raw_floor, 400) # Hard cap (Wiki aligned) to prevent runaway adaptation
+        return self._cached_floor

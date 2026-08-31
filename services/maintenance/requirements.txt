@@ -1,0 +1,6 @@
+langgraph>=0.2.0
+langgraph-checkpoint-sqlite>=0.1.0
+sqlite-vec>=0.1.0
+litellm>=1.40.0
+aio_pika>=9.0.0
+langchain-anthropic

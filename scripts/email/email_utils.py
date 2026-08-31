@@ -28,7 +28,7 @@ PROTON_HOST = "127.0.0.1"
 PROTON_PORT = 1143
 FILTER_RULES_FILE = Path("/Users/danexall/biomimetics/config/email_filtering_rules.json")
 WHITELIST_FILE = Path("/Users/danexall/biomimetics/config/email_whitelist.json")
-WEBHOOK_RECEIVER_URL = "http://localhost:8000/email"
+WEBHOOK_RECEIVER_URL = "http://localhost:8090/email"
 
 def get_master_key():
     if not os.path.exists(CREDENTIALS_FILE): return None
@@ -323,11 +323,15 @@ def extract_email_body(msg: email.message.Message) -> str:
                     charset = part.get_content_charset() or "utf-8"
                     raw_html = part.get_payload(decode=True).decode(charset, errors="replace")
                     if BS4_AVAILABLE:
+                        # Ensure we clean the HTML thoroughly
                         soup = BeautifulSoup(raw_html, "html.parser")
-                        # Deep cleanse: remove style and script tags to prevent code-clumping
-                        for tag in soup.find_all(["style", "script"]):
-                            tag.decompose()
-                        html_body = soup.get_text(separator="\n", strip=True)
+                        # Remove styling and script elements
+                        for element in soup(["script", "style", "head", "title", "meta", "[document]"]):
+                            element.decompose()
+                        # Get text with clean spacing
+                        text = soup.get_text(separator=" ", strip=True)
+                        # Remove redundant whitespace
+                        html_body = " ".join(text.split())
                     else:
                         html_body = raw_html
                 except Exception:
@@ -362,18 +366,93 @@ def extract_email_body(msg: email.message.Message) -> str:
     return body.strip()
 
 
-def send_to_notion(email_data: dict) -> dict:
-    """Send email metadata to local webhook translator for Notion dashboard"""
+def markdown_to_notion_children(body: str, limit: int = 80) -> list:
+    """Turn briefing markdown into Notion page body blocks (page create children)."""
+    children = []
+    if not body:
+        return children
+    for raw_line in body.splitlines():
+        text = raw_line.strip()
+        if not text:
+            continue
+        content = text[:2000]
+        if text.startswith("## "):
+            children.append({
+                "object": "block",
+                "type": "heading_2",
+                "heading_2": {"rich_text": [{"type": "text", "text": {"content": content[3:]}}]},
+            })
+        elif text.startswith("# "):
+            children.append({
+                "object": "block",
+                "type": "heading_1",
+                "heading_1": {"rich_text": [{"type": "text", "text": {"content": content[2:]}}]},
+            })
+        elif text.startswith("- "):
+            children.append({
+                "object": "block",
+                "type": "bulleted_list_item",
+                "bulleted_list_item": {"rich_text": [{"type": "text", "text": {"content": content[2:]}}]},
+            })
+        else:
+            children.append({
+                "object": "block",
+                "type": "paragraph",
+                "paragraph": {"rich_text": [{"type": "text", "text": {"content": content}}]},
+            })
+        if len(children) >= limit:
+            break
+    return children
+
+
+def send_to_notion(payload: dict) -> dict:
+    """Send tracking entry to Notion database directly."""
     try:
-        response = httpx.post(
-            WEBHOOK_RECEIVER_URL,
-            json=email_data,
-            headers={"Content-Type": "application/json"},
-            timeout=15.0
-        )
-        response.raise_for_status()
-        return response.json()
+        notion_api_key = os.environ.get("NOTION_API_KEY")
+        # Default to BiOS Authorisation DB ID
+        notion_db_id = os.environ.get("NOTION_EMAIL_DB_ID", "3284d2d9fc7c81bd9a91e865511e642f")
+        
+        # JIT Secret Fetching if not in environment
+        if not notion_api_key:
+            master_key = get_master_key()
+            if master_key:
+                notion_api_key = fetch_secret("notion-api-key", master_key)
+        
+        if not notion_api_key:
+            return {"error": "NOTION_API_KEY not set and could not be fetched"}
+        
+        body_text = payload.get("body", json.dumps(payload, indent=2))
+        notion_data = {
+            "parent": {"database_id": notion_db_id},
+            "properties": {
+                "Name": {"title": [{"text": {"content": f"[{payload.get('type', 'email').upper()}] {payload.get('subject', 'No Subject')}"}}]},
+                "Source": {"select": {"name": payload.get("type", "Email").capitalize()}},
+                "Status": {"select": {"name": payload.get("status", "Triage")}},
+                "Local File": {"rich_text": [{"text": {"content": payload.get("local_file", "")}}]},
+                "Payload": {"rich_text": [{"text": {"content": body_text[:2000]}}]}
+            }
+        }
+        children = markdown_to_notion_children(body_text)
+        if children:
+            notion_data["children"] = children
+
+        with httpx.Client(timeout=15.0) as client:
+            resp = client.post(
+                "https://api.notion.com/v1/pages",
+                headers={
+                    "Authorization": f"Bearer {notion_api_key}",
+                    "Content-Type": "application/json",
+                    "Notion-Version": "2022-06-28"
+                },
+                json=notion_data
+            )
+            if resp.status_code != 200:
+                print(f"  ❌ Notion API Error: {resp.status_code} {resp.text}")
+                return {"error": resp.text}
+            return resp.json()
+
     except Exception as e:
+        print(f"  ❌ Direct Notion push failed: {e}")
         return {"error": str(e)}
 
 

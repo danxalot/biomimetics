@@ -1,0 +1,32 @@
+{
+  "llms": [
+    {
+      "name": "interaction-agent",
+      "model": "gemma-4-31b-it",
+      "api_style": "google_ai_studio",
+      "api_key_env_var": "GOOGLE_API_KEY",
+      "is_primary": true,
+      "rate_limit_rpm": 15,
+      "description": "Fast user interaction model: gemma-4-31b-it"
+    },
+    {
+      "name": "reasoning-agent",
+      "model": "gemini-2.5-flash",
+      "api_style": "google_ai_studio",
+      "api_key_env_var": "GOOGLE_API_KEY",
+      "is_primary": false,
+      "rate_limit_rpm": 10,
+      "description": "Reasoning and analysis model: gemini-2.5-flash"
+    }
+  ],
+  "mcp_server": {
+    "url": "http://mcp_server:8086/mcp",
+    "timeout": 30
+  },
+  "agent_service": {
+    "url": "http://agent_service:8001",
+    "timeout": 60
+  },
+  "_generated_from": "centralized model_config.py",
+  "_model_config_available": true
+}

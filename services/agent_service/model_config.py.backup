@@ -1,0 +1,670 @@
+"""
+ARCA Model Configuration - Single Source of Truth
+Central configuration for all AI models used across ARCA services.
+All model names are configurable via environment variables.
+
+QUOTA TRACKING & 429 ERROR HANDLING:
+- Centralized in llm_gateway service (not per-tool)
+- Tracks all model calls regardless of which tool/agent calls it
+- Daily quota reset at midnight Pacific Time
+- 429 (quota exceeded) errors trigger HITL (Human-In-The-Loop) model selection
+  (NOT automatic fallback - human chooses which model to use)
+- See HITL_MODEL_SELECTION_SYSTEM.md for HITL workflow
+- See /hitl/available-models endpoint on llm_gateway for quota status
+
+ROLE DESIGNATIONS (January 3, 2026):
+- Architect: gemini-exp-1206 (strategic planning)
+- Engineer: gemini-2.5-flash (implementation)
+- Planner: gemini-2.0-flash-lite (decomposition)
+- Maintainer: deepseek-r1-distill-qwen-1.5b (local ops)
+- Compressor: gemini-2.5-flash (MCP tool)
+"""
+
+import os
+from dataclasses import dataclass, field
+from typing import Dict, Optional, List
+from datetime import datetime
+
+
+@dataclass
+class ModelConfig:
+    """Configuration for a single model"""
+    name: str
+    provider: str  # 'google', 'local', 'openai', etc.
+    tier: int  # 1=fast/cheap, 2=balanced, 3=powerful/expensive
+    description: str
+    role: Optional[str] = None  # 'architect', 'engineer', 'orchestrator', 'deepthink', etc.
+    context_window: int = 0
+    latency_ms: int = 0
+    quota_tracked: bool = False  # Track API quota usage
+    endpoint: Optional[str] = None
+    container_endpoint: Optional[str] = None
+
+
+@dataclass
+class QuotaCounter:
+    """Tracks quota usage for API calls"""
+    model_name: str
+    role: str
+    calls_count: int = 0
+    tokens_used: int = 0
+    quota_limit: int = 0
+    quota_remaining: int = 0
+    last_updated: str = field(default_factory=lambda: datetime.now().isoformat())
+    
+    def increment_call(self, tokens: int = 0):
+        """Increment call counter"""
+        self.calls_count += 1
+        self.tokens_used += tokens
+        self.quota_remaining = max(0, self.quota_limit - self.tokens_used)
+        self.last_updated = datetime.now().isoformat()
+
+
+# Default model names (can be overridden by environment variables)
+# All models use Google AI Studio API except local models (llama.cpp native)
+# Reference: services/shared/model_config.py (central source of truth)
+#
+# ROLE DESIGNATIONS (January 3, 2026):
+# ═══════════════════════════════════════════════════════
+# GENESIS CHAIN (Reasoning Layer - NO EXECUTION):
+# - ARCHITECT: gemini-exp-1206 (strategic planning & reasoning)
+# - PLANNER: gemini-2.0-flash-lite (task decomposition)
+# - ENGINEER: gemini-2.5-flash (implementation & execution)
+# - REVIEWER: gemini-2.5-flash-lite (quality gate)
+# - ORCHESTRATOR: gemini-2.0-flash-lite (coordination)
+#
+# EXECUTION LAYER (Local - llama.cpp):
+# - SERENA: granite-guardian-3.1-2b (code monitoring - local via llama.cpp)
+# - MAINTAINERS: deepseek-r1-distill-qwen-1.5b (Docker/Git/Security/File Ops)
+#
+# GEOMETRY KERNEL:
+# - SEMANTIC_INTERPRETER: deepseek-r1-distill-qwen-1.5b (force proposals - local)
+# - FEASIBILITY_AUDITOR: deepseek-r1-distill-qwen-1.5b (validation - local)
+#
+DEFAULTS = {
+    # ═══════════════════════════════════════════════════════
+    # GENESIS / REASONING CHAIN (Per Genesis Chain Configuration.md)
+    # ═══════════════════════════════════════════════════════
+    "ARCHITECT_MODEL": "gemini-3-flash",            # Strategic planning & reasoning
+    "PLANNER_MODEL": "gemini-2.5-flash-lite",       # Task decomposition
+    "ENGINEER_MODEL": "gemini-2.5-flash",           # Implementation & execution  
+    "REVIEWER_MODEL": "gemma-3-27b-it",             # Quality gate (130K context - NOT Flash-Lite)
+    "ORCHESTRATOR_MODEL": "gemini-2.0-flash-lite",  # Coordination
+    "META_DEBUGGER_MODEL": "gemma-3-27b-it",        # Failure analysis
+    
+    # Fast Genesis Chain (Speed-optimized variants)
+    "FAST_ARCHITECT_MODEL": "gemma-3-27b-it",       # Fast strategic planning
+    "FAST_PLANNER_MODEL": "gemma-3-12b-it",         # Fast task decomposition
+    "FAST_ENGINEER_MODEL": "gemma-3-27b-it",        # Fast implementation
+    "FAST_REVIEWER_MODEL": "gemma-3-27b-it",        # Fast quality gate
+    "FAST_ORCHESTRATOR_MODEL": "gemma-3-4b-it",     # Fast coordination → local ops
+    
+    # Observer / System Awareness (Silent Listener - Per user correction)
+    "OBSERVER_MODEL": "gemini-2.5-flash-lite",      # Silent Listener (parallel to Engineer)
+    
+    # ═══════════════════════════════════════════════════════
+    # CHAT/INTERACTION MODELS (Google AI Studio)
+    # ═══════════════════════════════════════════════════════
+    "CHAT_MODEL": "gemma-3-27b-it",                 # User interaction
+    "HITL_MODEL": "gemma-3-27b-it",                 # Human-in-the-loop model selection
+    
+    # ═══════════════════════════════════════════════════════
+    # LOCAL MODELS (llama.cpp host)
+    # ═══════════════════════════════════════════════════════
+    # User Mandate (Jan 20, 2026): All local ops use Qwen 3 VL Instruct 2B Q8.0 GGUF
+    "SERENA_MODEL": "devstral-2", # Serena code agent (Devstral 2)
+    "MAINTAINER_MODEL": "Qwen3VL-2B-Instruct-Q8_0.gguf",  # Docker/Git/Security/File Ops
+    "SEMANTIC_INTERPRETER_MODEL": "Qwen3VL-2B-Instruct-Q8_0.gguf", # Geometry reasoning (structured output)
+    "FEASIBILITY_AUDITOR_MODEL": "Qwen3VL-2B-Instruct-Q8_0.gguf",  # Geometry validation
+    "LOCAL_OPS_MODEL": "Qwen3VL-2B-Instruct-Q8_0.gguf",   # Local operations
+    "VISION_MODEL": "Qwen3VL-2B-Instruct-Q8_0.gguf",      # Local vision 
+    
+    "SIGLIP_MODEL": "google/siglip2-so400m-patch14-384", # Local SigLIP 2 Q4 for embeddings
+    "TOPOLOGY_MODEL": "SAIG-S_VIGOR_SameArea",           # SAIG-S for topological queries
+    "GLM_4_6V_FLASH_MODEL": "glm-4v-flash",               # Local encoded model (BigModel) -> Maps to zai/glm-4v
+    "VAE_TRANSFORMER_MODEL": "shape_vae_transformer_v1.pt",   # Local geometry VAE
+    "VIGOR_PLUS_MODEL": "vigor_plus_v1",                      # Local grounding logic
+    "QWEN_3_VL_MODEL": "Qwen3VL-2B-Instruct-Q8_0.gguf",     # Qwen 3 Vision (2B)
+    
+    # SYSTEM COMPONENTS (New Additions)
+    "CONCEPT_FARM_MODEL": "Qwen3VL-2B-Instruct-Q8_0.gguf", # Concept Farm / The Grinder
+    "GRINDER_MODEL": "Qwen3VL-2B-Instruct-Q8_0.gguf",      # The Grinder
+    "WORLD_MODEL": "Qwen3VL-2B-Instruct-Q8_0.gguf",        # World Model
+    
+    # ═══════════════════════════════════════════════════════
+    # MCP TOOLS MODELS
+    # ═══════════════════════════════════════════════════════
+    "DEEPTHINK_MODEL": "deep-research-pro-preview-12-2025",  # Deep research
+    "COMPRESSOR_MODEL": "gemini-2.0-flash",         # MCP tool for compression
+    "ROBOTICS_MODEL": "gemini-robotics-er-1.5-preview",  # Google Robotics 1.5 ER
+    "REASONING_BANK_MODEL": "gemma-3-12b-it",       # Optimized reasoning (Tier 2) - Balanced Spd/Cap
+    "INSIGHT_SYNTHESIS_MODEL": "gemma-3-27b-it",    # Uses architect-level analysis
+    "LEARN_MODEL": "gemma-3-27b-it",                # Learning and knowledge synthesis
+    
+    # ═══════════════════════════════════════════════════════
+    # EMBEDDING MODELS
+    # ═══════════════════════════════════════════════════════
+    "EMBEDDING_MODEL": "Qwen3-Embedding-0.6B-Q8_instruct.gguf",           # Qwen 3 0.6B Instruct (Native)
+}
+
+# Alternative model mappings for testing/fallback
+AVAILABLE_MODELS = {
+    # Gemini Models (Google AI Studio)
+    "gemini-3-pro": {"tier": 3, "context": 2097152, "latency": 847, "cost": "paid", "role": "architect"},
+    "gemini-3-flash": {"tier": 2, "context": 1000000, "latency": 423, "cost": "paid", "role": "engineer"},
+    "gemini-3-flash-lite": {"tier": 1, "context": 1000000, "latency": 318, "cost": "paid", "role": "fast_response"},
+    # Gemini 3 Preview & Latest Aliases (Verified Jan 11, 2026)
+    "gemini-3-pro-preview": {"tier": 3, "context": 2097152, "latency": 850, "cost": "paid", "role": "architect_preview", "litellm_model_name": "models/gemini-3-pro-preview"},
+    "gemini-3-flash-preview": {"tier": 2, "context": 1000000, "latency": 420, "cost": "paid", "role": "engineer_preview", "litellm_model_name": "models/gemini-3-flash-preview"},
+    
+    # Standardized Aliases (Rotation Heads)
+    "gemini-3.0-pro": {"tier": 3, "context": 2097152, "latency": 850, "cost": "paid", "role": "architect", "litellm_model_name": "models/gemini-3-pro-preview"},
+    "gemini-3.0-flash": {"tier": 2, "context": 1000000, "latency": 420, "cost": "paid", "role": "engineer", "litellm_model_name": "models/gemini-3-flash-preview"},
+    "gemini-3.0-flash-lite": {"tier": 1, "context": 1048576, "latency": 300, "cost": "free", "role": "orchestrator", "litellm_model_name": "models/gemini-2.0-flash-lite"},
+
+    "gemini-pro-latest": {"tier": 3, "context": 2097152, "latency": 850, "cost": "paid", "role": "architect_latest", "litellm_model_name": "models/gemini-pro-latest"},
+    "gemini-flash-latest": {"tier": 2, "context": 1000000, "latency": 420, "cost": "paid", "role": "engineer_latest", "litellm_model_name": "models/gemini-flash-latest"},
+    "gemini-2.5-flash-lite": {"tier": 1, "context": 1048576, "latency": 400, "cost": "free", "role": "orchestrator"},
+    "gemini-2.5-flash": {"tier": 2, "context": 1048576, "latency": 500, "cost": "free", "role": "compressor"},
+    
+    # SUBSTITUTE: 2.5 Pro -> 3.0 Flash (User Request: Non-Billing fallback)
+    "gemini-2.5-pro": {"tier": 3, "context": 2097152, "latency": 420, "cost": "free", "role": "architect_substitute", "litellm_model_name": "models/gemini-3-flash-preview"},
+    
+    "gemini-2.0-flash-lite": {"tier": 1, "context": 1048576, "latency": 300, "cost": "free", "role": "orchestrator"},
+    "gemini-2.0-flash": {"tier": 2, "context": 1048576, "latency": 400, "cost": "free", "role": "meta_debugger"},
+    "gemini-robotics-er-1.5-preview": {"tier": 3, "context": 1000000, "latency": 2000, "cost": "free", "role": "robotics", "litellm_model_name": "models/gemini-robotics-er-1.5-preview"},
+    
+    # BigModel / Zhipu AI
+    "glm-4v-flash": {"tier": 2, "context": 128000, "latency": 500, "cost": "free", "role": "vision_backup", "litellm_model_name": "zai/glm-4v"},
+    "glm-4.6v-flash": {"tier": 2, "context": 128000, "latency": 500, "cost": "free", "role": "vision_backup", "litellm_model_name": "zai/glm-4v"}, # Alias for user specific request
+    # Gemma Models (Google AI Studio)
+    "gemma-3-27b-it": {"tier": 3, "context": 8192, "latency": 800, "cost": "free", "role": "reasoning"},
+    "gemma-3-12b-it": {"tier": 2, "context": 8192, "latency": 600, "cost": "free", "role": "fast_planning"},
+    "gemma-3-4b-it": {"tier": 1, "context": 8192, "latency": 400, "cost": "free", "role": "fast_orchestration"},
+    
+    # Specialized Models
+    "deep-research-pro-preview-12-2025": {"tier": 3, "context": 1000000, "latency": 5000, "cost": "paid", "role": "deepthink"},
+    "text-embedding-001": {"tier": 1, "context": 2048, "latency": 100, "cost": "free", "role": "embedding"},
+    
+    # Local Models (llama.cpp)
+    "devstral-2": {"tier": 2, "context": 32768, "latency": 1500, "cost": "local", "role": "code_agent"},
+    "deepseek-r1-distill-qwen-1.5b": {"tier": 2, "context": 8192, "latency": 1200, "cost": "local", "role": "maintainer_fallback"},
+    "qwen3-vl-2b": {"tier": 2, "context": 4096, "latency": 2000, "cost": "local", "role": "vision"},
+    "Qwen3-Embedding-0.6B-Q8_0": {"tier": 1, "context": 2048, "latency": 100, "cost": "local", "role": "embedding"},
+}
+
+# ROLE-BASED MODEL MAPPING (December 22, 2025 - Updated Structure)
+# Designates specific models for specific agent roles
+# Used by langgraph_agent.py for Genesis Chain initialization
+ROLE_MODELS = {
+    # Genesis Chain (Standard Reasoning Layer - Per Genesis Chain Configuration.md)
+    "architect": "gemini-exp-1206",                     # Strategic planning & reasoning
+    "planner": "gemini-2.0-flash-lite",                # Task decomposition
+    "engineer": "gemini-2.5-flash",                    # Implementation & execution
+    "reviewer": "gemma-3-27b-it",                      # Quality gate (130K context)
+    "orchestrator": "gemini-2.0-flash-lite",           # Coordination & orchestration (runs maintainer agents)
+    "ops_controller": "qwen3-4b-thinking", # Local execution
+    "meta_debugger": "gemma-3-27b-it",                 # Failure analysis
+    "observer": "gemini-2.5-flash-lite",               # Silent Listener (parallel to Engineer)
+    
+    # Fast Genesis Chain (Speed-optimized variants)
+    "fast_architect": "gemma-3-27b-it",                # Fast strategic planning
+    "fast_planner": "gemma-3-12b-it",                  # Fast task decomposition
+    "fast_engineer": "gemma-3-27b-it",                 # Fast implementation
+    "fast_reviewer": "gemma-3-27b-it",                 # Fast quality gate
+    "fast_orchestrator": "gemma-3-4b-it",              # Fast coordination → local ops
+    
+    # Chat/Interaction
+    "chat": "gemma-3-27b-it",                          # User interaction
+    "hitl": "gemma-3-27b-it",                          # Human-in-the-loop model selection
+    
+    # MCP Tools
+    "deepthink": "deep-research-pro-preview-12-2025",  # Deep research
+    "compressor": "gemini-2.0-flash",                  # MCP tool: data compression
+    "robotics": "gemini-robotics-er-1.5-preview",      # MCP tool: robotics analysis
+    "reasoning_bank": "gemma-3-27b-it",                # MCP tool: reasoning storage
+    "insight_synthesis": "gemma-3-27b-it",             # MCP tool: insight synthesis
+    "learn": "gemma-3-27b-it",                         # MCP tool: learning synthesis
+    
+    # Local Models (llama.cpp)
+    "serena": "qwen3-4b-thinking",                        # Code monitoring (Native GPU llama.cpp)
+    "maintainer": "qwen3-4b-thinking",                 # Execution layer (local)
+    "semantic_interpreter": "qwen3-4b-thinking",       # Geometry kernel (local)
+    "feasibility_auditor": "qwen3-4b-thinking",        # Geometry kernel (local)
+    "local_ops": "qwen3-4b-thinking",                  # Local operations
+    "vision": "qwen3-vl-2b",                           # Local vision processing
+}
+
+
+def get_model(key: str) -> str:
+    """
+    Get model name from environment or default.
+    
+    Usage:
+        from model_config import get_model
+        model_name = get_model("CHAT_MODEL")
+    """
+    env_key = f"ARCA_{key}"
+    return os.environ.get(env_key, DEFAULTS.get(key, ""))
+
+
+def get_all_models() -> Dict[str, str]:
+    """Get all configured model names"""
+    return {key: get_model(key) for key in DEFAULTS.keys()}
+
+
+# Convenience functions for common models
+def chat_model() -> str:
+    """Model for user chat interactions (fast, cheap)"""
+    return get_model("CHAT_MODEL")
+
+
+def serena_model() -> str:
+    """Model for Serena code agent (balanced)"""
+    return get_model("SERENA_MODEL")
+
+
+def architect_model() -> str:
+    """Model for architect role (strategic planning - gemini-exp-1206)"""
+    return get_model("ARCHITECT_MODEL")
+
+
+def engineer_model() -> str:
+    """Model for engineer role (implementation - gemini-2.5-flash)"""
+    return get_model("ENGINEER_MODEL")
+
+
+def orchestrator_model() -> str:
+    """Model for orchestrator role (coordination - gemini-2.0-flash-lite)"""
+    return get_model("ORCHESTRATOR_MODEL")
+
+
+def deepthink_model() -> str:
+    """Model for deepthink role (research/analysis - deep-research-pro)"""
+    return get_model("DEEPTHINK_MODEL")
+
+
+def compressor_model() -> str:
+    """Model for compressor MCP tool (data compression - gemini-2.5-flash)"""
+    return get_model("COMPRESSOR_MODEL")
+
+
+def hitl_model_selection_model() -> str:
+    """Model for HITL model selection tool (human-in-the-loop selection - gemini-2.0-flash)"""
+    return get_model("HITL_MODEL")
+
+
+def local_ops_model() -> str:
+    """Local model for operations (no API calls)"""
+    return get_model("LOCAL_OPS_MODEL")
+
+
+def local_vision_model() -> str:
+    """Local vision model for robotics/image tasks"""
+    return get_model("LOCAL_VISION_MODEL")
+
+
+def embedding_model() -> str:
+    """Model for text embeddings"""
+    return get_model("EMBEDDING_MODEL")
+
+
+def planner_model() -> str:
+    """Model for planner role (task decomposition - gemma-3-27b-it)"""
+    return get_model("PLANNER_MODEL")
+
+
+def reviewer_model() -> str:
+    """Model for reviewer role (quality gate - gemma-3-27b-it)"""
+    return get_model("REVIEWER_MODEL")
+
+
+def meta_debugger_model() -> str:
+    """Model for meta-debugger role (failure analysis - gemini-2.0-flash)"""
+    return get_model("META_DEBUGGER_MODEL")
+
+
+def robotics_model() -> str:
+    """Model for robotics/physics analysis (gemini-robotics-er)"""
+    return get_model("ROBOTICS_MODEL")
+
+
+def semantic_interpreter_model() -> str:
+    """Model for geometry kernel semantic interpreter (glm:latest)"""
+    return get_model("SEMANTIC_INTERPRETER_MODEL")
+
+
+def feasibility_auditor_model() -> str:
+    """Model for geometry kernel feasibility auditor (glm:latest)"""
+    return get_model("FEASIBILITY_AUDITOR_MODEL")
+
+
+def maintainer_model() -> str:
+    """Model for maintainer agents (Docker/Git/Security/File Ops - granite-guardian-3.1-2b)"""
+    return get_model("MAINTAINER_MODEL")
+
+
+def docker_ops_model() -> str:
+    """Model for Docker operations maintainer (DeepSeek R1)"""
+    return get_model("MAINTAINER_MODEL")
+
+
+def git_ops_model() -> str:
+    """Model for Git operations maintainer (granite-guardian-3.1-2b)"""
+    return get_model("MAINTAINER_MODEL")
+
+
+def security_ops_model() -> str:
+    """Model for Security operations maintainer (granite-guardian-3.1-2b)"""
+    return get_model("MAINTAINER_MODEL")
+
+
+def file_ops_model() -> str:
+    """Model for File operations maintainer (granite-guardian-3.1-2b)"""
+    return get_model("MAINTAINER_MODEL")
+
+
+def reasoning_bank_model() -> str:
+    """Model for reasoning bank operations (deepthink for research)"""
+    return get_model("DEEPTHINK_MODEL")
+
+
+def insight_synthesis_model() -> str:
+    """Model for insight synthesis operations (architect-level analysis)"""
+    return get_model("INSIGHT_SYNTHESIS_MODEL")
+
+
+def learn_model() -> str:
+    """Model for LearnLM educational tasks (gemma-3-27B)"""
+    return get_model("LEARN_MODEL")
+
+
+def vision_model() -> str:
+    """Local vision model for image processing (glm:latest)"""
+    return get_model("VISION_MODEL")
+
+
+def glm_4_6v_flash_model() -> str:
+    """Local GLM-4.6V Flash model GGUF filename"""
+    return get_model("GLM_4_6V_FLASH_MODEL")
+
+
+def vae_transformer_model() -> str:
+    """Local VAE Transformer model filename"""
+    return get_model("VAE_TRANSFORMER_MODEL")
+
+
+def vigor_plus_model() -> str:
+    """VIGOR+ grounding model identifier"""
+    return get_model("VIGOR_PLUS_MODEL")
+
+
+def qwen_3_vl_model() -> str:
+    """Qwen 3 VL model filename (2B Q4_K_M)"""
+    return get_model("QWEN_3_VL_MODEL")
+
+
+# Fast Genesis Chain Model Accessors
+def fast_architect_model() -> str:
+    """Fast architect model for rapid strategic planning (gemma-3-27B)"""
+    return get_model("FAST_ARCHITECT_MODEL")
+
+
+def fast_planner_model() -> str:
+    """Fast planner model for rapid task decomposition (gemma-3-12B)"""
+    return get_model("FAST_PLANNER_MODEL")
+
+
+def fast_engineer_model() -> str:
+    """Fast engineer model for rapid implementation (gemma-3-27B)"""
+    return get_model("FAST_ENGINEER_MODEL")
+
+
+def fast_reviewer_model() -> str:
+    """Fast reviewer model for rapid quality gate (gemma-3-27B)"""
+    return get_model("FAST_REVIEWER_MODEL")
+
+
+def fast_orchestrator_model() -> str:
+    """Fast orchestrator model for rapid coordination to local ops (gemma-3-4B)"""
+    return get_model("FAST_ORCHESTRATOR_MODEL")
+
+
+def hitl_model_selection_model() -> str:
+    """Model for human-in-the-loop model selection interface (gemma-3-27B)"""
+    return get_model("HITL_MODEL")
+
+
+# QUOTA TRACKING NOTE:
+# Quota tracking is centralized in llm_gateway service.
+# All model API calls go through llm_gateway, which tracks:
+# - Calls per model per day (reset at midnight Pacific Time)
+# - Tokens used per model per day
+# - 429 (quota exceeded) errors with automatic fallback
+#
+# To check quota status:
+#   GET http://llm_gateway:8000/usage
+#   GET http://llm_gateway:8000/usage/{model_name}
+#
+# Fallback chain (when primary model quota exhausted):
+#   gemini-3-pro → gemini-3-flash → gemini-2.5-flash-lite → gemini-2.5-flash
+
+
+# Model registry with metadata
+MODEL_REGISTRY: Dict[str, ModelConfig] = {
+    "chat": ModelConfig(
+        name=chat_model(),
+        provider="google",
+        tier=1,
+        role="chat",
+        context_window=131072,
+        latency_ms=800,
+        quota_tracked=True,
+        description="Fast responses for user chat"
+    ),
+    "serena": ModelConfig(
+        name=serena_model(),
+        provider="bigmodel",
+        tier=2,
+        role="serena",
+        context_window=128000,
+        latency_ms=1200,
+        quota_tracked=True,
+        description="Cloud GLM-4 Flash model for code monitoring and analysis"
+    ),
+    "architect": ModelConfig(
+        name=architect_model(),
+        provider="google",
+        tier=3,
+        role="architect",
+        context_window=2097152,
+        latency_ms=847,
+        quota_tracked=True,
+        description="Powerful model for strategic planning and reasoning"
+    ),
+    "engineer": ModelConfig(
+        name=engineer_model(),
+        provider="google",
+        tier=2,
+        role="engineer",
+        context_window=1000000,
+        latency_ms=423,
+        quota_tracked=True,
+        description="Balanced model for implementation and execution"
+    ),
+    "orchestrator": ModelConfig(
+        name=orchestrator_model(),
+        provider="google",
+        tier=1,
+        role="orchestrator",
+        context_window=1048576,
+        latency_ms=318,
+        quota_tracked=True,
+        description="Fast model for coordination and orchestration"
+    ),
+    "deepthink": ModelConfig(
+        name=deepthink_model(),
+        provider="google",
+        tier=3,
+        role="deepthink",
+        context_window=1000000,
+        latency_ms=5000,
+        quota_tracked=True,
+        description="Specialized model for deep research and analysis"
+    ),
+    "compressor": ModelConfig(
+        name=compressor_model(),
+        provider="google",
+        tier=2,
+        role="compressor",
+        context_window=1048576,
+        latency_ms=500,
+        quota_tracked=True,
+        description="MCP tool model for data compression tasks"
+    ),
+    "local_ops": ModelConfig(
+        name=local_ops_model(),
+        provider="local",
+        tier=1,
+        role="local_ops",
+        context_window=8192,
+        latency_ms=500,
+        quota_tracked=False,
+        description="Local native model for operations (Qwen3 VL Instruct 2B Q8.0)",
+        endpoint=f"http://{os.environ.get('LOCAL_LLM_HOST', 'host.docker.internal')}:11435",
+        container_endpoint="http://llama_cpp:8081"
+    ),
+    "local_vision": ModelConfig(
+        name=local_vision_model(),
+        provider="local",
+        tier=2,
+        role="vision",
+        context_window=8192,
+        latency_ms=1200,
+        quota_tracked=False,
+        description="Local native vision model (Qwen3 VL Instruct 2B Q8.0)",
+        endpoint=f"http://{os.environ.get('LOCAL_LLM_HOST', 'host.docker.internal')}:11435",
+        container_endpoint="http://llama_vision:8083"
+    ),
+}
+
+
+# Agent node configurations (Genesis Chain + Execution Layer + Geometry Kernel)
+AGENT_NODES = {
+    # Genesis Chain Agents
+    "architect_agent": {
+        "model_key": "ARCHITECT_MODEL",
+        "description": "High-level architecture and system design",
+        "stateful": True,
+        "memory_type": "persistent",
+        "tier": 3,
+    },
+    "planner_agent": {
+        "model_key": "PLANNER_MODEL",
+        "description": "Task decomposition and execution planning",
+        "stateful": True,
+        "memory_type": "session",
+        "tier": 2,
+    },
+    "engineer_agent": {
+        "model_key": "ENGINEER_MODEL",
+        "description": "Implementation and code generation",
+        "stateful": True,
+        "memory_type": "session",
+        "tier": 2,
+    },
+    "reviewer_agent": {
+        "model_key": "REVIEWER_MODEL",
+        "description": "Code review and quality assurance",
+        "stateful": True,
+        "memory_type": "session",
+        "tier": 2,
+    },
+    "orchestrator_agent": {
+        "model_key": "ORCHESTRATOR_MODEL",
+        "description": "Ops coordination and task orchestration",
+        "stateful": True,
+        "memory_type": "session",
+        "tier": 1,
+    },
+    
+    # Execution Layer Agents
+    "serena_agent": {
+        "model_key": "SERENA_MODEL",
+        "description": "Noetic code agent for development tasks",
+        "stateful": True,
+        "memory_type": "persistent",
+        "tier": 2,
+    },
+    "maintainer_agent": {
+        "model_key": "MAINTAINER_MODEL",
+        "description": "Docker/Git/Security/File operations",
+        "stateful": True,
+        "memory_type": "session",
+        "tier": 1,
+    },
+    
+    # Geometry Kernel Agents
+    "semantic_interpreter_agent": {
+        "model_key": "SEMANTIC_INTERPRETER_MODEL",
+        "description": "Semantic analysis and intent parsing",
+        "stateful": True,
+        "memory_type": "session",
+        "tier": 2,
+    },
+    "feasibility_auditor_agent": {
+        "model_key": "FEASIBILITY_AUDITOR_MODEL",
+        "description": "Feasibility analysis and constraint validation",
+        "stateful": True,
+        "memory_type": "session",
+        "tier": 2,
+    },
+    
+    # Utility Agents
+    "chat_agent": {
+        "model_key": "CHAT_MODEL",
+        "description": "User-facing chat agent",
+        "stateful": True,
+        "memory_type": "session",
+        "tier": 1,
+    },
+    "local_ops_agent": {
+        "model_key": "LOCAL_OPS_MODEL",
+        "description": "Local operations without external API",
+        "stateful": True,
+        "memory_type": "session",
+        "tier": 1,
+    },
+    "vision_agent": {
+        "model_key": "LOCAL_VISION_MODEL",
+        "description": "Vision/robotics agent using Qwen VL",
+        "stateful": True,
+        "memory_type": "session",
+        "tier": 2,
+    },
+}
+
+
+def get_agent_config(agent_name: str) -> Dict:
+    """Get configuration for a specific agent node"""
+    if agent_name not in AGENT_NODES:
+        raise ValueError(f"Unknown agent: {agent_name}")
+    
+    config = AGENT_NODES[agent_name].copy()
+    config["model"] = get_model(config["model_key"])
+    return config
+
+
+if __name__ == "__main__":
+    # Print current configuration
+    print("ARCA Model Configuration")
+    print("=" * 50)
+    for key, value in get_all_models().items():
+        env_key = f"ARCA_{key}"
+        source = "ENV" if env_key in os.environ else "DEFAULT"
+        print(f"  {key}: {value} [{source}]")
+    
+    print("\nAgent Nodes:")
+    for name, config in AGENT_NODES.items():
+        model = get_model(config["model_key"])
+        print(f"  {name}: {model}")

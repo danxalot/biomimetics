@@ -1,0 +1,11 @@
+{
+  "task_id": "a1291fee-8963-4802-ab04-ddd456e53eed",
+  "agent_type": "security",
+  "operation": "execute",
+  "success": false,
+  "execution_log": [],
+  "validation_results": [],
+  "escalation_reason": "Planning failure: [Errno -2] Name or service not known",
+  "timestamp": "20260302_125216",
+  "nurture_recommendation": "Refine SOP for security or check MCP skills."
+}

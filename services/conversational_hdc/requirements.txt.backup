@@ -1,0 +1,15 @@
+fastapi
+uvicorn
+redis
+pydantic
+python-multipart
+httpx
+transformers
+# CPU-only torch (no CUDA)
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+timm
+torchhd
+# Proprioception
+prometheus-api-client
+numpy

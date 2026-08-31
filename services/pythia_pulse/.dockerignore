@@ -1,0 +1,42 @@
+# Pythia Pulse Service .dockerignore
+
+# Git
+.git
+.gitignore
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Test files
+tests/
+test_*.py
+*_test.py
+
+# Documentation
+*.md
+README*
+LICENSE
+
+# Backup files
+*.bak
+*.backup
+*.orig

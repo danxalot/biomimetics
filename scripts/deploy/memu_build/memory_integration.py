@@ -97,8 +97,8 @@ class GeminiEmbeddingClient:
         dims: int = 1536,
         output_dimensionality: Optional[int] = None,
         rpm: int = 100,
-        tpm: int = 30,
-        tpd: int = 1000,
+        tpm: int = 100000,
+        tpd: int = 1000000,
     ):
         self.api_key = api_key
         self.model = model
@@ -106,7 +106,8 @@ class GeminiEmbeddingClient:
         self.base_url = "https://generativelanguage.googleapis.com/v1beta"
         self._session: Optional[aiohttp.ClientSession] = None
 
-        # Rate limiter for embeddings
+        # Rate limiter for embeddings (defaults sized for vault sync / consolidate;
+        # never use the old 30 TPM / 1000 TPD which caused multi-hour sleeps)
         self._rate_limiter = RateLimiter(
             rpm=rpm,
             tpm=tpm,
@@ -631,9 +632,13 @@ class RateLimiter:
                 if self._token_tokens < estimated_tokens:
                     wait_times.append((estimated_tokens - self._token_tokens) / (self.tpm / 60.0))
                 if self._daily_tokens < estimated_tokens:
-                    wait_times.append(86400)  # Wait until next day
+                    # Fail fast — sleeping until next calendar day hangs Cloud Run
+                    raise RuntimeError(
+                        f"Embedding daily token budget exhausted "
+                        f"(need {estimated_tokens}, remaining {self._daily_tokens}, tpd={self.tpd})"
+                    )
                 
-                wait_time = max(wait_times)
+                wait_time = min(max(wait_times) if wait_times else 0.5, 30.0)
                 await asyncio.sleep(wait_time)
                 
                 now = datetime.now()
@@ -643,7 +648,7 @@ class RateLimiter:
 
 
 class AgentClient:
-    """Agent integration for Gemma 3 via Google's v1beta endpoint with inline tool calls"""
+    """Agent integration for Gemma 4 via Google's v1beta endpoint with inline tool calls"""
 
     def __init__(
         self,
@@ -651,17 +656,18 @@ class AgentClient:
         provider: str = "gemini",
         model: Optional[str] = None,
         base_url: Optional[str] = None,
-        rpm: int = 30,           # 1 request every 2 seconds = 30 rpm
-        tpm: int = 15000,        # 15k tokens per minute
+        rpm: int = 15,           # 15 requests per minute
+        tpm: int = 250000,       # 250k tokens per minute
+
         context_limit: int = 131072,  # 130k context window
     ):
         self.api_key = api_key
         self.provider = provider.lower()
-        self.model = model or "gemma-3-12b-it"
+        self.model = model or "gemma-4-26b-a4b-it"
         self.base_url = base_url or "https://generativelanguage.googleapis.com/v1beta"
         self._session: Optional[aiohttp.ClientSession] = None
         
-        # Rate limiter for Gemma 3
+        # Rate limiter for Gemma 4
         self._rate_limiter = RateLimiter(
             rpm=rpm,
             tpm=tpm,
@@ -675,14 +681,14 @@ class AgentClient:
 
     def _build_gemini_tools(self, tools: Optional[List[Dict]] = None) -> Optional[Dict]:
         """
-        Build inline tool definitions for Gemma 3.
-        Gemma 3 uses function_calling_config with inline tool definitions,
+        Build inline tool definitions for Gemma 4.
+        Gemma 4 uses function_calling_config with inline tool definitions,
         not the separate function_calling_messages format.
         """
         if not tools:
             return None
         
-        # Gemma 3 / Gemini format for tools
+        # Gemma 4 / Gemini format for tools
         return {
             "function_declarations": [
                 {
@@ -701,7 +707,7 @@ class AgentClient:
     ) -> List[Dict]:
         """
         Convert OpenAI-style messages to Gemini v1beta format.
-        Gemma 3 expects user/model role alternation with inline tool definitions.
+        Gemma 4 expects user/model role alternation with inline tool definitions.
         """
         contents = []
         
@@ -781,7 +787,7 @@ class AgentClient:
             "generationConfig": generation_config,
         }
         
-        # Add inline tools if provided (Gemma 3 function calling)
+        # Add inline tools if provided (Gemma 4 function calling)
         if tools:
             gemini_tools = self._build_gemini_tools(tools)
             payload["tools"] = [{"function_declarations": gemini_tools["function_declarations"]}]
@@ -889,6 +895,9 @@ class UnifiedMemory:
         gemini_api_key: Optional[str] = None,
         gemini_embedding_model: str = "text-embedding-004",
         use_gemini_embeddings: bool = False,
+        embedding_rpm: int = 100,
+        embedding_tpm: int = 100000,
+        embedding_tpd: int = 1000000,
     ):
         self.qdrant = QdrantMemory(
             host=qdrant_host,
@@ -908,8 +917,14 @@ class UnifiedMemory:
                 api_key=gemini_api_key,
                 model=gemini_embedding_model,
                 dims=embedding_dims,
+                rpm=embedding_rpm,
+                tpm=embedding_tpm,
+                tpd=embedding_tpd,
             )
-            print(f"✅ Using Gemini Embeddings ({gemini_embedding_model}) at {embedding_dims} dims")
+            print(
+                f"✅ Using Gemini Embeddings ({gemini_embedding_model}) at {embedding_dims} dims "
+                f"(rpm={embedding_rpm} tpm={embedding_tpm} tpd={embedding_tpd})"
+            )
         elif embedding_url:
             self.embedder = LocalEmbeddingClient(url=embedding_url, dims=embedding_dims)
             print(f"✅ Using local embedding server at {embedding_url}")

@@ -120,11 +120,12 @@ class Mamba3NP:
     def forward(self, x):
         B, T, _ = x.shape
         out = np.empty_like(x)
+
+        # Resize state buffers if batch size changes
+        if self.h_state.shape[0] != B:
+            self.reset_state(batch_size=B)
+
         for b in range(B):
-            h = np.zeros((self.nheads, self.headdim, self.d_state), dtype=np.float32)
-            xp = np.zeros((self.nheads, self.headdim), dtype=np.float32)
-            kp = np.zeros((self.nheads, self.d_state), dtype=np.float32)
-            ang = np.zeros((self.nheads, 128), dtype=np.float32)
             proj = x[b] @ self.in_proj_w.T
             z = proj[:, :1536].reshape(T, 24, 64)
             xi = proj[:, 1536:3072].reshape(T, 24, 64)
@@ -134,7 +135,13 @@ class Mamba3NP:
             dd_A = proj[:, 3608:3632]
             trap = proj[:, 3632:3656]
             angles = proj[:, 3656:3784]
-            y = scan_recurrent(z, xi, Bi, Ci, dd_dt, dd_A, trap, angles, self.dt_bias, self.B_bias, self.C_bias, self.B_norm_w, self.C_norm_w, self.D, h, xp, kp, ang)
+
+            # Pass persistence buffers to the scan
+            y = scan_recurrent(
+                z, xi, Bi, Ci, dd_dt, dd_A, trap, angles, 
+                self.dt_bias, self.B_bias, self.C_bias, self.B_norm_w, self.C_norm_w, self.D, 
+                self.h_state[b], self.x_prev[b], self.K_prev[b], self.angle_state[b]
+            )
             out[b] = y.reshape(T, 1536) @ self.out_proj_w.T
         return out
 

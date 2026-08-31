@@ -1,0 +1,51 @@
+# Build artifacts and cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.tar
+*.tar.gz
+arm64-runtime-artifact/
+*.log
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation and config
+README.md
+.env*
+config.yaml
+
+# Test files
+test_*.py
+*_test.py
+
+# Node modules (if any)
+node_modules/
+
+# Build directories
+build/
+dist/
+
+# Temporary files
+*.tmp
+*.temp

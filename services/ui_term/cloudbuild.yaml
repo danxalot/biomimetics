@@ -1,0 +1,5 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/arca-471022/user_interaction_agent:latest', '.']
+images:
+- 'gcr.io/arca-471022/user_interaction_agent:latest'

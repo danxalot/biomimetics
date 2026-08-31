@@ -1,0 +1,41 @@
+# Geometry Watcher — ARM64 (OCI Ampere A1)
+# Runs PPStructure preprocessing (CPU-only) + watchdog file intake.
+FROM python:3.11-slim-bookworm
+
+# System packages needed by PaddleOCR, pdf2image, and OpenCV
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    git \
+    wget \
+    curl \
+    # pdf2image / poppler
+    poppler-utils \
+    # OpenCV headless dependencies
+    libgl1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
+    # OpenBLAS for paddle CPU math
+    libopenblas-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy service requirements and install
+COPY services/geometry_watcher/requirements.txt /tmp/watcher_requirements.txt
+RUN pip install --no-cache-dir -r /tmp/watcher_requirements.txt
+
+# Copy watcher source + shared document_refinery
+COPY services/geometry_watcher/ /app/services/geometry_watcher/
+COPY services/pdf_to_embedding/document_refinery.py /app/services/pdf_to_embedding/document_refinery.py
+COPY services/pdf_to_embedding/__init__.py /app/services/pdf_to_embedding/__init__.py 2>/dev/null || touch /app/services/pdf_to_embedding/__init__.py
+
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+  CMD curl -sf http://localhost:8089/ || exit 1
+
+CMD ["python3", "/app/services/geometry_watcher/main.py"]

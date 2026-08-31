@@ -52,7 +52,8 @@ AGENT_TPM = int(os.getenv("AGENT_TPM", "250000"))
 AGENT_CONTEXT_LIMIT = int(os.getenv("AGENT_CONTEXT_LIMIT", "131072"))
 
 EMBEDDING_RPM = int(os.getenv("EMBEDDING_RPM", "100"))
-EMBEDDING_TPD = int(os.getenv("EMBEDDING_TPD", "1000"))
+EMBEDDING_TPM = int(os.getenv("EMBEDDING_TPM", "100000"))
+EMBEDDING_TPD = int(os.getenv("EMBEDDING_TPD", "1000000"))
 
 # ── Global state ──────────────────────────────────────────────────────────────
 memory: Optional[UnifiedMemory] = None
@@ -117,6 +118,9 @@ async def lifespan(app: FastAPI):
         gemini_api_key=gemini_embedding_api_key,
         gemini_embedding_model=GEMINI_EMBEDDING_MODEL,
         use_gemini_embeddings=USE_GEMINI_EMBEDDINGS,
+        embedding_rpm=EMBEDDING_RPM,
+        embedding_tpm=EMBEDDING_TPM,
+        embedding_tpd=EMBEDDING_TPD,
     )
 
     # ── Qdrant init ───────────────────────────────────────────────────────────
@@ -213,6 +217,8 @@ class SearchRequest(BaseModel):
     user_id: Optional[str] = "default"
     limit: int = 10
     min_confidence: float = 0.3
+    # embedding (default) | llm_assisted — Gemma re-ranks/synthesizes archive hits
+    mode: Optional[str] = "embedding"
 
     def resolved_query(self) -> str:
         val = self.query or self.text
@@ -282,11 +288,17 @@ async def search_memories(req: SearchRequest):
         # Generate 1536-dim embedding
         query_embedding = await memory.embedder.generate_embedding(q)
 
+        # Pull a wider candidate pool when LLM will re-rank
+        mode = (req.mode or "embedding").lower()
+        if mode in ("llm", "llm-assisted", "assisted"):
+            mode = "llm_assisted"
+        fetch_limit = req.limit if mode != "llm_assisted" else max(req.limit, 12)
+
         search_results = _qdrant_client.query_points(
             collection_name=QDRANT_COLLECTION,
             query=query_embedding,
-            limit=req.limit,
-            score_threshold=req.min_confidence,
+            limit=fetch_limit,
+            score_threshold=req.min_confidence if mode != "llm_assisted" else min(req.min_confidence, 0.15),
         ).points
 
         results = [
@@ -300,14 +312,88 @@ async def search_memories(req: SearchRequest):
             for hit in search_results
         ]
 
-        return {
+        synthesis = None
+        if mode == "llm_assisted" and results and memory.agent:
+            # Compact candidates for Gemma: re-rank + short synthesis for agent context
+            blocks = []
+            for i, r in enumerate(results[:12], 1):
+                snippet = (r.get("content") or "")[:900]
+                blocks.append(f"[{i}] score={r.get('confidence'):.3f}\n{snippet}")
+            prompt = (
+                "You are MemU archive retrieval. Given a user query and candidate "
+                "memory excerpts, select the most relevant items and write a concise "
+                "synthesis (max 250 words) the agent can use. Prefer durable facts, "
+                "decisions, legal/health context, and partitions. "
+                "Also list chosen indices as: SELECTED: 1,3,5\n\n"
+                f"QUERY: {q}\n\nCANDIDATES:\n" + "\n\n".join(blocks)
+            )
+            try:
+                llm_out = await memory.agent.complete(
+                    messages=[
+                        {"role": "system", "content": "Return synthesis then SELECTED: indices."},
+                        {"role": "user", "content": prompt},
+                    ],
+                    temperature=0.2,
+                    max_tokens=800,
+                )
+                # AgentClient returns dict with text variants
+                if isinstance(llm_out, dict):
+                    synthesis = (
+                        llm_out.get("content")
+                        or llm_out.get("text")
+                        or llm_out.get("response")
+                        or ""
+                    )
+                    if not synthesis and "candidates" in llm_out:
+                        try:
+                            synthesis = llm_out["candidates"][0]["content"]["parts"][0]["text"]
+                        except Exception:
+                            synthesis = str(llm_out)[:2000]
+                else:
+                    synthesis = str(llm_out)[:2000]
+                # Prefer re-ordered subset if SELECTED present
+                import re as _re
+                m = _re.search(r"SELECTED:\s*([0-9,\s]+)", synthesis or "", _re.I)
+                if m:
+                    idxs = []
+                    for part in m.group(1).split(","):
+                        part = part.strip()
+                        if part.isdigit():
+                            idxs.append(int(part) - 1)
+                    if idxs:
+                        reordered = []
+                        for i in idxs:
+                            if 0 <= i < len(results):
+                                item = dict(results[i])
+                                item["llm_selected"] = True
+                                reordered.append(item)
+                        # Keep remaining as lower priority
+                        for i, r in enumerate(results):
+                            if i not in idxs:
+                                reordered.append(r)
+                        results = reordered[: req.limit]
+                else:
+                    results = results[: req.limit]
+            except Exception as llm_err:
+                print(f"⚠️ llm_assisted synthesis failed (falling back to embedding): {llm_err}")
+                results = results[: req.limit]
+                synthesis = None
+        else:
+            results = results[: req.limit]
+
+        out = {
             "status": "success",
             "query": q,
             "user_id": req.user_id,
             "results": results,
             "source": "memu_archive",
+            "mode": mode,
             "total_found": len(results),
         }
+        if synthesis:
+            out["synthesis"] = synthesis
+            out["llm_synthesis"] = synthesis
+        return out
 
     except Exception as e:
         # Return structured error — do NOT silently swallow to empty results

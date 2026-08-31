@@ -1,0 +1,230 @@
+
+import logging
+import numpy as np
+import torch
+import torchhd as hd
+from typing import List, Dict, Any, Optional
+import asyncio
+import httpx
+from datetime import datetime
+
+# Configure Logging
+logger = logging.getLogger("HDCGenesisChain")
+
+class AFLASHEncoder:
+    """
+    Wrapper for HDC Encoding (SentenceTransformer -> Projection).
+    For now, uses Random Projection or TorchHD directly.
+    """
+    def __init__(self, hv_dim: int = 10000):
+        self.hv_dim = hv_dim
+        
+    def encode_text(self, text: str) -> torch.Tensor:
+        # Placeholder: Semantic Hash / Token-based encoding
+        # In real system: Embed -> Project
+        # Here: Random deterministic hash for demo/parsing
+        seed = hash(text) % (2**32)
+        return hd.random(1, self.hv_dim, generator=torch.Generator().manual_seed(seed))
+
+    def encode_vector(self, vector: torch.Tensor) -> torch.Tensor:
+        # Project dense vector to HDC
+        # Assuming vector is (1, Dim)
+        # Placeholder
+        return hd.random(1, self.hv_dim)
+
+class TDJEPAPredictor:
+    """
+    Wrapper for TD-JEPA Service (V-JEPA Int8).
+    """
+    def __init__(self, service_url: str = "http://td_jepa:8094"):
+        self.url = service_url
+        
+    async def predict_trajectory(self, system_state_hv: torch.Tensor, horizons: List[int]) -> dict:
+        """
+        Predict system trajectory for multiple time horizons.
+        """
+        # Call V-JEPA Service
+        # Input: Context Vector (HDC -> Latent needs mapping, or we send raw metrics)
+        # For this integration, we send the HV summary
+        try:
+             async with httpx.AsyncClient() as client:
+                 payload = {
+                     "context_vector": system_state_hv.flatten().tolist(),
+                     "shape": [1, 1, system_state_hv.numel()] # Reshape logic
+                 }
+                 # We might need to iterate for horizons, or service handles it
+                 # Current V-JEPA API is simple predict.
+                 resp = await client.post(f"{self.url}/predict", json=payload)
+                 if resp.status_code == 200:
+                     return resp.json()
+        except Exception as e:
+            logger.error(f"JEPA Prediction failed: {e}")
+            
+        return {"trajectory": "stable (simulated)"}
+
+    async def predict_action_outcome(self, state_hv: torch.Tensor, action_hv: torch.Tensor) -> dict:
+        """
+        Predict state after action.
+        """
+        # Bind State * Action
+        input_hv = hd.bind(state_hv, action_hv)
+        
+        # Predict
+        prediction = await self.predict_trajectory(input_hv, [1])
+        
+        # Mock confidence/duration for now if API doesn't return
+        return {
+            'predicted_state': state_hv, # Placeholder: No change
+            'confidence': 0.85,
+            'estimated_duration': 100
+        }
+
+class SkillsBank:
+    """
+    Interface to the MCP/ReasoningBank for retrieving skills.
+    """
+    async def find_similar_plans(self, task_hv: torch.Tensor, top_k: int = 3) -> List[dict]:
+        return [{"name": "Standard Plan", "similarity": 0.5}]
+        
+    async def find_skill_by_state(self, bound_state: torch.Tensor, top_k: int = 3) -> List[dict]:
+        return ["container_restart", "log_check"]
+
+class HDCGenesisChain:
+    """
+    Genesis Chain optimized for HDC/JEPA reasoning.
+    (Section 8.1 Implementation)
+    """
+
+    def __init__(self, 
+                 architect_model: str = "gemini-2.5-pro",
+                 engineer_model: str = "gemini-2.5-flash",
+                 hdc_encoder: Optional[AFLASHEncoder] = None,
+                 jepa_predictor: Optional[TDJEPAPredictor] = None,
+                 skills_bank: Optional[SkillsBank] = None):
+                 
+        self.architect = architect_model
+        self.engineer = engineer_model
+        
+        self.encoder = hdc_encoder if hdc_encoder else AFLASHEncoder()
+        self.predictor = jepa_predictor if jepa_predictor else TDJEPAPredictor()
+        self.skills_bank = skills_bank if skills_bank else SkillsBank()
+        
+        self.hv_dim = self.encoder.hv_dim
+        
+        # HDC Operations
+        self.bind = hd.bind
+        self.bundle = hd.bundle
+        self.permute = hd.permute
+        
+        # Roles
+        self.role_objectives = hd.random(1, self.hv_dim)
+        self.role_prerequisites = hd.random(1, self.hv_dim)
+        self.role_steps = hd.random(1, self.hv_dim)
+        self.role_criteria = hd.random(1, self.hv_dim)
+
+        # Pattern Loading (Simulated)
+        self.plan_archetypes = {"standard": hd.random(1, self.hv_dim)}
+        self.success_patterns = {}
+        self.failure_patterns = {}
+
+    async def _call_llm(self, model: str, prompt: str) -> str:
+        # Placeholder: Call LLM Gateway
+        # In real implementation: POST to /v1/chat/completions
+        logger.info(f"Generated LLM Request ({model}): {prompt[:100]}...")
+        # Mock response based on prompt detection
+        if "Architect" in prompt:
+            return '{"objectives": ["Fix system"], "steps": ["Check logs", "Restart"]}'
+        elif "Engineer" in prompt:
+            return '{"commands": ["docker logs"], "validation": "grep error"}'
+        return "{}"
+
+    def _parse_architect_response(self, response: str) -> dict:
+        # Simple JSON parse mock
+        import json
+        try:
+            return json.loads(response)
+        except:
+            return {"steps": []}
+
+    def _parse_engineer_response(self, response: str) -> dict:
+        import json
+        try:
+            return json.loads(response)
+        except:
+            return {"commands": []}
+
+    async def architect_phase(self, task_description: str, system_state_hv: torch.Tensor) -> dict:
+        """
+        Architect phase with HDC-augmented reasoning.
+        """
+        # Find similar past tasks
+        task_hv = self.encoder.encode_text(task_description)
+        similar_plans = await self.skills_bank.find_similar_plans(task_hv)
+        
+        # Decode state (Placeholder)
+        state_summary = "System stable but high memory usage."
+        
+        # Query JEPA
+        trajectory = await self.predictor.predict_trajectory(system_state_hv, [1000])
+        trajectory_summary = str(trajectory)
+        
+        prompt = f"""
+        You are the Architect agent.
+        TASK: {task_description}
+        STATE: {state_summary}
+        TRAJECTORY: {trajectory_summary}
+        SIMILAR: {similar_plans}
+        """
+        
+        response = await self._call_llm(self.architect, prompt)
+        plan = self._parse_architect_response(response)
+        
+        plan_hv = self._encode_plan_to_hdc(plan)
+        validation = await self._validate_plan_geometry(plan_hv, system_state_hv)
+        
+        if not validation['valid']:
+             plan['warnings'] = validation['warnings']
+             
+        return {
+            'plan': plan,
+            'plan_hv': plan_hv,
+            'validation': validation
+        }
+        
+    async def planner_phase(self, architect_output: dict) -> dict:
+        """
+        Decompose and Simulate.
+        """
+        plan = architect_output['plan']
+        # Simulation Logic - Iterate steps, predict outcome
+        # (Simplified for v1)
+        return {"steps": [{"description": s, "confidence": 0.9} for s in plan.get("steps", [])]}
+
+    async def engineer_phase(self, planner_output: dict) -> dict:
+        """
+        Generate concrete Implementation.
+        """
+        # Iterate steps, generate commands
+        return {"implementations": [{"cmd": "echo 'fix'"}]}
+
+    def _encode_plan_to_hdc(self, plan: dict) -> torch.Tensor:
+        # Encode components
+        # Simplified: Just encode steps sequence
+        steps = plan.get('steps', [])
+        steps_hv = self._encode_text_sequence(steps)
+        
+        # Bundle with role
+        return self.bind(steps_hv, self.role_steps)
+
+    def _encode_text_sequence(self, texts: List[str]) -> torch.Tensor:
+        if not texts: return hd.random(1, self.hv_dim)
+        res = self.encoder.encode_text(texts[0])
+        for i, t in enumerate(texts[1:], 1):
+            thv = self.encoder.encode_text(t)
+            res = self.bundle(res, self.permute(thv, shifts=i))
+        return res
+
+    async def _validate_plan_geometry(self, plan_hv: torch.Tensor, system_state_hv: torch.Tensor) -> dict:
+        # Check compatibility
+        # Here we just return valid for prototype
+        return {"valid": True, "warnings": [], "suggestions": []}

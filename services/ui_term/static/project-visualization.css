@@ -1,0 +1,534 @@
+/**
+ * ARCA Project Visualization Styles
+ * Styles for Mermaid graphs, Redis document breakdown, and resizable panes
+ */
+
+/* ===== RESIZABLE PANE BASE ===== */
+.resizable-pane {
+    display: flex;
+    flex-direction: column;
+    background: #1e1e1e;
+    border: 1px solid #3e3e42;
+    position: relative;
+    min-width: 200px;
+    transition: width 0.1s ease-out;
+}
+
+.resizable-pane.minimized {
+    height: 40px !important;
+    overflow: hidden;
+}
+
+.resizable-pane.minimized .pane-content {
+    display: none;
+}
+
+.resizable-pane.maximized {
+    position: fixed !important;
+    top: 60px;
+    left: 10px;
+    right: 10px;
+    bottom: 60px;
+    width: auto !important;
+    height: auto !important;
+    z-index: 1500;
+}
+
+.resizable-pane.hidden {
+    display: none !important;
+}
+
+.pane-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: #2d2d30;
+    border-bottom: 1px solid #3e3e42;
+    cursor: move;
+    flex-shrink: 0;
+}
+
+.pane-title {
+    font-size: 12px;
+    font-weight: bold;
+    color: #cccccc;
+}
+
+.pane-controls {
+    display: flex;
+    gap: 4px;
+}
+
+.pane-content {
+    flex: 1;
+    overflow: auto;
+    position: relative;
+}
+
+.pane-resizer {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    cursor: col-resize;
+    background: transparent;
+    transition: background 0.2s;
+    z-index: 10;
+}
+
+.pane-resizer:hover,
+.pane-resizer.active {
+    background: #4ec9b0;
+}
+
+.resizer-right {
+    right: -3px;
+}
+
+.resizer-left {
+    left: -3px;
+}
+
+/* ===== MERMAID GRAPH PANE ===== */
+#mermaidGraphPane {
+    background: #0d1117;
+    min-height: 300px;
+}
+
+#mermaidGraphPane.fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2000;
+    min-height: 100vh;
+}
+
+.mermaid-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    border-bottom: 2px solid #ffd700;
+}
+
+.mermaid-title {
+    font-size: 14px;
+    font-weight: bold;
+    color: #ffd700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.mermaid-controls {
+    display: flex;
+    gap: 6px;
+}
+
+.mermaid-content {
+    padding: 20px;
+    overflow: auto;
+    background: #0d1117;
+    min-height: 250px;
+    display: flex;
+    justify-content: center;
+    transition: transform 0.2s ease-out;
+}
+
+.mermaid-content .mermaid {
+    max-width: 100%;
+}
+
+.mermaid-content svg {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Mermaid dark theme overrides */
+.mermaid .node rect,
+.mermaid .node circle,
+.mermaid .node ellipse,
+.mermaid .node polygon {
+    stroke-width: 2px !important;
+}
+
+.mermaid .edgePath .path {
+    stroke-width: 2px !important;
+}
+
+/* ===== REDIS DOCUMENT PANE ===== */
+#redisDocumentPane {
+    background: #1a1a2e;
+    min-height: 250px;
+}
+
+.redis-doc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background: linear-gradient(135deg, #2d1f3d 0%, #1a1a2e 100%);
+    border-bottom: 2px solid #dc382d;
+}
+
+.redis-doc-title {
+    font-size: 14px;
+    font-weight: bold;
+    color: #dc382d;
+    text-shadow: 0 0 10px rgba(220, 56, 45, 0.3);
+}
+
+.redis-doc-controls {
+    display: flex;
+    gap: 6px;
+}
+
+.redis-doc-content {
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* Processing Pipeline */
+.redis-stages {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 10px 0;
+}
+
+.stage-card {
+    flex: 1;
+    min-width: 150px;
+    background: #252526;
+    border: 1px solid #3e3e42;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.stage-header {
+    padding: 8px 12px;
+    background: #37373d;
+    font-size: 11px;
+    font-weight: bold;
+    color: #4ec9b0;
+    text-align: center;
+    border-bottom: 1px solid #3e3e42;
+}
+
+#stage-input .stage-header { background: linear-gradient(135deg, #1e3a5f 0%, #37373d 100%); color: #007aff; }
+#stage-chunks .stage-header { background: linear-gradient(135deg, #3d2e1e 0%, #37373d 100%); color: #ff9500; }
+#stage-vectors .stage-header { background: linear-gradient(135deg, #2e3d1e 0%, #37373d 100%); color: #34c759; }
+#stage-redis .stage-header { background: linear-gradient(135deg, #3d1e1e 0%, #37373d 100%); color: #dc382d; }
+
+.stage-body {
+    padding: 12px;
+    font-size: 11px;
+    color: #cccccc;
+    min-height: 80px;
+}
+
+.stage-body .placeholder {
+    color: #5a5a5a;
+    font-style: italic;
+    text-align: center;
+    padding: 20px 0;
+}
+
+.stage-arrow {
+    display: flex;
+    align-items: center;
+    font-size: 24px;
+    color: #4ec9b0;
+    padding: 0 5px;
+    animation: pulse-arrow 2s infinite;
+}
+
+@keyframes pulse-arrow {
+    0%, 100% { opacity: 0.5; transform: translateX(0); }
+    50% { opacity: 1; transform: translateX(3px); }
+}
+
+/* Document Info */
+.doc-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.doc-name {
+    color: #4ec9b0;
+    font-weight: bold;
+}
+
+.doc-size {
+    color: #8e8e93;
+    font-size: 10px;
+}
+
+.doc-preview {
+    color: #a0a0a0;
+    font-size: 10px;
+    line-height: 1.4;
+    max-height: 60px;
+    overflow: hidden;
+    background: rgba(0,0,0,0.2);
+    padding: 6px;
+    border-radius: 4px;
+}
+
+/* Chunks */
+.chunks-count {
+    color: #ff9500;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.chunk-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 6px;
+    background: rgba(255, 149, 0, 0.1);
+    margin: 2px 0;
+    border-radius: 3px;
+    font-size: 10px;
+}
+
+.chunk-id { color: #dcdcaa; }
+.chunk-tokens { color: #8e8e93; }
+
+.more-chunks {
+    color: #5a5a5a;
+    font-style: italic;
+    text-align: center;
+    padding-top: 4px;
+}
+
+/* Vectors */
+.vector-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.vector-count { color: #34c759; font-weight: bold; }
+.vector-dim { color: #8e8e93; font-size: 10px; }
+.vector-model { color: #af52de; font-size: 10px; }
+
+/* Redis Keys */
+.redis-count {
+    color: #dc382d;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.redis-key {
+    padding: 4px 6px;
+    background: rgba(220, 56, 45, 0.1);
+    margin: 2px 0;
+    border-radius: 3px;
+    font-size: 10px;
+    font-family: 'Monaco', monospace;
+    color: #e06c75;
+}
+
+/* Keys Panel */
+.redis-keys-panel {
+    background: #252526;
+    border: 1px solid #3e3e42;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.keys-header {
+    padding: 8px 12px;
+    background: #37373d;
+    font-size: 11px;
+    font-weight: bold;
+    color: #dc382d;
+    border-bottom: 1px solid #3e3e42;
+}
+
+.keys-list {
+    padding: 10px;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.key-item {
+    padding: 6px 10px;
+    background: #1e1e1e;
+    margin: 4px 0;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: 'Monaco', monospace;
+    color: #e06c75;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.key-item:hover {
+    background: #2d2d30;
+    color: #f48771;
+}
+
+/* ===== BUTTON STYLES ===== */
+.btn-tiny {
+    padding: 4px 8px;
+    font-size: 11px;
+    background: #3c3c3c;
+    border: 1px solid #5a5a5a;
+    color: #cccccc;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-tiny:hover {
+    background: #4a4a4a;
+    border-color: #4ec9b0;
+    color: #ffffff;
+}
+
+/* ===== DOCUMENT VIEWER ENHANCEMENTS ===== */
+.doc-viewer {
+    transition: height 0.3s ease-out;
+}
+
+.doc-viewer:not(.collapsed) {
+    min-height: 200px;
+}
+
+.doc-viewer .doc-content {
+    position: relative;
+}
+
+#project3DContainer {
+    width: 100%;
+    height: 100%;
+    min-height: 400px;
+}
+
+/* ===== BOTTOM PANEL LAYOUT ===== */
+.bottom-panel {
+    display: flex;
+    flex-direction: column;
+    background: #1e1e1e;
+    border-top: 1px solid #3e3e42;
+}
+
+/* Horizontal split for bottom panes */
+.bottom-panes-container {
+    display: flex;
+    flex: 1;
+    min-height: 200px;
+}
+
+.bottom-panes-container > .resizable-pane {
+    flex: 1;
+}
+
+.bottom-panes-container > .resizer {
+    width: 6px;
+    background: #2d2d30;
+    cursor: col-resize;
+    flex-shrink: 0;
+}
+
+.bottom-panes-container > .resizer:hover {
+    background: #4ec9b0;
+}
+
+/* ===== VERTICAL RESIZER ===== */
+.resizer-vertical {
+    height: 6px;
+    width: 100%;
+    background: #2d2d30;
+    cursor: row-resize;
+    flex-shrink: 0;
+}
+
+.resizer-vertical:hover,
+.resizer-vertical.active {
+    background: #4ec9b0;
+}
+
+/* ===== LOADING STATES ===== */
+.loading-spinner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: #8e8e93;
+}
+
+.loading-spinner::after {
+    content: '';
+    width: 20px;
+    height: 20px;
+    border: 2px solid #3e3e42;
+    border-top-color: #4ec9b0;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-left: 10px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ===== RESPONSIVE ADJUSTMENTS ===== */
+@media (max-width: 1200px) {
+    .redis-stages {
+        flex-wrap: wrap;
+    }
+    
+    .stage-card {
+        min-width: calc(50% - 20px);
+    }
+    
+    .stage-arrow {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .stage-card {
+        min-width: 100%;
+    }
+    
+    .mermaid-content {
+        padding: 10px;
+    }
+}
+
+/* ===== SCROLLBAR STYLING ===== */
+.pane-content::-webkit-scrollbar,
+.mermaid-content::-webkit-scrollbar,
+.keys-list::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.pane-content::-webkit-scrollbar-track,
+.mermaid-content::-webkit-scrollbar-track,
+.keys-list::-webkit-scrollbar-track {
+    background: #1e1e1e;
+}
+
+.pane-content::-webkit-scrollbar-thumb,
+.mermaid-content::-webkit-scrollbar-thumb,
+.keys-list::-webkit-scrollbar-thumb {
+    background: #3e3e42;
+    border-radius: 4px;
+}
+
+.pane-content::-webkit-scrollbar-thumb:hover,
+.mermaid-content::-webkit-scrollbar-thumb:hover,
+.keys-list::-webkit-scrollbar-thumb:hover {
+    background: #5a5a5a;
+}

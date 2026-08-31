@@ -18,10 +18,11 @@ import email
 import ssl
 import argparse
 import re
+import certifi
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
-from email_utils import apply_filtering_rules, update_sent_whitelist, extract_email_body, send_to_notion
+from email_utils import apply_filtering_rules, update_sent_whitelist, extract_email_body, send_to_notion, process_and_save_email
 
 # Configuration paths
 CONFIG_FILE = Path.home() / "biomimetics" / "config" / "omni_sync_config.json"
@@ -275,8 +276,6 @@ def poll_account(account: Dict, state: EmailState, lookback_minutes: int = 5, st
         email_ids = messages[0].split()
 
         for email_id in email_ids:
-            time.sleep(4)
-            
             email_id_str = email_id.decode()
 
             if state.is_processed(f"{email_addr}:{email_id_str}"):
@@ -342,6 +341,7 @@ def poll_account(account: Dict, state: EmailState, lookback_minutes: int = 5, st
             print(f"💾 Saved to Staging: {filepath.name}")
             send_to_notion(notion_metadata)
             print(f"🔔 Triage notification sent ({'Read (auto-routed)' if is_auto_read else 'New'})")
+            time.sleep(0.5)
 
             state.mark_processed(f"{email_addr}:{email_id_str}")
 

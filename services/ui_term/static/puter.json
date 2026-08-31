@@ -1,0 +1,31 @@
+{
+    "name": "arca-terminal",
+    "title": "ARCA Terminal",
+    "description": "Agentic Research & Collaboration Assistant - Interactive Terminal",
+    "version": "2.0.0",
+    "author": "danexall",
+    "icon": "terminal",
+    "main": "arca-app.js",
+    "permissions": [
+        "filesystem",
+        "network",
+        "windows",
+        "notifications"
+    ],
+    "background_color": "#1e1e1e",
+    "theme_color": "#007acc",
+    "categories": [
+        "development",
+        "ai",
+        "productivity"
+    ],
+    "screenshots": [],
+    "window": {
+        "width": 1400,
+        "height": 900,
+        "minWidth": 800,
+        "minHeight": 600,
+        "resizable": true,
+        "maximizable": true
+    }
+}

@@ -7,12 +7,14 @@
 - **Execution**: OpenCode Go (Subscription) agents execute deep analysis and code edits.
 
 ## 2. 'Puck' Voice Orchestrator
-- **Status**: Stranded (Local tunnels missing).
-- **Identity**: 'Puck' persona missing from launch script.
-- **Delegation**: Lacks tools to feed the PM Agent.
+- **Status**: Operational (via Vultr Gemini 3.1 Live Relay).
+- **Identity**: 'Puck' persona fully implemented in `vultr_relay_client.py`.
+- **Delegation**: Integrated with MCP tools (Notion, Email, GDrive) via `/api/mcp/tool/execute`.
 
 ## 3. Discrepancy Log
-- [ ] bios-voice.sh lacks ssh -R 8089:8090 bridge.
+- [x] 'Puck' persona and identity implemented.
+- [x] Multi-modal tool support for Voice enabled.
+- [x] `bios-voice.sh` activation script optimized for terminal use.
 - [ ] serena_notion_poller.py is missing (requires reconstruction).
 - [ ] execute_opencode_task in serena_mcp_server.py is a placeholder.
 

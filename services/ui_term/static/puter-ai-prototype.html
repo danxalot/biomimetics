@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARCA Terminal - Puter AI Prototype</title>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/styles/main.css">
+    <style>
+        .ai-status {
+            font-size: 10px;
+            color: #8e8e93;
+            margin-top: 4px;
+            text-align: center;
+        }
+
+        .puter-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            margin-left: 8px;
+        }
+
+        .tool-call {
+            background: #2d2d30;
+            border-left: 3px solid #007acc;
+            padding: 8px 12px;
+            margin: 4px 0;
+            font-size: 11px;
+            font-family: 'Monaco', monospace;
+        }
+
+        .tool-call-header {
+            color: #4ec9b0;
+            font-weight: bold;
+        }
+
+        .tool-call-result {
+            color: #d4d4d4;
+            margin-top: 4px;
+            white-space: pre-wrap;
+        }
+    </style>
+
+    <!-- Puter.js SDK (if available) -->
+    <script src="https://js.puter.com/v2/"></script>
+</head>
+
+<body>
+    <div class="arca-terminal">
+        <div class="terminal-header">
+            <div class="terminal-title">
+                ARCA Terminal - Puter AI Prototype
+                <span class="puter-badge">Puter.js</span>
+            </div>
+            <div class="user-info">Prototype Mode</div>
+        </div>
+
+        <div class="main-layout">
+            <!-- Single panel for prototype -->
+            <div class="panel panel-center">
+                <div id="chat-panel"></div>
+            </div>
+        </div>
+
+        <div class="info-panel">
+            <h3>Prototype Information</h3>
+            <ul>
+                <li><strong>AI Model:</strong> Puter AI (Gemini 2.0 Flash Exp)</li>
+                <li><strong>MCP Backend:</strong> http://localhost:8086</li>
+                <li><strong>Tools Available:</strong> 6 MCP tools</li>
+                <li><strong>Mode:</strong> Standalone (no backend agent needed)</li>
+            </ul>
+
+            <h4>Try these commands:</h4>
+            <ul>
+                <li>"Show me the mcp_server infrastructure"</li>
+                <li>"Discover all tools in the system"</li>
+                <li>"Search for code related to Neo4j"</li>
+                <li>"Generate a diagram of postgres service"</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Component Scripts -->
+    <script src="/static/components/BaseComponent.js"></script>
+    <script src="/static/components/ChatPanelPuterAI.js"></script>
+
+    <!-- Initialization -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 Initializing ARCA Puter AI Prototype...');
+
+            // Check if Puter is available
+            if (typeof puter !== 'undefined') {
+                console.log('✅ Puter.js detected');
+            } else {
+                console.warn('⚠️ Puter.js not available, using mock AI');
+            }
+
+            // Initialize chat panel
+            const chatPanel = new ChatPanelPuterAI('#chat-panel');
+            chatPanel.mount();
+
+            // Add welcome message
+            chatPanel.addMessage({
+                role: 'assistant',
+                content: `Hello! I'm ARCA, powered by Puter AI. I have access to your MCP tools including:
+
+• Infrastructure discovery (Docker services)
+• Logic graph analysis (MCP tools, agents)
+• Mermaid diagram generation
+• Semantic search across your system
+
+What would you like to explore?`,
+                timestamp: new Date().toLocaleTimeString()
+            });
+
+            console.log('✅ ARCA Puter AI Prototype ready');
+        });
+    </script>
+</body>
+
+</html>

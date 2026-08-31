@@ -1,0 +1,37 @@
+# ARCA Job Processor Service Dockerfile
+
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
+
+# Install OpenTelemetry
+RUN pip install opentelemetry-distro opentelemetry-exporter-otlp-proto-grpc
+
+# Copy service code
+COPY job_processor_service.py /app/job_processor_service.py
+
+# Create non-root user
+RUN useradd --create-home --shell /bin/bash app \
+    && chown -R app:app /app
+USER app
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8087/health || exit 1
+
+# Expose port for health checks (optional)
+EXPOSE 8087
+
+# Run the service
+CMD ["python", "/app/job_processor_service.py"]

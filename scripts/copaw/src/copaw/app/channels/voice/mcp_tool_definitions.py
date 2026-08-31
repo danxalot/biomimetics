@@ -149,66 +149,6 @@ ARCA_TOOLS = [
         }
     },
     {
-        "name": "serena_analyze_code",
-        "description": "Analyze code for semantic meaning and potential refactoring via Serena.",
-        "parameters": {
-            "type": "OBJECT",
-            "properties": {
-                "code": {"type": "STRING", "description": "Code to analyze"},
-                "context": {"type": "STRING", "description": "Optional context for analysis"}
-            },
-            "required": ["code"]
-        }
-    },
-    {
-        "name": "serena_refactor_suggestion",
-        "description": "Suggest refactoring for a specific goal via Serena.",
-        "parameters": {
-            "type": "OBJECT",
-            "properties": {
-                "code": {"type": "STRING", "description": "Code to refactor"},
-                "goal": {"type": "STRING", "description": "Refactoring goal"}
-            },
-            "required": ["code", "goal"]
-        }
-    },
-    {
-        "name": "serena_semantic_diff",
-        "description": "Analyze the semantic impact of code changes (diff) via Serena.",
-        "parameters": {
-            "type": "OBJECT",
-            "properties": {
-                "diff_content": {"type": "STRING", "description": "The git diff or code change"},
-                "context": {"type": "STRING", "description": "Additional context (e.g. commit message)"}
-            },
-            "required": ["diff_content"]
-        }
-    },
-    {
-        "name": "serena_security_scan",
-        "description": "Scan code or config for security vulnerabilities via Serena.",
-        "parameters": {
-            "type": "OBJECT",
-            "properties": {
-                "content": {"type": "STRING", "description": "Code or config to scan"},
-                "context": {"type": "STRING", "description": "Context (e.g. filename, environment)"}
-            },
-            "required": ["content"]
-        }
-    },
-    {
-        "name": "serena_chat",
-        "description": "General interaction with Serena for architectural reasoning and task dispatch.",
-        "parameters": {
-            "type": "OBJECT",
-            "properties": {
-                "prompt": {"type": "STRING", "description": "Message or instruction"},
-                "context": {"type": "STRING", "description": "Context (JSON string or text)"}
-            },
-            "required": ["prompt"]
-        }
-    },
-    {
         "name": "search_arca",
         "description": "Search the ARCA semantic knowledge base for technical documentation and system history.",
         "parameters": {
@@ -243,20 +183,65 @@ OPENCODE_TOOLS = [
             },
             "required": ["target_model", "task_brief"]
         }
+    },
+    {
+        "name": "read_file",
+        "description": "Read the contents of a file from the local filesystem.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "path": {"type": "STRING", "description": "Absolute path to the file."}
+            },
+            "required": ["path"]
+        }
+    },
+    {
+        "name": "write_file",
+        "description": "Write content to a file on the local filesystem. Creates directories if needed.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "path": {"type": "STRING", "description": "Absolute path to the destination file."},
+                "content": {"type": "STRING", "description": "The text content to write."}
+            },
+            "required": ["path", "content"]
+        }
+    },
+    {
+        "name": "list_files",
+        "description": "List the contents of a directory.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "directory": {"type": "STRING", "description": "Absolute path to the directory."}
+            },
+            "required": ["directory"]
+        }
+    },
+    {
+        "name": "move_file",
+        "description": "Move or rename a file on the local filesystem.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "src": {"type": "STRING", "description": "Absolute path to the source file."},
+                "dest": {"type": "STRING", "description": "Absolute path to the destination."}
+            },
+            "required": ["src", "dest"]
+        }
     }
 ]
 
 CORE_RELAY_TOOLS = [
     {
         "name": "render_canvas",
-        "description": "Render visual components (HTML or Markdown) in the CoPaw HUD.",
+        "description": "Render an HTML page on the user's local macOS screen via the CoPaw HUD canvas.",
         "parameters": {
             "type": "OBJECT",
             "properties": {
-                "view": {"type": "STRING", "description": "View type (email, research, task, status)."},
-                "content": {"type": "STRING", "description": "HTML or Markdown content."}
+                "html": {"type": "STRING", "description": "HTML content to render. Can be a full document or just the body content."},
             },
-            "required": ["view", "content"]
+            "required": ["html"]
         }
     },
     {
@@ -295,7 +280,7 @@ PROJECT_MGMT_TOOLS = [
             "properties": {
                 "title": {"type": "STRING", "description": "Clear title for the issue/task."},
                 "description": {"type": "STRING", "description": "Detailed engineering brief."},
-                "repo": {"type": "STRING", "description": "GitHub repository."}
+                "repo": {"type": "STRING", "description": "GitHub repository (owner/repo format)."}
             },
             "required": ["title", "description"]
         }
@@ -310,6 +295,44 @@ PROJECT_MGMT_TOOLS = [
                 "status": {"type": "STRING", "description": "Status name (e.g. 'Ready for Dev')."}
             },
             "required": ["task_id", "status"]
+        }
+    },
+    {
+        "name": "search_notion_tasks",
+        "description": "Search for tasks in the Notion project database by title.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "query": {"type": "STRING", "description": "Search text to filter tasks by title."},
+                "database_id": {"type": "STRING", "description": "Optional specific Notion database ID."}
+            },
+            "required": []
+        }
+    },
+    {
+        "name": "create_notion_task",
+        "description": "Create a new task in the Notion project database.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "title": {"type": "STRING", "description": "Task title."},
+                "description": {"type": "STRING", "description": "Optional task description."},
+                "database_id": {"type": "STRING", "description": "Optional Notion database ID."}
+            },
+            "required": ["title"]
+        }
+    },
+    {
+        "name": "create_github_issue",
+        "description": "Create a new GitHub issue in the project repository.",
+        "parameters": {
+            "type": "OBJECT",
+            "properties": {
+                "title": {"type": "STRING", "description": "Issue title."},
+                "body": {"type": "STRING", "description": "Issue body/description."},
+                "repo": {"type": "STRING", "description": "GitHub repository (owner/repo format)."}
+            },
+            "required": ["title", "body"]
         }
     }
 ]

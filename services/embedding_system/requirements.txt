@@ -1,0 +1,20 @@
+google-genai>=0.8.0
+oracledb>=2.0.0
+asyncio
+typing-extensions
+python-dotenv
+Pillow>=10.0.0
+requests
+fastapi==0.109.0
+uvicorn==0.27.0
+httpx==0.26.0
+pydantic==2.6.0
+sentence-transformers>=2.2.2
+torch --extra-index-url https://download.pytorch.org/whl/cpu
+huggingface_hub
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-instrumentation-fastapi
+opentelemetry-exporter-otlp
+opentelemetry-instrumentation-httpx
+opentelemetry-instrumentation-requests

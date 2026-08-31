@@ -1,0 +1,8 @@
+# Ignore large directories to reduce build context
+__pycache__/
+*.log
+*.pyc
+.git/
+.DS_Store
+models/
+cache/

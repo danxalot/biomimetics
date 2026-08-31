@@ -1,0 +1,78 @@
+import os
+import logging
+import json
+import httpx
+from typing import Optional
+from mcp.server.fastmcp import FastMCP
+
+# Initialize FastMCP
+mcp = FastMCP("mcp-otel-autopsy")
+logger = logging.getLogger(__name__)
+
+# Configuration
+DOCKER_HELPER_URL = os.getenv("DOCKER_HELPER_URL", "http://docker_helper:8082")
+OTEL_DATA_PATH = os.getenv("OTEL_DATA_PATH", "/tmp/otel-data.jsonl")
+
+@mcp.tool()
+async def analyze_trace_causality(task_id: str, lookback_minutes: int = 10) -> str:
+    """
+    Retrieves OpenTelemetry spans and correlated Docker logs for a specific Task ID. 
+    Use this to diagnose WHY a failure occurred.
+    
+    Args:
+        task_id: The ID of the task to analyze.
+        lookback_minutes: How many minutes of history to retrieve (default: 10).
+    """
+    report = [f"=== Autopsy Report for Task ID: {task_id} ==="]
+    
+    # 1. Fetch OTel Spans (Best Effort from File)
+    spans = []
+    try:
+        if os.path.exists(OTEL_DATA_PATH):
+            report.append(f"Scanning OTel data at {OTEL_DATA_PATH}...")
+            with open(OTEL_DATA_PATH, 'r') as f:
+                for line in f:
+                    try:
+                        record = json.loads(line)
+                        # Check if task_id is in attributes or trace/span ID
+                        # This is a heuristic match
+                        record_str = json.dumps(record)
+                        if task_id in record_str:
+                            spans.append(record)
+                    except json.JSONDecodeError:
+                        continue
+            report.append(f"Found {len(spans)} related OTel spans.")
+        else:
+            report.append(f"Warning: OTel data file not found at {OTEL_DATA_PATH}. Skipping span analysis.")
+    except Exception as e:
+        report.append(f"Error reading OTel data: {str(e)}")
+
+    # 2. Fetch Docker Logs via Docker Helper
+    # We'll try to fetch logs for key containers
+    containers = ["agent_service", "mcp_server", "vllm-server"]
+    report.append("\n=== Docker Logs ===")
+    
+    async with httpx.AsyncClient() as client:
+        for container in containers:
+            try:
+                # Assuming docker_helper has a logs endpoint: GET /logs/{container}?tail=100
+                # Adjust endpoint based on actual docker_helper API
+                url = f"{DOCKER_HELPER_URL}/logs/{container}?tail=200"
+                resp = await client.get(url, timeout=5.0)
+                if resp.status_code == 200:
+                    logs = resp.text
+                    # Filter logs for task_id
+                    relevant_logs = [line for line in logs.splitlines() if task_id in line]
+                    if relevant_logs:
+                        report.append(f"--- {container} (Found {len(relevant_logs)} matches) ---")
+                        report.extend(relevant_logs[:20]) # Limit output
+                        if len(relevant_logs) > 20:
+                            report.append(f"... and {len(relevant_logs) - 20} more lines.")
+                    else:
+                        report.append(f"--- {container}: No logs found for Task ID.")
+                else:
+                    report.append(f"Failed to fetch logs for {container}: {resp.status_code}")
+            except Exception as e:
+                report.append(f"Error fetching logs for {container}: {str(e)}")
+
+    return "\n".join(report)

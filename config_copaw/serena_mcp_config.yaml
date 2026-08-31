@@ -1,0 +1,43 @@
+# Serena MCP Configuration - Multi-Model Routing
+# OpenCode Go Subscription Model Tiering
+
+endpoints:
+  - id: "kimi-k2.5"
+    name: "Moonshot Kimi k2.5"
+    tier: "ARCHITECTURE"
+    description: "Deep reasoning for system-level planning."
+    base_url: "https://api.opencode.go/v1/kimi"
+    api_key_ref: "opencode-go-api-key"
+
+  - id: "glm-5"
+    name: "Zhipu GLM 5"
+    tier: "DEVELOPMENT"
+    description: "Efficient code generation and tool usage."
+    base_url: "https://api.opencode.go/v1/glm"
+    api_key_ref: "opencode-go-api-key"
+
+  - id: "minimax-2.7"
+    name: "MiniMax 2.7"
+    tier: "RESEARCH"
+    description: "High-context document analysis and retrieval."
+    base_url: "https://api.opencode.go/v1/minimax"
+    api_key_ref: "opencode-go-api-key"
+
+  - id: "free-rotating"
+    name: "Community Tiers"
+    tier: "GENERAL"
+    description: "Low-priority tasks, basic QA, and formatting."
+    base_url: "https://api.opencode.go/v1/free"
+    api_key_ref: "opencode-go-api-key"
+
+routing_rules:
+  - task_type: "ARCHITECTURE"
+    preferred_model: "kimi-k2.5"
+    fallback: "glm-5"
+  
+  - task_type: "DEVELOPMENT"
+    preferred_model: "glm-5"
+    fallback: "kimi-k2.5"
+
+  - task_type: "GENERAL"
+    preferred_model: "free-rotating"

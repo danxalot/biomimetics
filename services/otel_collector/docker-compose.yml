@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector:latest
+    container_name: otel_collector
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      - "13133:13133" # Health check
+    volumes:
+      - /home/ubuntu/otel-data:/tmp:rw
+      - ./otel-collector-config.yaml:/etc/otelcol/config.yaml:ro
+    command: ["--config", "/etc/otelcol/config.yaml"]
+    restart: unless-stopped
+    networks:
+      - otel_net
+
+networks:
+  otel_net:
+    driver: bridge

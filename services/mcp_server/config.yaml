@@ -1,0 +1,17 @@
+# ARCA MCP Server Configuration
+# This file defines the configuration for the MCP server service
+# Copy this to .env and modify values as needed for your environment
+
+# Server Configuration
+MCP_SERVER_PORT: 8086
+INSTANCE_ID: workhorse-mcp
+
+# Paths
+ARCA_ROOT: /home/ubuntu/ARCA
+
+# TLS Configuration
+MCP_TLS_ENABLED: true
+MCP_CERT_DIR: /mnt/mcp_storage/certs
+
+# Logging
+LOG_LEVEL: INFO

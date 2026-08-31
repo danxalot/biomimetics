@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  user_interaction_agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: arca-user_interaction_agent:v3.0.0
+    container_name: user_interaction_agent
+    ports:
+      - "8084:8084"
+    environment:
+      # CRITICAL: Point to OCI agent_service public IP
+      - AGENT_SERVICE_URL=http://141.147.85.137:8000
+      - USER_AGENT_PORT=8084
+      - MCP_SERVER_URL=http://localhost:8085
+    volumes:
+      # Mount Docker socket for container metrics (optional but recommended)
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Mount secrets if available (optional)
+      # - ./secrets:/app/.secrets:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8084/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - arca-network
+
+networks:
+  arca-network:
+    driver: bridge

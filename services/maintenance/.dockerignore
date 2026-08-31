@@ -1,0 +1,12 @@
+# Ignore large directories to reduce build context
+shared_storage/
+logs/
+__pycache__/
+.secrets/
+*.log
+*.pyc
+.git/
+.DS_Store
+models/
+shared/
+arca_source/

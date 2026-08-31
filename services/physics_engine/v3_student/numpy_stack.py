@@ -57,26 +57,50 @@ class VersorMemMambaStackNP:
             
         # Assert key completeness
         all_keys = set(keys)
-        # Allow prediction heads keys in trainer model
-        head_keys = {
-            "rotor_head.weight", "rotor_head.bias",
-            "phase_head.weight", "phase_head.bias",
-            "smoe_gate.weight", "smoe_gate.bias"
-        }
-        for i in range(4):
-            head_keys.update({
-                f"smoe_expert.{i}.w1", f"smoe_expert.{i}.b1",
-                f"smoe_expert.{i}.w2", f"smoe_expert.{i}.b2"
-            })
-        missing = all_keys - consumed_keys - head_keys
+        missing = all_keys - consumed_keys
         extra = consumed_keys - all_keys
-        
+
+        # Delegate distilled head keys that live beyond the 384 core Mamba keys.
+        # student_with_heads_45k.npz contains smoe_*, rotor_head.*, phase_head.*
+        # keys that the downstream head modules consume; they must not fail here.
+        self.extra_head_keys = {}
+        _head_prefixes = ("smoe_", "rotor_head", "phase_head")
+        _remaining_missing = set()
+        for k in missing:
+            if any(k.startswith(p) for p in _head_prefixes):
+                self.extra_head_keys[k] = data[k]
+            else:
+                _remaining_missing.add(k)
+        missing = _remaining_missing
+
         if missing:
             raise RuntimeError(f"Keys left over in npz: {missing}")
         if extra:
             raise RuntimeError(f"Keys missing from npz: {extra}")
         if len(consumed_keys) != 384:
             raise RuntimeError(f"Expected 384 keys, consumed {len(consumed_keys)}")
+
+        # Allostatic gate parameters — writable at runtime via /system/config
+        self.thermal_clamp_max = 5.0   # per-element clip bound (safety ceiling), NOT the level control
+        self.decay_hypo = 0.98         # retain energy when starved (<1) to wake
+        self.decay_hyper = 0.95        # cool aggressively when hot (>4)
+        self.decay_base = 0.97         # homeostatic baseline damping (1-4)
+        # Operating-energy lever: scales the injected pulse. Equilibrium energy ≈
+        # gain*injection/(1-decay), so this (and the decay sliders) set where energy
+        # SETTLES below the clamp. 1.0 = neutral. This is the real "pulse energy" knob.
+        self.energy_gain = 1.0
+
+        # Global rotor: 32-element vector of per-layer L2 norms.
+        # np.linalg.norm(global_rotor) → scalar total energy (reported as mamba_pulse_l2).
+        self.global_rotor = np.zeros(self.n_layers, dtype=np.float32)
+        self.global_rotor[0] = 1.0  # Identity until first pulse
+
+        # Per-layer forward-pass activity: residual-stream mean|h| at each depth,
+        # refreshed on every forward(). Unlike h_state (which absorb_pulse overwrites
+        # with an identical broadcast across ALL layers), this is genuinely
+        # differentiated across the 32 layers and moves with the live input — it is
+        # the telemetry the manifold visualisation reads as layer_energies.
+        self.layer_activity = np.zeros(self.n_layers, dtype=np.float32)
 
     def forward(self, x):
         """x: (B, T, 768)"""
@@ -89,6 +113,8 @@ class VersorMemMambaStackNP:
             m_out = layer['mamba'].forward(normed)
             # Residual
             h = h + self.residual_scale * m_out
+            # Record per-layer activity (read-only telemetry; does not affect dynamics)
+            self.layer_activity[i] = float(np.mean(np.abs(h)))
         return h
 
     def step(self, x_t, states):
@@ -97,10 +123,44 @@ class VersorMemMambaStackNP:
         pass
 
     def absorb_pulse(self, pulse: np.ndarray, coupling: float = 0.2):
-        """Distribute resonance pulse across all Mamba-3 layers."""
-        for layer in self.layers:
+        """Distribute a resonance pulse across all Mamba-3 layers as a damped leaky integrator.
+
+        Per layer:  h <- decay*h + (energy_gain * coupling * pulse), then clip to ±thermal_clamp_max.
+
+        The decay term is the damping that was previously missing — without it h could only
+        grow and saturated against the clip ceiling (energy permanently pinned). With it, energy
+        settles at equilibrium ≈ gain*injection/(1-decay), BELOW the ceiling, giving real dynamic
+        range. The decay rate is gated allostatically on the current metabolic energy (mean|h|,
+        the same [0, clamp] scale reported as hamiltonian_energy and targeted by pythia_pulse):
+        retain when starved (<1), cool hard when hot (>4), homeostatic in-band. energy_gain is the
+        user-facing operating-energy lever; thermal_clamp_max is only a hard safety ceiling.
+        """
+        clamp = getattr(self, 'thermal_clamp_max', 5.0)
+        gain = getattr(self, 'energy_gain', 1.0)
+        # PULSE_BASE_SCALE calibrates the (small, unit-ish) Redis pulse so that the
+        # leaky-integrator equilibrium at neutral gain (energy_gain=1.0) settles in the
+        # middle of the healthy 1-4 band. Empirically gain=1 w/o scale → E≈0.12; the
+        # in-band damping regime multiplies injection by ~33, so ~30× lands E≈2.4.
+        # The energy_gain slider then spans roughly E∈[0,4.7] over gain∈[0,2].
+        injection = pulse.astype(np.float32) * coupling * gain * 30.0  # (256,) broadcasts over (1, 24, 64, 256)
+
+        for i, layer in enumerate(self.layers):
             mamba = layer['mamba']
             if hasattr(mamba, 'h_state') and mamba.h_state is not None:
-                noise = np.random.randn(*mamba.h_state.shape).astype(np.float32) * coupling * 0.01
-                mamba.h_state += noise
-                mamba.h_state = np.clip(mamba.h_state, -5.0, 5.0)
+                # Allostatic damping selection on the mean|h| (reported) energy scale
+                current_energy = float(np.mean(np.abs(mamba.h_state)))
+                if current_energy < 1.0:
+                    decay = getattr(self, 'decay_hypo', 0.98)
+                elif current_energy > 4.0:
+                    decay = getattr(self, 'decay_hyper', 0.95)
+                else:
+                    decay = getattr(self, 'decay_base', 0.97)
+                mamba.h_state = mamba.h_state * decay + injection
+                mamba.h_state = np.clip(mamba.h_state, -clamp, clamp)
+
+        # Update global_rotor with per-layer L2 norms so the vitals endpoint
+        # reports np.linalg.norm(global_rotor) as the true total-energy scalar.
+        for i, layer in enumerate(self.layers):
+            mamba = layer['mamba']
+            if hasattr(mamba, 'h_state') and mamba.h_state is not None and i < len(self.global_rotor):
+                self.global_rotor[i] = float(np.linalg.norm(mamba.h_state))

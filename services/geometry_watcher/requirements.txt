@@ -1,0 +1,23 @@
+# geometry_watcher ARM64 dependencies
+# Runs Phase 0 preprocessing on OCI Ampere (aarch64/CPU)
+# Supports: PDF (PPStructure), TXT, MD, EPUB
+
+# File watching
+watchdog==4.0.1
+
+# PDF rasterisation (same as geometry_heavy_lifter)
+pdf2image==1.17.0
+Pillow>=10.0.0
+
+# Layout analysis — CPU-only paddle stack (aarch64 wheel available on PyPI)
+paddlepaddle==2.6.2
+paddleocr==2.8.1
+numpy>=1.24.0,<2.0
+
+# EPUB extraction
+ebooklib>=0.18
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+
+# HTTP
+requests>=2.31.0

@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+pydantic
+slowapi
+python-multipart
+neo4j
+numpy
+google-genai
+psycopg2-binary
+pgvector
+aiosqlite
+redis

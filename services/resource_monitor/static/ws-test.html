@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WebSocket Metrics Test</title>
+  <style>
+    :root { color-scheme: dark; }
+    body { margin: 0; padding: 24px; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, sans-serif; background: #0b0f14; color: #e6f1ff; }
+    h1 { font-size: 20px; margin: 0 0 12px; }
+    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+    input[type="text"] { width: 440px; max-width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #2b3b4b; background: #0f1620; color: #e6f1ff; }
+    button { padding: 8px 12px; border-radius: 6px; border: 1px solid #2b3b4b; background: #162433; color: #e6f1ff; cursor: pointer; }
+    button.primary { background: #1e88e5; border-color: #1e88e5; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 999px; border: 1px solid #2b3b4b; background: #0f1620; font-size: 12px; }
+    .ok { color: #8bc34a; border-color: #2e4831; background: #122015; }
+    .err { color: #ff6e6e; border-color: #52303a; background: #2a1318; }
+    .warn { color: #ffd166; border-color: #544633; background: #271f12; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .card { border: 1px solid #2b3b4b; background: #0f1620; border-radius: 8px; padding: 12px; min-height: 120px; }
+    pre { margin: 0; white-space: pre-wrap; word-break: break-word; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 12px; }
+    code { font-family: inherit; }
+    small { opacity: 0.8; }
+  </style>
+</head>
+<body>
+  <h1>WebSocket Metrics Test</h1>
+  <div class="row">
+    <label for="wsUrl"><small>WebSocket URL</small></label>
+    <input id="wsUrl" type="text" />
+    <button class="primary" id="connectBtn">Connect</button>
+    <button id="disconnectBtn" disabled>Disconnect</button>
+    <button id="clearBtn">Clear</button>
+    <span id="status" class="pill warn">disconnected</span>
+  </div>
+  <div class="grid">
+    <div class="card">
+      <strong>Events</strong>
+      <pre id="events">(none)</pre>
+    </div>
+    <div class="card">
+      <strong>Last message</strong>
+      <pre id="last">(none)</pre>
+    </div>
+  </div>
+  <p><small>Tip: This page auto-detects protocol/host/port. If it fails, edit the URL above. Expected endpoint is <code>/ws/metrics</code>.</small></p>
+
+  <hr style="margin:16px 0;border-color:#2b3b4b;" />
+
+  <h1>Agent Terminal</h1>
+  <div class="row">
+    <label for="threadId"><small>Thread ID</small></label>
+    <input id="threadId" type="text" placeholder="paste thread_id here" />
+    <button id="termConnectBtn" class="primary">Connect</button>
+    <button id="termDisconnectBtn" disabled>Disconnect</button>
+    <span id="termStatus" class="pill warn">disconnected</span>
+  </div>
+  <div class="card" style="min-height:180px;">
+    <strong>Terminal</strong>
+    <pre id="termLog" style="height:220px; overflow:auto; background:#0a0f14; padding:8px;">(no output)</pre>
+    <div class="row">
+      <input id="termInput" type="text" placeholder="type feedback and press Enter" style="flex:1;" />
+      <button id="termSendBtn">Send</button>
+    </div>
+    <small>Connects to <code>ws://&lt;host&gt;:8000/ws/terminal?thread_id=…</code>. Any message you send is delivered as human feedback for that thread.</small>
+  </div>
+
+  <script>
+    const wsUrlInput = document.getElementById('wsUrl');
+    const connectBtn = document.getElementById('connectBtn');
+    const disconnectBtn = document.getElementById('disconnectBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const statusEl = document.getElementById('status');
+    const eventsEl = document.getElementById('events');
+    const lastEl = document.getElementById('last');
+
+  let ws;
+  let termWs;
+
+    function logEvent(msg) {
+      const ts = new Date().toISOString();
+      if (eventsEl.textContent === '(none)') eventsEl.textContent = '';
+      eventsEl.textContent += `[${ts}] ${msg}\n`;
+      eventsEl.scrollTop = eventsEl.scrollHeight;
+    }
+
+    function setStatus(kind, text) {
+      statusEl.className = 'pill ' + (kind || 'warn');
+      statusEl.textContent = text || 'unknown';
+    }
+
+    function defaultWsUrl() {
+      const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+      const host = location.hostname;
+      const port = location.port || (location.protocol === 'https:' ? '443' : '80');
+      return `${proto}://${host}:${port}/ws/metrics`;
+    }
+
+    function safeParseJSON(data) {
+      try { return JSON.stringify(JSON.parse(data), null, 2); }
+      catch { return String(data); }
+    }
+
+    function connect() {
+      const url = wsUrlInput.value.trim();
+      if (!url) return;
+      try {
+        ws = new WebSocket(url);
+      } catch (e) {
+        setStatus('err', 'constructor failed');
+        logEvent('WebSocket constructor error: ' + (e && e.message));
+        return;
+      }
+
+      setStatus('warn', 'connecting…');
+      connectBtn.disabled = true;
+      disconnectBtn.disabled = false;
+
+      ws.onopen = () => {
+        setStatus('ok', 'connected');
+        logEvent('open');
+      };
+
+      ws.onmessage = (e) => {
+        lastEl.textContent = typeof e.data === 'string' ? safeParseJSON(e.data) : '[binary message]';
+      };
+
+      ws.onerror = (e) => {
+        setStatus('err', 'error');
+        logEvent('error: ' + (e && (e.message || e.type)));
+      };
+
+      ws.onclose = (e) => {
+        setStatus('warn', `closed (code=${e.code}, reason=${e.reason || 'n/a'})`);
+        logEvent(`close: wasClean=${e.wasClean}, code=${e.code}, reason=${e.reason || 'n/a'}`);
+        connectBtn.disabled = false;
+        disconnectBtn.disabled = true;
+      };
+    }
+
+    function disconnect() {
+      try { ws && ws.close(1000, 'client closing'); } catch {}
+    }
+
+    function clearLogs() {
+      eventsEl.textContent = '(none)';
+      lastEl.textContent = '(none)';
+    }
+
+    // Initialize defaults
+    wsUrlInput.value = defaultWsUrl();
+
+    // Wire controls
+    connectBtn.addEventListener('click', connect);
+    disconnectBtn.addEventListener('click', disconnect);
+    clearBtn.addEventListener('click', clearLogs);
+
+    // Optional: auto-connect on load
+    // connect();
+
+    // ---- Agent Terminal wiring ----
+    const termStatus = document.getElementById('termStatus');
+    const termLog = document.getElementById('termLog');
+    const termInput = document.getElementById('termInput');
+    const termConnectBtn = document.getElementById('termConnectBtn');
+    const termDisconnectBtn = document.getElementById('termDisconnectBtn');
+    const threadIdInput = document.getElementById('threadId');
+
+    function termSetStatus(kind, text) {
+      termStatus.className = 'pill ' + (kind || 'warn');
+      termStatus.textContent = text || 'unknown';
+    }
+
+    function termLogLine(line) {
+      const ts = new Date().toISOString();
+      if (termLog.textContent === '(no output)') termLog.textContent = '';
+      termLog.textContent += `[${ts}] ${line}\n`;
+      termLog.scrollTop = termLog.scrollHeight;
+    }
+
+    function agentWsUrl(threadId) {
+      const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+      const host = location.hostname;
+      return `${proto}://${host}:8000/ws/terminal?thread_id=${encodeURIComponent(threadId)}`;
+    }
+
+    function termConnect() {
+      const threadId = threadIdInput.value.trim();
+      if (!threadId) { alert('Enter a thread_id first'); return; }
+      try {
+        termWs = new WebSocket(agentWsUrl(threadId));
+      } catch (e) {
+        termSetStatus('err', 'constructor failed');
+        termLogLine('WebSocket constructor error: ' + (e && e.message));
+        return;
+      }
+      termSetStatus('warn', 'connecting…');
+      termConnectBtn.disabled = true;
+      termDisconnectBtn.disabled = false;
+      termWs.onopen = () => { termSetStatus('ok', 'connected'); termLogLine('open'); };
+      termWs.onmessage = (e) => { termLogLine(e.data); };
+      termWs.onerror = (e) => { termSetStatus('err', 'error'); termLogLine('error: ' + (e && (e.message || e.type))); };
+      termWs.onclose = (e) => {
+        termSetStatus('warn', `closed (code=${e.code})`);
+        termLogLine(`close: wasClean=${e.wasClean}, code=${e.code}, reason=${e.reason || 'n/a'}`);
+        termConnectBtn.disabled = false;
+        termDisconnectBtn.disabled = true;
+      };
+    }
+
+    function termDisconnect() { try { termWs && termWs.close(1000, 'client closing'); } catch {} }
+    function termSend() {
+      const msg = termInput.value;
+      if (termWs && termWs.readyState === WebSocket.OPEN && msg) {
+        termWs.send(msg);
+        termInput.value = '';
+      }
+    }
+
+    termConnectBtn.addEventListener('click', termConnect);
+    termDisconnectBtn.addEventListener('click', termDisconnect);
+    document.getElementById('termSendBtn').addEventListener('click', termSend);
+    termInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') termSend(); });
+  </script>
+</body>
+</html>

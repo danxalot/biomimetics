@@ -1,0 +1,343 @@
+
+import logging
+import torch
+import numpy as np
+import torchhd as hd
+from typing import List, Dict, Optional, Tuple, Any
+from datetime import datetime
+
+logger = logging.getLogger("ConversationalHDCState")
+
+class ConversationalHDCState:
+    """
+    Encodes an entire conversation into a single hypervector that
+    accumulates understanding without storing raw text.
+    """
+
+    def __init__(self, encoder=None, hv_dim: int = 10000):
+        self.hv_dim = hv_dim
+        # Default Random Projection Encoder if none provided (placeholder)
+        self.encoder = encoder
+        
+        # --- HDC Operations (Aliases for torch-hd) ---
+        self.bind = hd.bind
+        self.bundle = hd.bundle
+        self.permute = hd.permute
+        
+        # Running conversation state
+        # Using Torch Tensors for HDC lib compatibility, treating as efficient packed bits if needed
+        # For torch-hd, we usually work with floats/integers or explicit MAP/BSC/FHRR models
+        # Assuming FHRR (Float) or MAP (Dense Semantic) for now, or binary. 
+        # Code snippet implied uint8 -> likely Binary Spatter Code (BSC) or similar discrete 
+        
+        # Initialize random hypervectors for roles
+        self.role_user = hd.random(1, hv_dim)
+        self.role_assistant = hd.random(1, hv_dim)
+        self.role_system = hd.random(1, hv_dim)
+        self.role_topics = hd.random(1, hv_dim)
+        self.role_sentiment = hd.random(1, hv_dim)
+        self.role_intents = hd.random(1, hv_dim)
+        
+        # State Vectors
+        self.conversation_hv = torch.zeros(1, hv_dim)
+        self.topics_hv = torch.zeros(1, hv_dim)
+        self.sentiment_hv = torch.zeros(1, hv_dim)
+        self.intents_hv = torch.zeros(1, hv_dim)
+
+        self.message_count = 0
+        self.position = 0
+        
+        # Codebooks (Simulated for this implementation)
+        self.topic_codebook = {} 
+        self.sentiment_codebook = {
+            "positive": hd.random(1, hv_dim),
+            "negative": hd.random(1, hv_dim),
+            "neutral": hd.random(1, hv_dim)
+        }
+        self.intent_codebook = {}
+        
+        self.archetypes = {
+            'technical': hd.random(1, hv_dim),
+            'problem_solving': hd.random(1, hv_dim),
+            'casual': hd.random(1, hv_dim),
+            'learning': hd.random(1, hv_dim),
+            'planning': hd.random(1, hv_dim)
+        }
+
+    def _get_role_hv(self, role_name: str):
+        if role_name == 'topics': return self.role_topics
+        if role_name == 'sentiment': return self.role_sentiment
+        if role_name == 'intents': return self.role_intents
+        return hd.random(1, self.hv_dim)
+
+    def _get_topic_hv(self, topic: str):
+        if topic not in self.topic_codebook:
+            self.topic_codebook[topic] = hd.random(1, self.hv_dim)
+        return self.topic_codebook[topic]
+
+    def _get_sentiment_hv(self, sentiment: str):
+        return self.sentiment_codebook.get(sentiment, self.sentiment_codebook['neutral'])
+
+    def _get_intent_hv(self, intent: str):
+        if intent not in self.intent_codebook:
+            self.intent_codebook[intent] = hd.random(1, self.hv_dim)
+        return self.intent_codebook[intent]
+        
+    def add_message(self, role: str, content: str, 
+                    content_embedding: np.ndarray,
+                    detected_topics: List[str] = None,
+                    detected_sentiment: str = None,
+                    detected_intent: str = None):
+        """
+        Add a new message to the conversation state.
+        """
+        # Encode content to HDC
+        # Assuming encoder takes dense (1, D_emb) -> (1, D_hv)
+        if self.encoder:
+            content_tensor = torch.tensor(content_embedding).float().unsqueeze(0)
+            content_hv = self.encoder.encode(content_tensor) # Abstract method call
+        else:
+            # Fallback for compilation: Random projection
+            content_hv = hd.random(1, self.hv_dim) 
+
+        # Bind with speaker role
+        role_hv = {
+            'user': self.role_user,
+            'assistant': self.role_assistant,
+            'system': self.role_system
+        }.get(role, self.role_system)
+
+        bound_content = self.bind(content_hv, role_hv)
+
+        # Apply positional permutation
+        positioned_content = self.permute(bound_content, shifts=self.position)
+        self.position += 1
+
+        # Bundle into main conversation state
+        # MAP/Bundle accumulates info
+        self.conversation_hv = self.bundle(self.conversation_hv, positioned_content)
+        self.message_count += 1
+
+        # Update topic tracking
+        if detected_topics:
+            for topic in detected_topics:
+                topic_hv = self._get_topic_hv(topic)
+                self.topics_hv = self.bundle(self.topics_hv, topic_hv)
+
+        # Update sentiment tracking
+        if detected_sentiment:
+            sentiment_hv = self._get_sentiment_hv(detected_sentiment)
+            positioned_sentiment = self.permute(sentiment_hv, shifts=self.position)
+            self.sentiment_hv = self.bundle(self.sentiment_hv, positioned_sentiment)
+
+        # Update intent tracking
+        if detected_intent:
+            intent_hv = self._get_intent_hv(detected_intent)
+            self.intents_hv = self.bundle(self.intents_hv, intent_hv)
+
+    def get_conversation_summary_vector(self) -> torch.Tensor:
+        """
+        Get a single vector summarizing the entire conversation.
+        """
+        # Combine all tracking vectors
+        summary = self.bundle(self.conversation_hv, self.bind(self.topics_hv, self._get_role_hv('topics')))
+        summary = self.bundle(summary, self.bind(self.sentiment_hv, self._get_role_hv('sentiment')))
+        summary = self.bundle(summary, self.bind(self.intents_hv, self._get_role_hv('intents')))
+        return summary
+
+    def query_relevance(self, query_hv: torch.Tensor) -> dict:
+        """
+        Query how relevant different aspects of the conversation are
+        to a given query vector.
+        """
+        return {
+            'content_relevance': hd.cosine_similarity(query_hv, self.conversation_hv).item(),
+            'topic_relevance': hd.cosine_similarity(query_hv, self.topics_hv).item(),
+            'sentiment_relevance': hd.cosine_similarity(query_hv, self.sentiment_hv).item(),
+            'intent_relevance': hd.cosine_similarity(query_hv, self.intents_hv).item()
+        }
+    
+    def extract_context_for_llm(self, query: str, query_embedding: np.ndarray, max_tokens: int = 1000, 
+                                momentum_description: str = None) -> str:
+        """
+        Generate a compressed context string for LLM based on HDC relevance.
+        
+        Instead of passing the full conversation history, we:
+        1. Query the HDC state to understand what aspects are relevant
+        2. Generate a geometric "summary" of conversation state
+        3. Translate key resonances to natural language
+        
+        This solves "lost in the middle" by providing semantically-relevant
+        context rather than chronological history.
+        """
+        # Encode content to HDC
+        if self.encoder:
+             # Match user snippet: encode_vector(tensor.unsqueeze(0))
+             content_tensor = torch.tensor(query_embedding).float().unsqueeze(0)
+             if hasattr(self.encoder, 'encode_vector'):
+                 query_hv = self.encoder.encode_vector(content_tensor)
+             else:
+                 query_hv = self.encoder.encode(content_tensor)
+        else:
+             query_hv = hd.random(1, self.hv_dim)
+
+        # Get relevance scores
+        relevances = self.query_relevance(query_hv)
+        
+        context_parts = []
+        
+        # If topics are highly relevant, surface them
+        if relevances['topic_relevance'] > 0.3:
+            active_topics = self._decode_active_topics()
+            if active_topics:
+                 context_parts.append(f"Active topics in conversation: {', '.join(active_topics)}")
+        
+        # If sentiment trajectory matters
+        if relevances['sentiment_relevance'] > 0.3:
+            sentiment_summary = self._decode_sentiment_trajectory()
+            context_parts.append(f"Conversation sentiment: {sentiment_summary}")
+        
+        # If intents are relevant
+        if relevances['intent_relevance'] > 0.3:
+             # Placeholder for intent decoding as per snippet logic availability
+             # active_intents = self._decode_active_intents() 
+             # context_parts.append(f"User intent patterns: {active_intents}")
+             pass
+
+        # Generate geometric state description
+        geometric_state = self._describe_geometric_state()
+        context_parts.append(f"Conversation geometry: {geometric_state}")
+        
+        # Estimate conversation "momentum" (where it's heading)
+        if momentum_description:
+            momentum = momentum_description
+        else:
+            momentum = self._estimate_conversation_momentum()
+        context_parts.append(f"Conversation trajectory: {momentum}")
+        
+        return "\\n".join(context_parts)
+
+    def get_resonance_data(self, query_embedding: np.ndarray, momentum_description: str = None) -> Dict[str, Any]:
+        """
+        Get structured resonance data with scores for thresholding.
+        Returns topics, sentiments, etc. with their similarity scores.
+        """
+        if self.encoder:
+             content_tensor = torch.tensor(query_embedding).float().unsqueeze(0)
+             if hasattr(self.encoder, 'encode_vector'):
+                 query_hv = self.encoder.encode_vector(content_tensor)
+             else:
+                 query_hv = self.encoder.encode(content_tensor)
+        else:
+             query_hv = hd.random(1, self.hv_dim)
+
+        relevances = self.query_relevance(query_hv)
+        
+        # Decode active topics with scores
+        active_topics = []
+        for topic_name, topic_hv in self.topic_codebook.items():
+            similarity = hd.cosine_similarity(self.topics_hv, topic_hv).item()
+            if similarity > 0.1:  # Lower threshold for raw data
+                active_topics.append({"name": topic_name, "score": similarity})
+        active_topics.sort(key=lambda x: x["score"], reverse=True)
+
+        return {
+            "relevances": relevances,
+            "topics": active_topics[:5], # Top 5
+            "sentiment_trajectory": self._decode_sentiment_trajectory(),
+            "momentum": momentum_description if momentum_description else self._estimate_conversation_momentum()
+        }
+
+    def _decode_active_topics(self) -> List[str]:
+        """Decode which topics are most active in the conversation."""
+        active_topics = []
+        
+        # Query against known topic vectors
+        for topic_name, topic_hv in self.topic_codebook.items():
+            similarity = hd.cosine_similarity(self.topics_hv, topic_hv).item()
+            if similarity > 0.2:  # Threshold for "active"
+                active_topics.append((topic_name, similarity))
+        
+        # Sort by similarity and return top topics
+        active_topics.sort(key=lambda x: x[1], reverse=True)
+        return [t[0] for t in active_topics[:5]]
+
+    def _decode_sentiment_trajectory(self) -> str:
+        """Describe how sentiment has evolved."""
+        # Sample sentiment at different positions
+        sentiments = []
+        # Step size logic from snippet: max(1, self.position // 5)
+        step = max(1, self.position // 5)
+        for pos in range(0, self.position, step):
+            # Unbind at this position (Permute inverse)
+            # Permute(HV, -pos)
+            pos_sentiment = self.permute(self.sentiment_hv, shifts=-pos)
+            
+            # Match against sentiment codebook
+            best_match_name = "neutral"
+            best_sim = -1.0
+            for name, hv in self.sentiment_codebook.items():
+                sim = hd.cosine_similarity(pos_sentiment, hv).item()
+                if sim > best_sim:
+                    best_sim = sim
+                    best_match_name = name
+            sentiments.append(best_match_name)
+        
+        if not sentiments: return "Neutral"
+
+        # Describe trajectory
+        if len(set(sentiments)) == 1:
+            return f"Consistently {sentiments[0]}"
+        else:
+            return f"Evolved from {sentiments[0]} to {sentiments[-1]}"
+
+    def _describe_geometric_state(self) -> str:
+        """
+        Translate the geometric properties of the conversation vector
+        into natural language.
+        """
+        # Compute key geometric properties
+        # For float/int HDC, 'density' isn't bit-density, but magnitude/norm or variance
+        # We'll use a placeholder for density if not using binary
+        density = 0.5 
+        
+        # Compare to known conversation archetypes
+        # Assuming self.archetypes is populated either by init or dynamically
+        active_archetypes = getattr(self, 'archetypes', {})
+        if not active_archetypes:
+             return "Undefined"
+
+        similarities = {
+            name: hd.cosine_similarity(self.conversation_hv, hv).item()
+            for name, hv in active_archetypes.items()
+        }
+        
+        primary_archetype = max(similarities, key=similarities.get)
+        confidence = similarities[primary_archetype]
+        
+        return f"{primary_archetype} (confidence: {confidence:.2f})"
+
+    def _estimate_conversation_momentum(self) -> str:
+        """
+        Estimate where the conversation is "heading" based on
+        recent vector changes.
+        """
+        if self.message_count < 3:
+            return "Insufficient history for momentum estimation"
+        
+        # Compare recent state to earlier state
+        # (This is a simplified version - full implementation would
+        # use JEPA predictions)
+        
+        # Approximate recent vs. early conversation vectors
+        # by weighted unbundling at different positions / topics
+        # Note: Ideally we unbind topics at specific positions. 
+        # Here we simulate by splitting the topic dictionary into 'early' and 'late' simulated sets logic
+        # Since we don't have position-indexed topic storage in this class yet (only bundled topics_hv),
+        # we will infer it from the fact that 'topics_hv' represents the *whole* conversation.
+        # This part of the user snippet relies on `_decode_topics_at_position_range` which isn't in standard HDCState.
+        # We will Implement a simplified version here, or assume we can't do exact momentum without history buffer.
+        
+        return "Stable trajectory (Momentum estimation pending JEPA linkage)"
+
+

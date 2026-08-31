@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  policy_manager:
+    build: .
+    image: arca-policy-manager:latest
+    container_name: policy-manager
+    ports:
+      - "8003:8003"
+    environment:
+      - POLICY_MANAGER_PORT=8003
+      - LOG_LEVEL=INFO
+    networks:
+      - arca-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  arca-network:
+    external: true
