@@ -1,9 +1,9 @@
 {
   "filesystem_sources": [
     {
-      "name": "current_session",
-      "base_path": "/Users/danexall/.gemini/antigravity/brain/bbf2254f-9d0b-42cc-ba07-47eea4b50d94/",
-      "artifact_names": ["walkthrough.md", "implementation_plan.md", "analysis_results.md", "gcp_memory_recon_report.md", "gemma4_guidebook_v1.md", "integration_test_results.md", "mcp_sensory_expansion_scaffold.md", "status_report.md"],
+      "name": "antigravity_brains",
+      "base_path": "/Users/danexall/.gemini/antigravity/brain/",
+      "artifact_names": ["walkthrough.md", "implementation_plan.md", "task.md", "analysis_results.md", "status_report.md"],
       "default_tags": ["source/antigravity", "bios/architecture"],
       "moc": "Biomimetics_MOC"
     },
@@ -11,7 +11,7 @@
       "name": "raw_docs",
       "base_path": "/Users/danexall/biomimetics/docs/",
       "artifact_names": ["*.md"],
-      "ignore": ["obsidian_staging", "KNOWLEDGE_GRAPH", "_MOC.md", "_ARCHIVIST_PROMPT.md", "alignment", "phases"],
+      "ignore": ["obsidian_staging", "KNOWLEDGE_GRAPH", "_MOC.md", "_ARCHIVIST_PROMPT.md", "alignment", "phases", "MASTER_"],
       "default_tags": ["source/manual", "bios/infrastructure"],
       "moc": "Biomimetics_MOC"
     },

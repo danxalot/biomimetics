@@ -2,15 +2,22 @@
 """
 BiOS Vault Condenser (Tier 2 Assimilator)
 Autonomously compresses raw staging artifacts into Master reference documents
-using Gemini 3.1 Flash Lite via direct REST calls.
+using Gemini 3.5 Flash Lite via the shared credentials client.
 """
 
 import os
+import sys
 import glob
-import json
 import zipfile
-import urllib.request
 from datetime import datetime, timezone
+from pathlib import Path
+
+SCRIPTS_DIR = Path(__file__).resolve().parent.parent
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from lib.gemini import MODEL_SYNTH, fetch_api_key, invoke  # noqa: E402
+from lib.vault_io import land_architecture_note  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -20,11 +27,7 @@ STAGING_DIR = "/Users/danexall/biomimetics/docs/obsidian_staging"
 ARCHIVE_DIR = os.path.join(STAGING_DIR, ".archive")
 DOCS_DIR = "/Users/danexall/biomimetics/docs"
 
-CREDENTIALS_SERVER = "http://localhost:8089"
-CREDENTIALS_API_KEY_PATH = "/Users/danexall/biomimetics/secrets/credentials_api_key"
-
-MODEL_ID = "gemini-3.1-flash-lite-preview"
-GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL_ID}:generateContent"
+MODEL_ID = MODEL_SYNTH
 
 PILLARS = [
     {
@@ -57,64 +60,14 @@ PILLARS = [
 # Helpers
 # ---------------------------------------------------------------------------
 
-def fetch_gemini_key():
-    """Fetch Gemini API key from Credentials Server."""
+def invoke_gemini(_api_key, system_instruction, user_content):
     try:
-        with open(CREDENTIALS_API_KEY_PATH, 'r') as f:
-            master_key = f.read().strip()
-        req = urllib.request.Request(
-            f"{CREDENTIALS_SERVER}/secrets/gemini_api_key",
-            headers={"X-API-Key": master_key},
+        return invoke(
+            user_content,
+            system=system_instruction,
+            model=MODEL_SYNTH,
+            temperature=0.2,
         )
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            return data.get("value")
-    except Exception as e:
-        print(f"  ⚠ Credentials Server unavailable ({e}), trying local fallback")
-        local_fallback = "/Users/danexall/Documents/VS Code Projects/ARCA/.secrets/google_ai_studio"
-        if os.path.exists(local_fallback):
-            with open(local_fallback, 'r') as f:
-                return f.read().strip()
-        print(f"  ⚠ Local fallback not found at {local_fallback}")
-        return None
-
-def invoke_gemini(api_key, system_instruction, user_content):
-    """Invoke Gemini REST API synchronously."""
-    payload = {
-        "system_instruction": {
-            "parts": [{"text": system_instruction}]
-        },
-        "contents": [
-            {
-                "role": "user",
-                "parts": [{"text": user_content}]
-            }
-        ],
-        "generationConfig": {
-            "temperature": 0.2, # Low temperature for accurate summarization
-            "topP": 0.95
-        }
-    }
-    
-    import ssl
-    ctx = ssl.create_default_context()
-    try:
-        import certifi
-        ctx.load_verify_locations(certifi.where())
-    except ImportError:
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
-
-    req = urllib.request.Request(
-        f"{GEMINI_URL}?key={api_key}",
-        headers={"Content-Type": "application/json"},
-        data=json.dumps(payload).encode("utf-8")
-    )
-    
-    try:
-        with urllib.request.urlopen(req, timeout=120, context=ctx) as resp:
-            response_data = json.loads(resp.read().decode("utf-8"))
-            return response_data["candidates"][0]["content"]["parts"][0]["text"]
     except Exception as e:
         print(f"  ⚠ Gemini API call failed: {e}")
         return None
@@ -155,10 +108,14 @@ def main():
         print("  ✅ No `.md` files found in staging. Vault is clean.")
         return
         
-    api_key = fetch_gemini_key()
+    try:
+        api_key = fetch_api_key()
+    except Exception as e:
+        print(f"  ❌ Cannot proceed without Gemini API Key: {e}")
+        return
     if not api_key:
         print("  ❌ Cannot proceed without Gemini API Key.")
-        return
+        raise SystemExit(1)
 
     # Categorize files by Pillar
     processed_any = False
@@ -229,6 +186,12 @@ def main():
                 f.write(updated_master.strip() + "\n")
             print(f"  ✅ Updated '{os.path.basename(master_path)}'.")
             
+            for fp, content in matched_files:
+                try:
+                    land_architecture_note(os.path.basename(fp), content)
+                except Exception as e:
+                    print(f"  ⚠ Vault land failed for {os.path.basename(fp)}: {e}")
+
             # Archive files
             archived = archive_files([fp for fp, _ in matched_files], f"archive_{pillar['name'].lower()}")
             print(f"  📦 Zipped raw files to {os.path.basename(archived)}")

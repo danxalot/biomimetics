@@ -4,6 +4,8 @@
 <dict>
     <key>Label</key>
     <string>com.bios.condenser</string>
+    <key>Disabled</key>
+    <true/>
     <key>ProgramArguments</key>
     <array>
         <string>/Library/Frameworks/Python.framework/Versions/3.13/bin/python3</string>
@@ -13,6 +15,7 @@
     <string>/Users/danexall/biomimetics</string>
     <key>RunAtLoad</key>
     <false/>
+    <!-- Duplicate of daily-pipeline step 4. Disabled 2026-08-29. -->
     <key>StartCalendarInterval</key>
     <dict>
         <key>Hour</key>

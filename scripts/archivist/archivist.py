@@ -22,6 +22,13 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
+SCRIPTS_DIR = Path(__file__).resolve().parent.parent
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+from lib.creds import get_first  # noqa: E402
+from lib.vault_io import land_architecture_note  # noqa: E402
+
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
@@ -106,21 +113,11 @@ def content_hash(content):
 
 
 def fetch_notion_token():
-    """Fetch Notion API key from Credentials Server, fallback to local file."""
+    """Fetch Notion API key from Credentials Server only."""
     try:
-        api_key = CREDENTIALS_API_KEY_PATH.read_text().strip()
-        req = urllib.request.Request(
-            f"{CREDENTIALS_SERVER}/secrets/notion-api-key",
-            headers={"X-API-Key": api_key},
-        )
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            return data.get("value")
+        return get_first("notion", prefer=("notion-api-key", "notion_api_key"))
     except Exception as e:
-        print(f"  ⚠ Credentials Server unavailable ({e}), trying local fallback")
-        local = REPO_ROOT / "secrets" / "notion-api-key"
-        if local.exists():
-            return local.read_text().strip()
+        print(f"  ⚠ Credentials Server unavailable ({e})")
         return None
 
 
@@ -147,12 +144,16 @@ def derive_tags(filepath, content, default_tags, config_moc):
         tags.update(["source/biomimetics", "bios/architecture"])
         mocs.add("Biomimetics_MOC")
         
-    # 3. Pythia Keyword Logic
-    pythia_keywords = ["vsa", "ebm", "jepa", "reasoningbank", "geometric sentience"]
-    if any(kw in check_text for kw in pythia_keywords):
+    # 3. Pythia is a project path, not a keyword in IDE logs.
+    from lib.origin import is_ide_log, pythia_by_path
+    if pythia_by_path(filepath):
         tags.add("pythia")
         mocs.add("Pythia_MOC")
-        
+    elif (not is_ide_log(filepath, content)
+          and any(kw in check_text for kw in ("pythia", "noumenal engine"))):
+        tags.add("pythia")
+        mocs.add("Pythia_MOC")
+
     return sorted(list(tags)), sorted(list(mocs))
 
 
@@ -260,6 +261,8 @@ def scan_filesystem_sources(config, state, bootstrap=False):
                 rel = os.path.relpath(fpath, base)
                 if any(ig in rel for ig in ignore):
                     continue
+                if "MASTER_" in os.path.basename(fpath):
+                    continue
                 # Skip .resolved files
                 if ".resolved" in fpath or ".metadata.json" in fpath:
                     continue
@@ -307,10 +310,14 @@ def scan_notion_source(config, state, bootstrap=False):
     moc = notion_cfg.get("moc", "Biomimetics_MOC")
 
     # Query Notion for matching tasks
+    # BiOS Tasks has State (select) and Status (status). There is no
+    # "Ready for Sync" option — completed work is State=Done / Status=Done.
     query_body = json.dumps({
         "filter": {
-            "property": "State",
-            "select": {"equals": filter_status}
+            "or": [
+                {"property": "State", "select": {"equals": filter_status}},
+                {"property": "Status", "status": {"equals": filter_status}},
+            ]
         },
         "page_size": 20
     }).encode("utf-8")
@@ -491,8 +498,15 @@ def main():
         out_filename = f"{safe_name}.md"
         out_path = os.path.join(staging_dir, out_filename)
 
+        from lib.origin import origin_from_path, stamp_origin
+        origin = artifact.get("source_name") or origin_from_path(source_path) or "manual"
+        node_content = stamp_origin(node_content, origin, source_path)
         with open(out_path, "w") as f:
             f.write(node_content)
+        try:
+            land_architecture_note(out_filename, node_content)
+        except Exception as e:
+            print(f"    ⚠ Vault land failed for {out_filename}: {e}")
 
         # Update MOCs
         for m in mocs:

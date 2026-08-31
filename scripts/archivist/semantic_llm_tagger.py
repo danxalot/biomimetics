@@ -22,10 +22,16 @@ import sys
 
 # --- Configuration ---
 DOCS_DIR = "/Users/danexall/Google Drive/My Drive/Obsidian-life"
-CREDENTIALS_SERVER = "http://localhost:8089"
+CREDENTIALS_SERVER = "http://127.0.0.1:8089"  # 127.0.0.1 (not localhost) — server binds IPv4 only
 RATE_LIMIT_DELAY = 6.0  # 6-second heartbeat for safe RPM/TPM pacing
 MIN_WORDS_PER_PARAGRAPH = 20  # Minimum words to trigger semantic tagging
-FLASH_LITE_MODEL = "gemini-3.1-flash-lite-preview"  # Primary tagging model
+# High-volume tagging: 3.1 Flash Lite free quota (500/day). Synthesis uses 3.5.
+from pathlib import Path as _Path
+import sys as _sys
+_SCRIPTS = str(_Path(__file__).resolve().parent.parent)
+if _SCRIPTS not in _sys.path:
+    _sys.path.insert(0, _SCRIPTS)
+from lib.gemini import MODEL_VOLUME as FLASH_LITE_MODEL  # noqa: E402
 PARAGRAPH_CHUNK_SIZE = 5 # Number of paragraphs to process per API call
 TAG_MARKER = "<!-- LLM_TAGGED -->"
 
@@ -127,11 +133,22 @@ FEWSHOT = {
 def route_domain(filepath, content):
     """Determine the document's domain and (for pythia) host.
     Returns (domain, host) where host is 'arca'|'bios'|None."""
+    from lib.origin import is_ide_log, pythia_by_path
+
     path_lower = str(filepath).lower()
     content_lower = content.lower()
 
-    # Pythia detection wins over path — pythia lives inside both arca and bios
-    if any(kw in content_lower for kw in PYTHIA_KEYWORDS):
+    # IDE harvests stay bios/arca even if they mention Pythia internals.
+    if is_ide_log(filepath, content) and not pythia_by_path(filepath):
+        if "/arca/" in path_lower:
+            return "arca", None
+        return "bios", None
+
+    # Pythia partition is path-true, or a dedicated pythia doc (keyword + not an IDE log)
+    if pythia_by_path(filepath) or (
+        any(kw in content_lower for kw in PYTHIA_KEYWORDS)
+        and not is_ide_log(filepath, content)
+    ):
         if "/arca/" in path_lower:
             host = "arca"
         elif "/bios/" in path_lower or "/biomimetics/" in path_lower:
@@ -145,6 +162,79 @@ def route_domain(filepath, content):
     if "/arca/" in path_lower:
         return "arca", None
     return "bios", None  # default
+
+# --------------------------------------------------------------------------
+# DOCUMENT-LEVEL PARTITION DELINEATION (runs on EVERY file, prose or not)
+# Guarantees each note is routed to a project partition for memory ingestion,
+# so nothing is dropped just because it lacks flowing prose. v1 = deterministic
+# path+content signals; an LLM refinement pass can layer on top later.
+# --------------------------------------------------------------------------
+PARTITION_TAXONOMY = ["life", "life/email", "life/legal", "life/legal/sar",
+                      "arca", "bios", "grants", "pythia"]
+
+def classify_partition(filepath, content, frontmatter=""):
+    """Return an ordered, de-duplicated list of '#partition/...' tags.
+    Always returns at least one (defaults to life)."""
+    p = str(filepath).lower()
+    c = content.lower()
+    tags = []
+    def add(leaf):
+        t = f"#partition/{leaf}"
+        if t not in tags:
+            tags.append(t)
+
+    is_email = ("source: email" in c or "\nsender:" in c
+                or "/emails/" in p or "/email" in p or "/personal" in p)
+
+    # Legal / SAR / ombudsman — safety-critical partition, highest priority
+    legal_sig = (any(k in c for k in [
+                    "subject access request", "ombudsman", "lgsco", "phso",
+                    "maladministration", "calderdale", "blue badge",
+                    "penalty charge", "duty of candour", "safeguarding",
+                    "housing officer", "swypft"])
+                 or any(k in p for k in ["legal", "complaint", "evidence_pack",
+                                          "ombudsman", "/sar"]))
+    if legal_sig:
+        add("life"); add("life/legal")
+        if "subject access request" in c or "sar" in p:
+            add("life/legal/sar")
+
+    # Grants / funding for the AI project
+    if (any(k in c for k in ["grant application", "funding call", "fellowship",
+                             "ukri", "innovate uk", "horizon europe",
+                             "research council", "grant opportunity"])
+            or "grant" in p):
+        add("grants")
+
+    # Pythia research: path wins. Keywords must not hijack IDE work-logs.
+    from lib.origin import is_ide_log, pythia_by_path
+    if pythia_by_path(filepath):
+        add("pythia")
+    elif any(kw in c for kw in PYTHIA_KEYWORDS) and not is_ide_log(filepath, content):
+        add("pythia")
+
+    # ARCA project docs. IDE logs that mention Muninn/MemU stay bios.
+    if "/arca/" in p:
+        add("arca")
+    elif not is_ide_log(filepath, content) and any(k in c for k in [
+            "arca ", "pythia_server", "geometry kernel"]):
+        add("arca")
+
+    # BiOS system docs
+    if (any(k in p for k in ["/bios", "biomimetics"]) or any(k in c for k in [
+            "biomimetics", "silent listener", "archivist", "voice agent",
+            "bios memory"])):
+        add("bios")
+
+    # Email that isn't already a project/legal doc -> life email
+    if is_email and not any(
+            t.startswith("#partition/arca") or t.startswith("#partition/grants")
+            or t.startswith("#partition/life/legal") for t in tags):
+        add("life"); add("life/email")
+
+    if not tags:
+        add("life")
+    return tags
 
 def build_prompt(domain, payload_text, frontmatter=""):
     """Returns contents_list for Gemma 4. Domain is locked by routing,
@@ -186,21 +276,10 @@ Tags:
     return contents
 
 def fetch_api_key():
-    """Fetch Gemini API key from Credentials Server."""
-    creds_api_key_path = "/Users/danexall/biomimetics/secrets/credentials_api_key"
+    """Fetch Gemini API key from Credentials Server only."""
+    from lib.gemini import fetch_api_key as _fetch
     try:
-        if os.path.exists(creds_api_key_path):
-            with open(creds_api_key_path, 'r') as f:
-                master_key = f.read().strip()
-
-            req = urllib.request.Request(
-                f"{CREDENTIALS_SERVER}/secrets/google_api_key",
-                headers={"X-API-Key": master_key},
-            )
-            with urllib.request.urlopen(req, timeout=5) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                return data.get("value")
-        return None
+        return _fetch()
     except Exception as e:
         print(f"  ⚠ Credentials Server unavailable ({e})")
         return None
@@ -396,13 +475,15 @@ def process_file(fpath, api_key):
     if paragraphs and paragraphs[0]["type"] == "protected" and paragraphs[0]["text"].startswith("---"):
         frontmatter_text = paragraphs[0]["text"]
 
+    # Document-level partition delineation — ALWAYS computed, even with no prose.
+    partition_tags = classify_partition(fpath, content, frontmatter_text)
+    partition_line = " ".join(partition_tags)
+
     text_indices = [i for i, p in enumerate(paragraphs) if p["type"] == "text" and len(p["text"].split()) >= MIN_WORDS_PER_PARAGRAPH]
 
     if not text_indices:
-        print("  ○ No eligible paragraphs found.")
-        return False
+        print(f"  ○ No prose to enrich — document-level partition only: {partition_line}")
 
-    modified = False
     all_chunks_succeeded = True
     for i in range(0, len(text_indices), PARAGRAPH_CHUNK_SIZE):
         chunk_indices = text_indices[i:i + PARAGRAPH_CHUNK_SIZE]
@@ -431,41 +512,81 @@ def process_file(fpath, api_key):
                 if isinstance(tags, list) and tags:
                     tag_string = " " + " ".join(tags)
                     paragraphs[idx]["text"] += tag_string
-                    modified = True
 
         time.sleep(1.0) # Small delay between chunks
 
-    if modified:
-        reassembled = "\n".join(p["text"] for p in paragraphs)
-        with open(fpath, "w", encoding="utf-8") as f:
-            f.write(reassembled + "\n\n" + TAG_MARKER)
-        if all_chunks_succeeded:
-            print(f"  ✅ Tags injected.")
-        else:
-            print(f"  ⚠️ Partially tagged. Some chunks failed.")
-        return True
+    # Reassemble body, inject the document-level partition line after any
+    # frontmatter, then the processed marker. EVERY file is written + marked,
+    # so ingestion is decoupled from prose-tagging and nothing is dropped.
+    reassembled = "\n".join(p["text"] for p in paragraphs)
+    if frontmatter_text and frontmatter_text in reassembled:
+        reassembled = reassembled.replace(
+            frontmatter_text, frontmatter_text + "\n\n" + partition_line, 1)
+    else:
+        reassembled = partition_line + "\n\n" + reassembled
 
-    print("  ○ No tags were applied.")
-    return False
+    with open(fpath, "w", encoding="utf-8") as f:
+        f.write(reassembled + "\n\n" + TAG_MARKER)
+
+    if text_indices and all_chunks_succeeded:
+        print(f"  ✅ Enriched + partitioned: {partition_line}")
+    elif text_indices:
+        print(f"  ⚠️ Partitioned; some enrichment chunks failed: {partition_line}")
+    else:
+        print(f"  ✅ Partitioned (no prose): {partition_line}")
+    return True
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--limit", type=int, default=0,
+                        help="process at most N files that actually get written (0 = all)")
+    args, _ = parser.parse_known_args()
+
     print("="*60)
-    print("  BiOS Semantic LLM Tagger (v2.3.0) - Flash Mode")
+    print("  BiOS Semantic LLM Tagger (v2.4.0) - Partition Delineation")
     print("="*60)
+
+    from lib.origin import rewrite_artifact_partitions
+    from lib.vault_io import read_text, write_text
+    art_dir = os.path.join(DOCS_DIR, "bios", "architecture", "artifacts")
+    fixed = 0
+    if os.path.isdir(art_dir):
+        for fpath in glob.glob(os.path.join(art_dir, "*.md")):
+            fp = _Path(fpath)
+            try:
+                old = read_text(fp)
+            except Exception:
+                continue
+            new = rewrite_artifact_partitions(fpath, old)
+            if new != old:
+                write_text(fp, new)
+                fixed += 1
+                print(f"  ✏ corrected partitions: {os.path.basename(fpath)}")
+        if fixed:
+            print(f"  Fixed {fixed} mis-partitioned artifact notes (origin kept, pythia keyword dropped).")
 
     api_key = fetch_api_key()
     if not api_key:
         print("❌ Critical Error: Could not locate Gemini API Key.")
-        return
+        sys.exit(1)
 
     files = glob.glob(os.path.join(DOCS_DIR, "**", "*.md"), recursive=True)
 
+    processed = 0
     for fpath in files:
-        if any(x in fpath for x in ["obsidian_staging", ".archive", "MOC", "MASTER_"]):
+        if any(x in fpath for x in ["obsidian_staging", ".archive", "_generated", "MOC", "MASTER_"]):
             continue
 
-        process_file(fpath, api_key)
-        time.sleep(RATE_LIMIT_DELAY)
+        did = process_file(fpath, api_key)
+        if did:
+            processed += 1
+            if args.limit and processed >= args.limit:
+                print(f"\n[--limit {args.limit}] stopping after {processed} written files.")
+                break
+            time.sleep(RATE_LIMIT_DELAY)
+
+    print(f"\nDone. {processed} files written this run.")
 
 if __name__ == "__main__":
     main()
