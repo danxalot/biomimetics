@@ -129,6 +129,8 @@ llama_cpp_bypass
 scripts/copaw/src/*.egg-info/
 scripts/secret_manager/github_mcp_api_key
 scripts/secret_manager/github_mcp_zed_config.json
+**/kaggle.json
+**/service_account.json
 identify_vm.command
 run_tagger_test.command
 system_diag.command
@@ -145,6 +147,14 @@ actions_logs/
 
 # Large Model weights, Archives, and Datasets
 *.pth
+*.pt
+*.npz
+*.onnx
+*.onnx.data
+*.safetensors
+*.gguf
+*.ggml
+*.ckpt
 *.tar.gz
 *.tar
 *.mp4
