@@ -629,7 +629,9 @@ def _purge_source_both(source: str) -> list:
     purge_payload = {"source": source, "timeframe": "all"}
     muninn_res = call_endpoint(f"{MUNINN_VM_URL}/api/purge", purge_payload)
     memu_res = call_endpoint(f"{MEMU_URL}/purge", purge_payload)
-    if "error" in muninn_res:
+    muninn_err = str(muninn_res.get("error") or "")
+    # GCP Muninn has no /api/purge (404). MemU is the replace path.
+    if muninn_err and "404" not in muninn_err:
         errors.append(f"MuninnDB purge: {muninn_res['error']}")
     if "error" in memu_res:
         errors.append(f"MemU purge: {memu_res['error']}")
@@ -653,10 +655,18 @@ def handle_memorize(payload: dict) -> tuple:
     content_tokens = estimate_tokens(content)
     skip_budget = bool(payload.get("skip_token_budget") or metadata.get("tagged"))
     vault_token_cap = int(os.environ.get("VAULT_TOKEN_BUDGET", "8000"))
+    memu_content = content
     if not skip_budget and content_tokens > MAX_TOTAL_TOKENS:
-        content = truncate_to_token_budget(content, MAX_TOTAL_TOKENS)
+        memu_content = truncate_to_token_budget(content, MAX_TOTAL_TOKENS)
     elif skip_budget and content_tokens > vault_token_cap:
-        content = truncate_to_token_budget(content, vault_token_cap)
+        memu_content = truncate_to_token_budget(content, vault_token_cap)
+
+    catalog = payload.get("catalog")
+    if isinstance(catalog, str) and catalog.strip():
+        muninn_content = catalog.strip()[:4000]
+    else:
+        # Metadata layer: Muninn never holds the full vault note.
+        muninn_content = truncate_to_token_budget(content, 400)
 
     pre_purge_errors = _purge_source_both(source) if upsert and source else []
 
@@ -672,10 +682,10 @@ def handle_memorize(payload: dict) -> tuple:
 
     muninn_payload = {
         "concept": concept or "memory",
-        "content": content,
+        "content": muninn_content,
         "tags": tags[:30] if tags else [],
         "vault": metadata.get("vault") or "default",
-        "metadata": metadata,
+        "metadata": {**metadata, "memory_role": metadata.get("memory_role") or "catalog"},
     }
     muninn_result = call_endpoint(f"{MUNINN_VM_URL}/api/engrams", muninn_payload)
 
@@ -688,7 +698,7 @@ def handle_memorize(payload: dict) -> tuple:
         memu_meta.setdefault("memory_type", "knowledge")
 
     memu_payload = {
-        "content": content,
+        "content": memu_content,
         "user_id": user_id,
         "metadata": memu_meta,
         "tags": tags or None,
@@ -710,7 +720,8 @@ def handle_memorize(payload: dict) -> tuple:
         "memory_id": muninn_result.get("id", muninn_result.get("memory_id")),
         "upsert": upsert,
         "token_usage": {
-            "content": estimate_tokens(content),
+            "content": estimate_tokens(memu_content),
+            "catalog": estimate_tokens(muninn_content),
             "budget": vault_token_cap if skip_budget else MAX_TOTAL_TOKENS,
         },
         "errors": list(pre_purge_errors),

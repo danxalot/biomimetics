@@ -95,18 +95,21 @@ canary_logs_final_dir/
 
 # Large dataset bundles (uploaded to Kaggle separately)
 pythia/data/kinematics/unpacked_bundle/
-scripts/secret_manager/.env
+# scripts/secret_manager/.env
 .local_gdrive_token.json
 pythia/data/
 *.pt
 *.npz
 **/.env
 llama_cpp_bypass/
-scripts/secret_manager/
-config_copaw/
+# scripts/secret_manager/
+# config_copaw/
 config_copaw.secret/
+.staging/
+.tmp_write_test
+.agent_bridge/
 .serena/
-scripts/copaw/src/
+# scripts/copaw/src/
 docs/
 models/
 scratch/

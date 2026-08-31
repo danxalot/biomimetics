@@ -42,9 +42,10 @@ EXTENSIONS = {".md", ".markdown"}
 # Never ingest: raw staging, archives, and auto-generated overview outputs
 # (the last would create a feedback loop — L4 is derived FROM memory, not INTO it).
 EXCLUDE_SEGMENTS = ("obsidian_staging", "staging", ".archive", "_generated")
-EXCLUDE_NAME_SUBSTR = ("MASTER_",)
+EXCLUDE_NAME_SUBSTR = ("MASTER_", ".full.md")
 
-MAX_CHARS = 20000  # safety cap per note payload
+MAX_CHARS = 12000  # skip (do not truncate) notes larger than this — chunk in Obsidian first
+CATALOG_CHARS = 1200  # Muninn catalog card; MemU gets the full chunk
 SYNC_RETRIES = 4
 READ_RETRIES = 5
 STATE_FLUSH_EVERY = 10
@@ -169,14 +170,45 @@ def set_file_record(state: dict, rel_path: str, sha: str, memory_id=None) -> Non
     state.setdefault("files", {})[rel_path] = rec
 
 
+def catalog_card(filepath: str, content: str, tags: list, partitions: list) -> str:
+    """Short Muninn-facing card: what the note is, not the whole body."""
+    title = Path(filepath).stem.replace("_", " ")
+    for line in content.splitlines():
+        s = line.strip().lstrip("#").strip()
+        if s:
+            title = s[:120]
+            break
+    headings = re.findall(r"^#{2,3}\s+(.+)$", content, re.M)[:16]
+    body = re.sub(r"^---\n.*?\n---\n", "", content, count=1, flags=re.S)
+    preview = " ".join(body.split())[:500]
+    parts = ", ".join(partitions) or "life"
+    origin = [t for t in tags if str(t).lstrip("#").startswith("source/")][:6]
+    lines = [
+        f"# {title}",
+        f"source: {filepath}",
+        f"partition: {parts}",
+    ]
+    if origin:
+        lines.append("origin: " + ", ".join(origin))
+    if headings:
+        lines.append("headings: " + " | ".join(headings))
+    lines.append("")
+    lines.append(preview)
+    return "\n".join(lines)[:CATALOG_CHARS]
+
+
 def sync_to_gcp(content: str, filepath: str, tags: list, partitions: list) -> tuple:
-    """Upsert this vault note. Returns (ok, memory_id)."""
+    """MemU gets the note; Muninn gets a catalog card. Returns (ok, memory_id)."""
+    if len(content) > MAX_CHARS:
+        print(f"   skip oversized ({len(content)} chars) — chunk in Obsidian first")
+        return False, None
     purge_source(filepath)
     payload = {
         "operation": "memorize",
         "upsert": True,
         "skip_token_budget": True,
-        "content": content[:MAX_CHARS],
+        "content": content,
+        "catalog": catalog_card(filepath, content, tags, partitions),
         "metadata": {
             "source": filepath,
             "tags": tags,
@@ -185,6 +217,7 @@ def sync_to_gcp(content: str, filepath: str, tags: list, partitions: list) -> tu
             "synced_at": datetime.now().isoformat(),
             "tagged": True,
             "source_system": "vault_sync",
+            "memory_role": "catalog_and_archive",
         },
     }
 

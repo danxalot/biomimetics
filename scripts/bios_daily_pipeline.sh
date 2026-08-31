@@ -39,6 +39,9 @@ echo -e "\n--- [Step 3/8] Executing Notion Vault Sweeper ---"
 echo -e "\n--- [Step 4/8] Running Vault Condenser (Pillar Assimilation) ---"
 "$PYTHON_BIN" scripts/archivist/vault_condenser.py || fail "Vault Condenser"
 
+echo -e "\n--- [Step 4b/8] Chunking oversized vault notes ---"
+"$PYTHON_BIN" scripts/archivist/vault_chunker.py || fail "Vault Chunker"
+
 echo -e "\n--- [Step 5/8] Running Semantic LLM Tagger (partition delineation) ---"
 "$PYTHON_BIN" scripts/archivist/semantic_llm_tagger.py || fail "Semantic Tagger"
 
