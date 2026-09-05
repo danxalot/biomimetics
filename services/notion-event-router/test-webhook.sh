@@ -2,7 +2,14 @@
 # Test Notion Event Router deployment
 
 WORKER_URL="https://hooks.arca-vsa.tech"
-WEBHOOK_SECRET=""
+CRED_KEY_FILE="${CRED_KEY_FILE:-/Users/danexall/biomimetics/secrets/credentials_api_key}"
+WEBHOOK_SECRET="$(curl -sf -H "X-API-Key: $(cat "$CRED_KEY_FILE")" \
+  "http://127.0.0.1:8089/secrets/notion-webhook-secret" \
+  | python3 -c "import sys,json; print(json.load(sys.stdin).get('value',''))")"
+if [ -z "$WEBHOOK_SECRET" ]; then
+  echo "❌ notion-webhook-secret missing from credentials server"
+  exit 1
+fi
 
 # Test payload
 PAYLOAD='{

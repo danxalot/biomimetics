@@ -6,7 +6,14 @@ import websockets
 from websockets.asyncio.client import connect as ws_connect
 
 # DIRECT BYPASS TEST: Targeting Google Upstream Directly
-API_KEY = ""
+from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from lib.creds import get_first  # noqa: E402
+
+API_KEY = get_first("google-ai-studio") or get_first("gemini")
+if not API_KEY:
+    raise SystemExit("gemini/google-ai-studio key missing from credentials server")
 URL = f"wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent?key={API_KEY}"
 
 async def test_direct_bypass():

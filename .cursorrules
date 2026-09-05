@@ -36,9 +36,8 @@ As agents execute tasks, they must dynamically orient themselves to the currentl
 
 ### 1. Credentials Server — Single Source of Truth
 **All secrets MUST be fetched from the Credentials Server on port 8089.**
-- Server: `http://localhost:8089` (Azure Key Vault `arca-mcp-kv-dae` backend)
-- API Key: `` (header `X-API-Key`)
-- Stored at: `/Users/danexall/biomimetics/secrets/credentials_api_key`
+- Server: `http://127.0.0.1:8089` (Azure Key Vault `arca-mcp-kv-dae` backend)
+- Master API key: file only — `/Users/danexall/biomimetics/secrets/credentials_api_key` (header `X-API-Key`)
 - Endpoints: `GET /secrets`, `GET /secrets/{name}`, `POST /secrets/batch`, `GET /health`
 - **NEVER** hardcode credentials, read from env vars, or load local JSON key files.
 - Local file fallback is **DISABLED**. Missing secrets = hard 503/404.

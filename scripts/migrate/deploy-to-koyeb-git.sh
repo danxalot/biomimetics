@@ -19,7 +19,16 @@ echo ""
 ARCA_SECRETS_DIR="${ARCA_SECRETS_DIR:-/Users/danexall/Documents/VS Code Projects/ARCA/.secrets}"
 GITHUB_MCP_DIR="${GITHUB_MCP_DIR:-/Users/danexall/github-mcp-super-gateway}"
 KOYEB_APP_NAME="${KOYEB_APP_NAME:-github-mcp-server}"
-KOYEB_TOKEN=""
+CRED_KEY_FILE="${CRED_KEY_FILE:-/Users/danexall/biomimetics/secrets/credentials_api_key}"
+if [ -z "${KOYEB_TOKEN:-}" ]; then
+  KOYEB_TOKEN="$(curl -sf -H "X-API-Key: $(cat "$CRED_KEY_FILE")" \
+    "http://127.0.0.1:8089/secrets/koyeb-token" \
+    | python3 -c "import sys,json; print(json.load(sys.stdin).get('value',''))")"
+fi
+if [ -z "$KOYEB_TOKEN" ]; then
+  echo "❌ koyeb-token missing from credentials server"
+  exit 1
+fi
 GITHUB_REPO="${GITHUB_REPO:-github.com/danxalot/biomimetics}"
 GIT_BRANCH="${GIT_BRANCH:-main}"
 GIT_PATH="${GIT_PATH:-github-mcp-super-gateway}"

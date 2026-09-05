@@ -30,21 +30,20 @@ You are the **Builder/Executor** agent for Biomimetics. Your counterpart is the 
 
 ### 1. Credentials Server — Single Source of Truth
 **All secrets MUST be fetched from the Credentials Server on port 8089.**
-- Server: `http://localhost:8089` (Azure Key Vault `arca-mcp-kv-dae` backend)
-- API Key: `` (header `X-API-Key`)
-- Stored at: `/Users/danexall/biomimetics/secrets/credentials_api_key`
+- Server: `http://127.0.0.1:8089` (Azure Key Vault `arca-mcp-kv-dae` backend)
+- Master API key: **file only** — `/Users/danexall/biomimetics/secrets/credentials_api_key` (header `X-API-Key`)
 - Endpoints:
   - `GET /secrets` — list all secret names
   - `GET /secrets/{name}` — fetch single secret
   - `POST /secrets/batch` — fetch multiple
   - `GET /health` — health check
-- **NEVER** hardcode credentials, read from env vars, or load local JSON key files.
+- **NEVER** hardcode credentials (including the master API key), read from env vars, or load local JSON key files.
 - Local file fallback is **DISABLED**. Missing secrets = hard 503/404.
 
 ```bash
-# Example: fetch a secret
-curl -s -H "X-API-Key: " \
-     "http://localhost:8089/secrets/<secret-name>"
+# Example: fetch a secret (key from file, never inlined)
+curl -s -H "X-API-Key: $(cat /Users/danexall/biomimetics/secrets/credentials_api_key)" \
+     "http://127.0.0.1:8089/secrets/<secret-name>"
 ```
 
 ### 2. Memory Stores — Two Accessible Layers

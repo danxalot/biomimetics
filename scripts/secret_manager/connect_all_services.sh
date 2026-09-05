@@ -6,11 +6,15 @@
 
 set -euo pipefail
 
-CREDENTIALS_API_KEY=""
+CRED_KEY_FILE="${CRED_KEY_FILE:-/Users/danexall/biomimetics/secrets/credentials_api_key}"
 CREDENTIALS_URL="http://127.0.0.1:8089"
-
+if [ ! -f "$CRED_KEY_FILE" ]; then
+    echo "❌ Credentials API key file missing: $CRED_KEY_FILE"
+    exit 1
+fi
+CREDENTIALS_API_KEY="$(cat "$CRED_KEY_FILE")"
 if [ -z "" ]; then
-    echo "❌ CREDENTIALS_API_KEY is not set in the environment. Exiting."
+    echo "❌ Credentials API key file is empty: $CRED_KEY_FILE"
     exit 1
 fi
 
