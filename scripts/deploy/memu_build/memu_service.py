@@ -532,14 +532,20 @@ async def store_memory(req: StoreRequest):
     try:
         content = req.resolved_content()
         backends = [MemoryBackend(b) for b in req.backends] if req.backends else None
-        await memory.store(
+        result = await memory.store(
             content=content,
             metadata=req.metadata,
             tags=req.tags,
             backends=backends,
         )
-        used = req.backends or ["qdrant", "firebase"]
-        return {"status": "stored", "backends": used}
+        used = (result or {}).get("backends") or req.backends or ["qdrant", "firebase"]
+        embedded = bool((result or {}).get("embedded"))
+        if (not req.backends or "qdrant" in req.backends) and not embedded:
+            raise HTTPException(
+                status_code=500,
+                detail="embedding required for archive store; write not recorded as done",
+            )
+        return {"status": "stored", "embedded": embedded, "backends": used}
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:

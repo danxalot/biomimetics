@@ -821,7 +821,12 @@ def handle_memorize(payload: dict) -> tuple:
     memu_result = call_endpoint(f"{MEMU_URL}/store", memu_payload)
 
     muninn_ok = "error" not in muninn_result
-    memu_ok = "error" not in memu_result and memu_result.get("status") in (None, "stored", "success")
+    # Fail closed: Firestore-only / no-vector MemU writes must not count as done.
+    memu_ok = (
+        "error" not in memu_result
+        and memu_result.get("status") in ("stored", "success")
+        and memu_result.get("embedded") is True
+    )
     if muninn_ok and memu_ok:
         status = "success"
     elif muninn_ok or memu_ok:
@@ -848,6 +853,8 @@ def handle_memorize(payload: dict) -> tuple:
         response["errors"].append(f"MemU: {memu_result['error']}")
     elif not memu_ok and memu_result.get("detail"):
         response["errors"].append(f"MemU: {memu_result.get('detail')}")
+    elif not memu_ok:
+        response["errors"].append("MemU: archive write missing embedding; not marking done")
 
     return (json.dumps(response), 200, {"Content-Type": "application/json"})
 

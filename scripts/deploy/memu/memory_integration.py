@@ -959,20 +959,29 @@ class UnifiedMemory:
             id=entry_id, content=content, metadata=metadata or {}, tags=tags or []
         )
 
-        # Generate embedding
-        if self.embedder:
+        if backends is None:
+            backends = [MemoryBackend.QDRANT, MemoryBackend.FIREBASE]
+        want_qdrant = MemoryBackend.QDRANT in backends
+
+        # Fail closed: never report a successful archive write without a vector.
+        if want_qdrant:
+            if not self.embedder:
+                raise RuntimeError("embedder not configured; refusing Qdrant store")
+            try:
+                entry.embedding = await self.embedder.generate_embedding(content)
+            except Exception as e:
+                raise RuntimeError(f"embedding failed; refusing archive store: {e}") from e
+            if not entry.embedding:
+                raise RuntimeError("no embedding produced; refusing Qdrant store")
+        elif self.embedder:
             try:
                 entry.embedding = await self.embedder.generate_embedding(content)
             except Exception as e:
                 print(f"Warning: Failed to generate embedding: {e}")
 
-        # Default to all backends
-        if backends is None:
-            backends = [MemoryBackend.QDRANT, MemoryBackend.FIREBASE]
-
         tasks = []
 
-        if MemoryBackend.QDRANT in backends and entry.embedding:
+        if want_qdrant:
             tasks.append(self.qdrant.store(entry))
 
         if MemoryBackend.FIREBASE in backends:
@@ -983,6 +992,10 @@ class UnifiedMemory:
 
         if tasks:
             await asyncio.gather(*tasks)
+        return {
+            "embedded": bool(entry.embedding),
+            "backends": [b.value for b in backends],
+        }
 
     async def recall(
         self, query: str, backends: Optional[List[MemoryBackend]] = None, limit: int = 5,
