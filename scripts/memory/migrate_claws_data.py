@@ -37,34 +37,17 @@ BATCH_SIZE = 50  # Process in batches to avoid rate limits
 
 
 def get_gemini_api_key() -> str:
-    """Get Gemini API key from environment or secret file"""
-    # Try environment variable first
-    if os.environ.get("GEMINI_API_KEY"):
-        return os.environ["GEMINI_API_KEY"]
-
-    # Get ARCA secrets directory from environment or use default
-    arca_secrets_dir = os.environ.get(
-        "ARCA_SECRETS_DIR",
-        "/Users/danexall/Documents/VS Code Projects/ARCA/.secrets"
-    )
-
-    # Try secret file
-    secret_paths = [
-        f"{arca_secrets_dir}/google_ai_studio",
-        "/Users/danexall/.secrets/google_ai_studio",
-        "./google_ai_studio",
-    ]
-
-    for path in secret_paths:
-        if os.path.exists(path):
-            with open(path) as f:
-                content = f.read().strip()
-                # Handle KEY=VALUE format
-                if "=" in content and "\n" not in content:
-                    return content.split("=", 1)[1].strip()
-                return content
-
-    raise RuntimeError("Gemini API key not found. Set GEMINI_API_KEY env var or create secret file.")
+    """Get Gemini API key from the credentials server only."""
+    import sys
+    from pathlib import Path
+    scripts = Path("/Users/danexall/biomimetics/scripts")
+    if str(scripts) not in sys.path:
+        sys.path.insert(0, str(scripts))
+    from lib.creds import get_first
+    key = get_first("google-ai-studio") or get_first("gemini-api-key") or get_first("google-api-key")
+    if not key:
+        raise RuntimeError("Gemini API key missing from credentials server")
+    return key
 
 
 def init_firestore() -> Any:

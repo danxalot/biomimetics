@@ -217,7 +217,7 @@ wrangler pages deploy ./dist --project-name=arca-live-voice
 
 ### Environment Variables (set via dashboard)
 ```
-GEMINI_API_KEY=AIzaSy...  # From Google AI Studio
+GEMINI_API_KEY=<credentials-server:gemini-api-key>
 CLOUDFLARE_WORKER_URL=https://...workers.dev
 ```
 
