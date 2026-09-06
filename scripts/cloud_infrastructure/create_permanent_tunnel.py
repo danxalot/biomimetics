@@ -6,13 +6,25 @@ Create permanent Cloudflare Tunnel via API
 import json
 import httpx
 import sys
+from pathlib import Path
 
-# Cloudflare API Token (service token from secrets)
-CLOUDFLARE_API_TOKEN = ""
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from lib.creds import get_first  # noqa: E402
+
+CLOUDFLARE_API_TOKEN = get_first("cloudflare", prefer=("api-token", "api_token", "token", "global"))
+if not CLOUDFLARE_API_TOKEN:
+    raise SystemExit("cloudflare token missing from credentials server")
+VPS_PASSWORD = (
+    get_first("vps-password")
+    or get_first("vultr-password")
+    or get_first("relay-vps")
+)
+if not VPS_PASSWORD:
+    raise SystemExit("VPS password missing from credentials server")
+
 TUNNEL_NAME = "gemini-relay-tunnel"
 TUNNEL_HOSTNAME = "gemini-relay.arca-vsa.tech"
 VPS_IP = "149.248.32.53"
-VPS_PASSWORD = ""
 RELAY_PORT = 8765
 
 HEADERS = {
